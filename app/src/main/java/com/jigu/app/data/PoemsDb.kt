@@ -23,6 +23,9 @@ class PoemsDb private constructor(context: Context) :
             "(SELECT GROUP_CONCAT(i.name, '、') FROM poem_imagery pi " +
                 "JOIN imagery i ON i.id = pi.imagery_id WHERE pi.poem_id = p.id)"
 
+        private const val FAMOUS_SUB =
+            "(SELECT f.line FROM famous_lines f WHERE f.poem_id = p.id) AS famous_line"
+
         @Volatile
         private var instance: PoemsDb? = null
 
@@ -65,6 +68,7 @@ class PoemsDb private constructor(context: Context) :
         val body: String,
         val dynasty: String,
         val imagery: List<String>,
+        val famousLine: String,
     )
 
     // ---------- 基础查询 ----------
@@ -77,6 +81,15 @@ class PoemsDb private constructor(context: Context) :
     fun meta(key: String): String? =
         readableDatabase.rawQuery("SELECT value FROM meta WHERE key = ?", arrayOf(key)).use { c ->
             if (c.moveToFirst()) c.getString(0) else null
+        }
+
+    fun categoryCounts(): Map<String, Int> =
+        readableDatabase.rawQuery(
+            "SELECT category, count(*) FROM poems GROUP BY category", null,
+        ).use { c ->
+            val out = mutableMapOf<String, Int>()
+            while (c.moveToNext()) out[c.getString(0)] = c.getInt(1)
+            out
         }
 
     private fun queryPoem(sql: String, args: Array<String>): Poem? =
@@ -109,6 +122,7 @@ class PoemsDb private constructor(context: Context) :
             dynasty = i.getString(12) ?: "",
             imagery = (if (i.isNull(13)) "" else i.getString(13))
                 .split('、').filter { it.isNotBlank() },
+            famousLine = if (i.isNull(14)) "" else i.getString(14) ?: "",
         )
     }
 
@@ -120,13 +134,13 @@ class PoemsDb private constructor(context: Context) :
     // ---------- 业务查询 ----------
 
     fun poemById(id: Int): Poem? = queryPoem(
-        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems p " +
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
             "LEFT JOIN authors a ON a.id = p.author_id WHERE p.id = ?",
         arrayOf(id.toString()),
     )
 
     fun poemAtOffset(offset: Int): Poem? = queryPoem(
-        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems p " +
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
             "LEFT JOIN authors a ON a.id = p.author_id LIMIT 1 OFFSET ?",
         arrayOf(offset.toString()),
     )
@@ -142,7 +156,7 @@ class PoemsDb private constructor(context: Context) :
         }
 
     fun listByCategory(category: String, limit: Int, offset: Int): List<Poem> = queryPoems(
-        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems p " +
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
             "LEFT JOIN authors a ON a.id = p.author_id WHERE p.category = ? " +
             "ORDER BY p.id LIMIT ? OFFSET ?",
         arrayOf(category, limit.toString(), offset.toString()),
@@ -167,7 +181,7 @@ class PoemsDb private constructor(context: Context) :
     }
 
     private fun searchByLike(q: String, limit: Int): List<Poem> = queryPoems(
-        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems p " +
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
             "LEFT JOIN authors a ON a.id = p.author_id " +
             "WHERE p.body LIKE ? OR p.title LIKE ? LIMIT ?",
         arrayOf("%$q%", "%$q%", limit.toString()),
@@ -178,7 +192,7 @@ class PoemsDb private constructor(context: Context) :
         if (poem.imagery.isNotEmpty()) {
             val marks = poem.imagery.joinToString(",") { "?" }
             val rows = queryPoems(
-                "SELECT DISTINCT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems p " +
+                "SELECT DISTINCT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
                     "LEFT JOIN authors a ON a.id = p.author_id " +
                     "JOIN poem_imagery pi ON pi.poem_id = p.id " +
                     "JOIN imagery i ON i.id = pi.imagery_id " +
@@ -188,13 +202,13 @@ class PoemsDb private constructor(context: Context) :
             if (rows.isNotEmpty()) return rows
         }
         return queryPoems(
-            "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems p " +
+            "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
                 "LEFT JOIN authors a ON a.id = p.author_id " +
                 "WHERE p.id != ? AND (a.name = ? OR p.category = ?) LIMIT ?",
             arrayOf(poem.id.toString(), poem.author, poem.category, limit.toString()),
         ).ifEmpty {
             queryPoems(
-                "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems p " +
+                "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
                     "LEFT JOIN authors a ON a.id = p.author_id WHERE p.id != ? LIMIT ?",
                 arrayOf(poem.id.toString(), limit.toString()),
             )

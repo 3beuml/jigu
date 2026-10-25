@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -34,14 +35,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jigu.app.data.PoemOfDay
 import com.jigu.app.data.PoemsDb
-import com.jigu.app.ui.theme.PoemTitleStyle
 import com.jigu.app.ui.theme.PoemTextStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-/** 今日页（D-008：纯沉浸）——一首诗、一枚节气角标、三个安静的出口 */
+/**
+ * 今日页（D-008 纯沉浸 + 名句制）：亮出一句最有名的，其余藏进详情。
+ * 显示优先级：名句表 -> 首句；点击任意处进详情。
+ */
 @Composable
 fun TodayScreen(onOpen: (Int) -> Unit) {
     val context = LocalContext.current
@@ -68,6 +71,9 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
     val poem = r.poem
     val badge = r.badge
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日"))
+    val line = poem.famousLine.ifBlank {
+        poem.paragraphs.firstOrNull().orEmpty()
+    }
 
     Column(
         modifier = Modifier
@@ -103,7 +109,7 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
             }
         }
 
-        // 中部：诗（点击进详情）
+        // 中部：名句（点击进详情看全篇）
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -112,27 +118,18 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (poem.rhythmic.isNotBlank()) {
-                Text(
-                    text = poem.rhythmic,
-                    style = PoemTitleStyle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(10.dp))
-            }
-            poem.paragraphs.forEach { line ->
-                Text(
-                    text = line,
-                    style = PoemTextStyle,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
+            Text(
+                text = line,
+                style = PoemTextStyle,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
             Spacer(Modifier.height(24.dp))
             Text(
                 text = attribution(poem),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
 
@@ -149,9 +146,8 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                 Icon(
                     if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                     contentDescription = null,
-                    modifier = Modifier.height(18.dp),
+                    modifier = Modifier.size(18.dp),
                 )
-                Spacer(Modifier.height(0.dp))
                 Text("收藏", fontSize = 14.sp)
             }
             TextButton(onClick = { /* 阶段5：分享卡片 */ }) { Text("做卡片", fontSize = 14.sp) }
@@ -161,19 +157,8 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
 }
 
 fun attribution(poem: PoemsDb.Poem): String {
-    val who = if (poem.author.isBlank()) "佚名" else poem.author
-    val era = when {
-        poem.dynasty.isNotBlank() -> poem.dynasty
-        else -> ""
-    }
-    val place = when {
-        poem.chapter.isNotBlank() -> poem.chapter
-        poem.section.isNotBlank() -> poem.section
-        else -> ""
-    }
-    return listOfNotNull(
-        place.takeIf { it.isNotBlank() }?.let { "$it · " },
-        era.takeIf { it.isNotBlank() },
-        who,
-    ).joinToString("").removePrefix(" · ")
+    val era = poem.dynasty.takeIf { it.isNotBlank() }
+    val who = poem.author.ifBlank { "佚名" }
+    val head = listOfNotNull(era, who).joinToString(" · ")
+    return "$head《${poem.title}》"
 }

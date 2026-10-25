@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -18,12 +19,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.LibraryScreen
+import com.jigu.app.ui.library.ModuleScreen
 import com.jigu.app.ui.mine.MineScreen
 import com.jigu.app.ui.theme.JiguTheme
 import com.jigu.app.ui.today.TodayScreen
@@ -54,7 +57,7 @@ fun JiguApp() {
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(modifier = Modifier.height(64.dp)) {
                 NavigationBarItem(
                     selected = currentRoute(nav) == "today",
                     onClick = { nav.navigate("today") { launchSingleTop = true; popUpTo("today") { inclusive = true } } },
@@ -78,7 +81,19 @@ fun JiguApp() {
     ) { padding ->
         NavHost(nav, startDestination = "today", modifier = Modifier.padding(padding)) {
             composable("today") { TodayScreen(onOpen = openDetail) }
-            composable("library") { LibraryScreen(onOpen = openDetail) }
+            composable("library") {
+                LibraryScreen(
+                    onOpenModule = { key -> nav.navigate("module/$key") },
+                    onOpen = openDetail,
+                )
+            }
+            composable("module/{key}") { back ->
+                ModuleScreen(
+                    key = back.arguments?.getString("key") ?: "",
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
             composable("mine") { MineScreen() }
             composable("detail/{id}") { back ->
                 DetailScreen(

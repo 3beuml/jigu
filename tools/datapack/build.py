@@ -33,8 +33,8 @@ from opencc import OpenCC
 
 T2S = OpenCC("t2s")
 
-SCHEMA_VERSION = 1
-DATA_VERSION = 2
+SCHEMA_VERSION = 2
+DATA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -66,6 +66,14 @@ CREATE TABLE poems(
 CREATE INDEX idx_poems_category ON poems(category);
 CREATE INDEX idx_poems_author   ON poems(author_id);
 CREATE INDEX idx_poems_title    ON poems(title);
+
+-- 名句表（今日页亮一句、名句模块浏览）；种子见 FAMOUS_LINES，构建期解析回 poem_id
+CREATE TABLE famous_lines(
+  id      INTEGER PRIMARY KEY,
+  poem_id INTEGER NOT NULL REFERENCES poems(id),
+  line    TEXT NOT NULL,
+  UNIQUE(poem_id)
+);
 
 CREATE VIRTUAL TABLE poems_fts USING fts5(
   body, title, content='poems', content_rowid='id', tokenize='trigram'
@@ -376,6 +384,61 @@ CALENDAR_KEYWORDS = {
 # calendar_map 配诗只从韵文类取
 POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "shijing", "chuci", "han_wei")
 
+# 名句种子：(题目关键词, 名句关键词)。命中即把该句登记为该诗的"名句"；
+# 未命中的打印跳过。首版覆盖三百首/诗经/楚辞/纳兰（精选库可解析），宋词条目仅全量库生效。
+FAMOUS_LINES = [
+    ("静夜思", "床前"), ("春晓", "春眠不觉晓"), ("登鹳雀楼", "白日依山尽"),
+    ("相思", "红豆生南国"), ("望庐山瀑布", "飞流直下三千尺"), ("早发白帝城", "朝辞白帝彩云间"),
+    ("望天门山", "天门中断楚江开"), ("独坐敬亭山", "众鸟高飞尽"), ("春夜喜雨", "好雨知时节"),
+    ("绝句", "两个黄鹂鸣翠柳"), ("鸟鸣涧", "人闲桂花落"),
+    ("黄鹤楼送孟浩然之广陵", "烟花三月下扬州"), ("赠汪伦", "桃花潭水深千尺"),
+    ("春望", "国破山河在"), ("月夜忆舍弟", "露从今夜白"),
+    ("登高", "无边落木萧萧下"), ("登岳阳楼", "昔闻洞庭水"), ("望岳", "会当凌绝顶"),
+    ("枫桥夜泊", "月落乌啼霜满天"), ("寒食", "春城无处不飞花"), ("滁州西涧", "独怜幽草涧边生"),
+    ("塞下曲", "月黑雁飞高"), ("游子吟", "慈母手中线"), ("题都城南庄", "桃花依旧"),
+    ("乌衣巷", "旧时王谢堂前燕"), ("望洞庭", "湖光秋月两相和"), ("浪淘沙", "九曲黄河万里沙"),
+    ("赋得古原草送别", "离离原上草"), ("暮江吟", "一道残阳铺水中"), ("忆江南", "日出江花红胜火"),
+    ("江雪", "千山鸟飞绝"), ("山行", "停车坐爱枫林晚"),
+    ("泊秦淮", "烟笼寒水月笼沙"), ("江南春绝句", "千里莺啼"), ("蜂", "采得百花成蜜后"),
+    ("回乡偶书", "少小离家老大回"), ("咏柳", "碧玉妆成一树高"),
+    ("凉州词", "黄河远上白云间"), ("凉州词", "葡萄美酒夜光杯"), ("出塞", "秦时明月汉时关"),
+    ("从军行", "青海长云暗雪山"), ("芙蓉楼送辛渐", "一片冰心在玉壶"), ("别董大", "莫愁前路无知己"),
+    ("渭城曲", "渭城朝雨"), ("九月九日忆山东兄弟", "每逢佳节倍思亲"),
+    ("竹里馆", "独坐幽篁里"), ("鹿柴", "空山不见人"),
+    ("山居秋暝", "空山新雨后"), ("使至塞上", "大漠孤烟直"), ("终南别业", "行到水穷处"),
+    ("黄鹤楼", "日暮乡关何处是"), ("次北固山下", "海日生残夜"),
+    ("将进酒", "君不见黄河之水"), ("琵琶引", "同是天涯沦落人"),
+    ("关雎", "关关雎鸠"), ("蒹葭", "蒹葭苍苍"), ("桃夭", "桃之夭夭"), ("采薇", "昔我往矣"),
+    ("离骚", "路漫漫"),
+    ("长相思", "山一程"), ("木兰花令", "人生若只如初见"), ("画堂春", "一生一代一双人"),
+    # 全量库才有的宋词/宋诗
+    ("水调歌头", "明月几时有"), ("念奴娇", "大江东去"), ("雨霖铃", "执手相看泪眼"),
+    ("声声慢", "寻寻觅觅"), ("满江红", "怒发冲冠"), ("钗头凤", "红酥手"),
+    ("鹊桥仙", "金风玉露一相逢"), ("破阵子", "醉里挑灯看剑"), ("永遇乐", "千古江山"),
+    ("青玉案", "蓦然回首"), ("卜算子", "零落成泥碾作尘"), ("游山西村", "山重水复疑无路"),
+]
+
+
+def fill_famous_lines(conn):
+    n = 0
+    for title_hint, line_hint in FAMOUS_LINES:
+        row = conn.execute(
+            "SELECT id, paragraphs FROM poems WHERE title LIKE ? AND body LIKE ? ORDER BY id LIMIT 1",
+            (f"%{title_hint}%", f"%{line_hint}%"),
+        ).fetchone()
+        if not row:
+            print(f"    [名句] 未命中（跳过）: {title_hint} / {line_hint}")
+            continue
+        pid, paras_json = row
+        paras = json.loads(paras_json)
+        line = next((p for p in paras if line_hint in p), paras[0])
+        conn.execute(
+            "INSERT OR IGNORE INTO famous_lines(poem_id, line) VALUES (?,?)",
+            (pid, line),
+        )
+        n += 1
+    print(f"  名句表: {n}/{len(FAMOUS_LINES)} 条解析成功")
+
 
 def annotate(conn):
     """单遍扫描正文：打意象标签 + 填 calendar_map。"""
@@ -459,6 +522,7 @@ def build(db_path: Path, dataset: Path, label: str, full: bool):
                     print(f"  [{label}] {name}: {n} …", flush=True)
             print(f"  [{label}] {name}: {n} 条")
     t0 = time.time()
+    fill_famous_lines(db.conn)
     annotate(db.conn)
     print(f"  [{label}] 意象打标 + 节气节日配诗完成（{time.time()-t0:.0f}s）："
           f"意象 {db.conn.execute('SELECT count(*) FROM imagery').fetchone()[0]} 类，"
