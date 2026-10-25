@@ -645,7 +645,9 @@ def fill_famous_lines(conn):
             continue
         pid, paras_json = row
         paras = json.loads(paras_json)
-        line = next((p for p in paras if line_hint in p), paras[0])
+        line = next((p for p in paras if line_hint in p), None)
+        if not line or len(line) < 6:  # 防御：不落短行/脏行
+            continue
         conn.execute(
             "INSERT OR IGNORE INTO famous_lines(poem_id, line) VALUES (?,?)",
             (pid, line),

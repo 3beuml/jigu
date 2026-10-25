@@ -83,14 +83,16 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
     val poem = r.poem
     val badge = r.badge
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日"))
-    val line = poem.famousLine.ifBlank {
-        poem.paragraphs.firstOrNull().orEmpty()
-    }
+    val line = poem.famousLine.takeIf { it.length >= 6 }
+        ?: poem.paragraphs.firstOrNull().takeIf { !it.isNullOrBlank() && it.length >= 6 }
+        ?: poem.paragraphs.joinToString("").takeIf { it.isNotBlank() }
+        ?: ""
 
-    // 角隅山水：当前节气的画，右下角淡出（A 手法）；深色模式隐藏；画意开关可全关
+    // 角隅山水：当前节气的画，右下角淡出（A 手法）；深色模式隐藏；画意开关可全关；
+    // 护栏"文字区净空"：长文（>4 段）不配画，避免压字
     val artEnabled = JiguSettings.artEnabled(context)
-    val artwork = if (artEnabled && !isSystemInDarkTheme()) {
-        ArtworkRepo.forTerm(badge)
+    val artwork = if (artEnabled && !isSystemInDarkTheme() && poem.paragraphs.size <= 4) {
+        ArtworkRepo.forTerm(context, badge)
     } else null
     var artBitmap by remember(artwork?.file) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(artwork?.file) {
@@ -191,7 +193,7 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
             TextButton(onClick = {
                 // 渲染诗卡（带节气配画）并唤起系统分享
                 scope.launch {
-                    val art = ArtworkRepo.forTerm(badge)
+                    val art = ArtworkRepo.forTerm(context, badge)
                     val card = withContext(Dispatchers.IO) {
                         runCatching { PoemCard.render(context, poem, art) }.getOrNull()
                     }

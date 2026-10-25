@@ -188,7 +188,7 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
             // 赏画（D 手法：默认收起，展开才见画；深色模式隐藏）
             val artEnabled = JiguSettings.artEnabled(context)
             val dArt = if (artEnabled && !isSystemInDarkTheme()) {
-                ArtworkRepo.forTerm(JiguCalendar.currentTerm(java.time.LocalDate.now()))
+                ArtworkRepo.forTerm(context, JiguCalendar.currentTerm(java.time.LocalDate.now()))
             } else null
             if (dArt != null) {
                 var artBitmap by remember(dArt.file) {

@@ -48,14 +48,9 @@ object ArtworkRepo {
         }
     }
 
-    fun forTerm(term: String?): Artwork? {
-        loadOnce()
+    fun forTerm(context: Context, term: String?): Artwork? {
+        load(context)
         return term?.let { byTerm[it] }
-    }
-
-    @Synchronized
-    private fun loadOnce() {
-        if (!loaded) loaded = true // 占位：load(context) 才真正解析；未加载时查询返回空由调用方兜底
     }
 
     fun decode(context: Context, artwork: Artwork): Bitmap? = runCatching {
