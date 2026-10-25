@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -22,9 +24,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,17 +41,29 @@ import com.jigu.app.ui.theme.PoemTitleStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** 书库模块（京墨式）：一个模块一个门类，点击进入浏览；全局搜索常驻页首 */
+/** 书库模块（京墨式）：category = 按分类浏览；tag = 按标签筛选（如三百首） */
+private data class Module(
+    val key: String,
+    val title: String,
+    val brief: String,
+    val kind: String,
+    val tag: String? = null,
+)
+
 private val MODULES = listOf(
-    Triple("tang_poem", "唐诗三百首", "家塾课本 · 熟读成诵"),
-    Triple("shijing", "诗经", "风雅颂 · 先秦歌谣"),
-    Triple("chuci", "楚辞", "骚体 · 浪漫之源"),
-    Triple("guwen", "古文观止", "散文正宗 · 十二卷"),
-    Triple("qing_ci", "纳兰词", "清词第一"),
-    Triple("youmengying", "幽梦影", "清言小品 · 带评点"),
-    Triple("lunyu", "论语", "语录即文章"),
-    Triple("sishu", "孟子", "雄辩滔滔"),
-    Triple("han_wei", "曹操诗集", "建安风骨"),
+    Module("tang_poem", "全唐诗", "《全唐诗》· 补录全收", "category"),
+    Module("song_poem", "全宋诗", "两宋诗集大成", "category"),
+    Module("ci", "全宋词", "词的黄金时代", "category"),
+    Module("yuan_qu", "元曲", "散曲小令 · 杂剧", "category"),
+    Module("tang_poem", "唐诗三百首", "家塾课本 · 熟读成诵", "tag", "唐诗三百首"),
+    Module("shijing", "诗经", "风雅颂 · 先秦歌谣", "category"),
+    Module("chuci", "楚辞", "骚体 · 浪漫之源", "category"),
+    Module("guwen", "古文观止", "散文正宗 · 十二卷", "category"),
+    Module("qing_ci", "纳兰词", "清词第一", "category"),
+    Module("youmengying", "幽梦影", "清言小品 · 带评点", "category"),
+    Module("lunyu", "论语", "语录即文章", "category"),
+    Module("sishu", "孟子", "雄辩滔滔", "category"),
+    Module("han_wei", "曹操诗集", "建安风骨", "category"),
 )
 
 @Composable
@@ -55,10 +71,15 @@ fun LibraryScreen(onOpenModule: (String) -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var tagCount by remember { mutableIntStateOf(0) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) { counts = PoemsDb.get(context).categoryCounts() }
+        withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            counts = db.categoryCounts()
+            tagCount = db.tagCount("唐诗三百首")
+        }
     }
     LaunchedEffect(query) {
         if (query.isBlank()) {
@@ -86,28 +107,28 @@ fun LibraryScreen(onOpenModule: (String) -> Unit, onOpen: (Int) -> Unit) {
         Spacer(Modifier.height(14.dp))
 
         if (query.isBlank()) {
-            // 模块宫格
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(MODULES, key = { it.first }) { (key, title, brief) ->
+                items(MODULES, key = { it.title }) { m ->
+                    val count = if (m.kind == "tag") tagCount else counts[m.key] ?: 0
                     ModuleCard(
-                        title = title,
-                        brief = brief,
-                        count = counts[key] ?: 0,
-                        onClick = { onOpenModule(key) },
+                        title = m.title,
+                        brief = m.brief,
+                        count = count,
+                        onClick = {
+                            onOpenModule(if (m.kind == "tag") "tag:${m.tag}" else m.key)
+                        },
                     )
                 }
             }
         } else {
-            // 搜索结果
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(results.size, key = { results[it].id }) { index ->
-                    val p = results[index]
-                    PoemRow(p, onClick = { onOpen(p.id) })
+                    PoemRow(results[index], onClick = { onOpen(results[index].id) })
                 }
                 if (results.isEmpty()) {
                     item {
@@ -156,15 +177,34 @@ private fun ModuleCard(title: String, brief: String, count: Int, onClick: () -> 
     }
 }
 
-/** 模块浏览页：单分类列表 */
+/**
+ * 模块浏览页：key 为 "分类名" 或 "tag:标签名"；大模块分页加载。
+ * 路由约定：LibraryScreen 的 onOpenModule 传 "tang_poem" 或 "tag:唐诗三百首"。
+ */
 @Composable
 fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
-    val label = MODULES.firstOrNull { it.first == key }?.second ?: key
-    var poems by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
+    val tagMode = key.startsWith("tag:")
+    val category = if (tagMode) "tang_poem" else key
+    val tag = if (tagMode) key.removePrefix("tag:") else null
+    val label = if (tagMode) tag ?: key else MODULES.firstOrNull { it.key == key }?.title ?: key
 
-    LaunchedEffect(key) {
-        withContext(Dispatchers.IO) { poems = PoemsDb.get(context).listByCategory(key, 1000, 0) }
+    var poems by remember(key) { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
+    var hasMore by remember(key) { mutableStateOf(true) }
+    var page by remember(key) { mutableIntStateOf(0) }
+    val pageSize = 300
+
+    LaunchedEffect(key, page) {
+        withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            val batch = if (tagMode) {
+                db.listByTag(tag ?: "", pageSize, page * pageSize)
+            } else {
+                db.listByCategory(category, pageSize, page * pageSize)
+            }
+            poems = if (page == 0) batch else poems + batch
+            hasMore = batch.size == pageSize
+        }
     }
 
     Column(
@@ -188,6 +228,16 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(poems.size, key = { poems[it].id }) { index ->
                 PoemRow(poems[index], onClick = { onOpen(poems[index].id) })
+            }
+            if (hasMore && poems.isNotEmpty()) {
+                item {
+                    TextButton(
+                        onClick = { page += 1 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    ) { Text("加载更多") }
+                }
             }
         }
     }

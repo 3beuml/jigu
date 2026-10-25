@@ -24,9 +24,9 @@ object PoemOfDay {
             db.calendarPoemIds("solar_term", termToday).takeIf { it.isNotEmpty() }
                 ?.let { ids -> db.poemById(ids[absIndex(today, ids.size)])?.let { return Result(it, termToday) } }
         }
-        val n = db.count()
+        val n = db.curatedCount()
         if (n <= 0) return null
-        val poem = db.poemAtOffset(absIndex(today, n)) ?: return null
+        val poem = db.curatedAtOffset(absIndex(today, n)) ?: return null
         // 角标仍展示当前所在节气，让普通日子也有时序感
         return Result(poem, JiguCalendar.currentTerm(today))
     }

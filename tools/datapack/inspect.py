@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-CORE = REPO / "app/src/main/assets/data/jigu-core.db"
+CORE = REPO / "build-datapack/jigu-core.db"
 FULL = REPO / "build-datapack/jigu-full.db"
 
 

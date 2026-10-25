@@ -34,7 +34,7 @@ from opencc import OpenCC
 T2S = OpenCC("t2s")
 
 SCHEMA_VERSION = 2
-DATA_VERSION = 3
+DATA_VERSION = 4
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -190,10 +190,11 @@ class Db:
         _ = cur.lastrowid
         return True
 
-    def finish(self, label: str):
-        self.conn.execute(
-            "INSERT INTO poems_fts(rowid, body, title) SELECT id, body, title FROM poems"
-        )
+    def finish(self, label: str, fts: bool = True):
+        if fts:
+            self.conn.execute(
+                "INSERT INTO poems_fts(rowid, body, title) SELECT id, body, title FROM poems"
+            )
         for k, v in {
             "schema_version": SCHEMA_VERSION,
             "data_version": DATA_VERSION,
@@ -504,7 +505,7 @@ FULL_EXTRA_SOURCES = [
 ]
 
 
-def build(db_path: Path, dataset: Path, label: str, full: bool):
+def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True):
     db = Db(db_path)
     for name, fn in CORE_SOURCES:
         n = 0
@@ -527,7 +528,7 @@ def build(db_path: Path, dataset: Path, label: str, full: bool):
     print(f"  [{label}] 意象打标 + 节气节日配诗完成（{time.time()-t0:.0f}s）："
           f"意象 {db.conn.execute('SELECT count(*) FROM imagery').fetchone()[0]} 类，"
           f"配诗键 {db.conn.execute('SELECT count(DISTINCT key) FROM calendar_map').fetchone()[0]} 个")
-    db.finish(label)
+    db.finish(label, fts=fts)
     total = sum(db.counts.values())
     print(f"  [{label}] 合计 {total} 条，重出剔除 {sum(db.dups.values())} 条 -> {db_path}")
 
@@ -538,13 +539,21 @@ def main():
     ap.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2])
     args = ap.parse_args()
 
-    core_out = args.repo / "app/src/main/assets/data/jigu-core.db"
+    core_out = args.repo / "build-datapack/jigu-core.db"
     full_out = args.repo / "build-datapack/jigu-full.db"
+    zip_out = args.repo / "app/src/main/assets/data/jigu.zip"
 
-    print("== 精选库 ==")
+    print("== 精选库（本地质检用，不进 assets）==")
     build(core_out, args.dataset, "core", full=False)
-    print("== 全量库 ==")
-    build(full_out, args.dataset, "full", full=True)
+    print("== 全量库（App 随包，无 FTS）==")
+    build(full_out, args.dataset, "full", full=True, fts=False)
+
+    # 全量库压缩后作为 App 唯一随包数据（App 首启解压到内部存储）
+    import zipfile
+    zip_out.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(zip_out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+        z.write(full_out, "jigu.db")
+    print(f"== 打包 {full_out.stat().st_size/1e6:.0f}MB -> {zip_out} ({zip_out.stat().st_size/1e6:.0f}MB) ==")
 
 
 if __name__ == "__main__":

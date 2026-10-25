@@ -17,7 +17,7 @@ class PoemsDb private constructor(context: Context) :
         const val DB_NAME = "jigu.db"
 
         /** 随数据包版本升级（tools/datapack/build.py 的 DATA_VERSION）；不一致则重拷库 */
-        const val REQUIRED_DATA_VERSION = 3
+        const val REQUIRED_DATA_VERSION = 4
 
         /** 必须与 build.py 的 SCHEMA_VERSION 一致（即库文件 PRAGMA user_version） */
         const val HELPER_DB_VERSION = 2
@@ -77,9 +77,17 @@ class PoemsDb private constructor(context: Context) :
 
     private fun copyFromAssets(dbFile: File) {
         dbFile.parentFile?.mkdirs()
-        // 资产名是构建产物 jigu-core.db；落盘为运行库名 jigu.db
-        appContext.assets.open("data/jigu-core.db").use { input ->
-            dbFile.outputStream().use { output -> input.copyTo(output) }
+        // 随包资产是压缩的全量库 jigu.zip（内含 jigu.db）；解压落盘为运行库
+        appContext.assets.open("data/jigu.zip").use { input ->
+            java.util.zip.ZipInputStream(input).use { zis ->
+                while (true) {
+                    val entry = zis.nextEntry ?: break
+                    if (entry.name == "jigu.db") {
+                        dbFile.outputStream().use { zis.copyTo(it) }
+                    }
+                    zis.closeEntry()
+                }
+            }
         }
     }
 
@@ -118,14 +126,58 @@ class PoemsDb private constructor(context: Context) :
             if (c.moveToFirst()) c.getString(0) else null
         }
 
-    fun categoryCounts(): Map<String, Int> =
-        readableDatabase.rawQuery(
+    fun categoryCounts(): Map<String, Int> {
+        cachedCounts?.let { return it }
+        val out = readableDatabase.rawQuery(
             "SELECT category, count(*) FROM poems GROUP BY category", null,
         ).use { c ->
-            val out = mutableMapOf<String, Int>()
-            while (c.moveToNext()) out[c.getString(0)] = c.getInt(1)
-            out
+            val m = mutableMapOf<String, Int>()
+            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+            m
         }
+        cachedCounts = out
+        return out
+    }
+
+    @Volatile
+    private var cachedCounts: Map<String, Int>? = null
+
+    /** 精选池（日推的普通日子从这里轮转，避免落入海量平庸诗）：公版经典 + 三百首 + 名句 */
+    private val CURATED_WHERE =
+        "category IN ('shijing','chuci','qing_ci','youmengying','guwen','lunyu','sishu','han_wei') " +
+            "OR tags LIKE '%\"唐诗三百首\"%' " +
+            "OR EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id)"
+
+    fun curatedCount(): Int {
+        cachedCurated?.let { return it }
+        val n = readableDatabase.rawQuery(
+            "SELECT count(*) FROM poems p WHERE $CURATED_WHERE", null,
+        ).use { c -> c.moveToFirst(); c.getInt(0) }
+        cachedCurated = n
+        return n
+    }
+
+    @Volatile
+    private var cachedCurated: Int? = null
+
+    fun curatedAtOffset(offset: Int): Poem? = queryPoem(
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
+            "LEFT JOIN authors a ON a.id = p.author_id WHERE $CURATED_WHERE LIMIT 1 OFFSET ?",
+        arrayOf(offset.toString()),
+    )
+
+    /** 按标签列诗（如「唐诗三百首」标签），带分页 */
+    fun listByTag(tag: String, limit: Int, offset: Int): List<Poem> = queryPoems(
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
+            "LEFT JOIN authors a ON a.id = p.author_id " +
+            "WHERE p.tags LIKE ? ORDER BY p.id LIMIT ? OFFSET ?",
+        arrayOf("%\"$tag\"%", limit.toString(), offset.toString()),
+    )
+
+    fun tagCount(tag: String): Int =
+        readableDatabase.rawQuery(
+            "SELECT count(*) FROM poems WHERE tags LIKE ?", arrayOf("%\"$tag\"%"),
+        ).use { c -> c.moveToFirst(); c.getInt(0) }
 
     private fun queryPoem(sql: String, args: Array<String>): Poem? =
         readableDatabase.rawQuery(sql, args).use { c ->
