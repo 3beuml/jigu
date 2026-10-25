@@ -21,3 +21,6 @@ keystore.properties
 # 系统
 .DS_Store
 Thumbs.db
+
+# 数据包构建产物（全量库不进 git，走 Release 分发）
+build-datapack/
