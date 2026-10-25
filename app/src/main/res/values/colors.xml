@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 图标底色：暂用朱砂，正式配色随设计系统（D-004）确定 -->
+    <color name="ic_launcher_background">#9E2F26</color>
+</resources>

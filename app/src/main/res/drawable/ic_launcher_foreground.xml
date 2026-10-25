@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 占位印章图形：白描「回」字方印，正式印章图标随设计系统确定 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M30,30h48v48h-48z M38,38v32h32v-32z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M47,47h14v14h-14z" />
+</vector>
