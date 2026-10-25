@@ -14,13 +14,13 @@
 
 ## 硬约束（违反即返工）
 
-1. **版本常量三处同步**：`tools/datapack/build.py` 的 SCHEMA_VERSION / DATA_VERSION
-   ↔ `PoemsDb.kt` 的 HELPER_DB_VERSION / REQUIRED_DATA_VERSION。
-   漏提 = 升级不触发（旧库缺新列崩溃）或降级异常。当前：schema 5 / data 7。
+1. **数据版本单一事实源**：管线改 schema/内容 → build.py 的 SCHEMA_VERSION/DATA_VERSION 必须递增；
+   build.py 自动产出 `assets/data/version.json`，App 从这里读版本号决定是否重拷库——
+   **Kotlin 侧已无硬编码版本**（该坑已结构性消灭）。改完 schema 记得同步 build.py 里的建表语句。
 2. **包名永不可改**：`com.jigu.app`。
 3. **签名**：`C:\Work\keystore\jigu-release.jks` 唯一副本不可再生；凭据在项目
    `keystore.properties`（gitignored）；绝不入库、密码不进对话。
-4. **令牌**：`C:\Work\.jigu_token.txt`（单仓库 Contents 权限），用后由用户吊销。
+4. **令牌**：`C:\Work\.jigu_token.txt`（单仓库 Contents 权限），失效/用后由用户重新生成并吊销。
 5. **装包**：`adb push + pm install`（MSYS_NO_PATHCONV=1），禁用 adb install。
 6. **收录条例 D-010**：任何数据扩容先对照三层模型与五条条例（不收整本大部头、
    编者身份、公版、结构化可行、不重复）；《文字蒙求》因展示不可行已下架，勿加回。
