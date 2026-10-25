@@ -3,26 +3,31 @@ package com.jigu.app.data
 import android.content.Context
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.CountDownLatch
 
 /**
  * 预构建库（assets/data/jigu.zip 内 jigu.db，由 tools/datapack/build.py 产出）的访问层。
- * 首启/升级在后台线程解压拷库（保留收藏），所有查询经 awaitData() 等待就绪。
+ *
+ * 设计要点：
+ * - 首启/升级在后台线程解压拷库（保留收藏），所有查询经 awaitData() 等待就绪
+ * - 不继承 SQLiteOpenHelper：库是预构建整体替换的，升级=重拷，没有原地 schema 迁移；
+ *   版本号从数据包自带的 data/version.json 读取，杜绝 Kotlin 侧硬编码版本与管线脱节
  */
-class PoemsDb private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, DB_NAME, null, HELPER_DB_VERSION) {
+class PoemsDb private constructor(context: Context) {
 
     companion object {
         const val DB_NAME = "jigu.db"
 
-        /** 随数据包版本升级（tools/datapack/build.py 的 DATA_VERSION）；不一致则重拷库 */
-        const val REQUIRED_DATA_VERSION = 6
-
-        /** 必须与 build.py 的 SCHEMA_VERSION 一致（即库文件 PRAGMA user_version） */
-        const val HELPER_DB_VERSION = 4
+        /** 精选池（日推普通日子）：公版经典 + 三百首 + 名句/名段。
+         *  注意：guwen 不在分类白名单——古文只有收录了名段（famous_lines）才进日推，
+         *  避免"整篇长文上今日页"（D-011）。 */
+        private const val CURATED_WHERE =
+            "category IN ('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei') " +
+                "OR tags LIKE '%\"唐诗三百首\"%' " +
+                "OR EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id)"
 
         private const val CORE_COLUMNS =
             "p.id, p.category, p.title, IFNULL(a.name,'佚名') AS author, IFNULL(a.brief,'') AS brief, " +
@@ -39,14 +44,6 @@ class PoemsDb private constructor(context: Context) :
         private const val AUTHOR_COLUMNS =
             "a.id, a.name, a.dynasty, a.brief, a.birth_year, a.death_year, count(p.id) AS cnt"
 
-        /** 精选池（日推普通日子）：公版经典 + 三百首 + 名句/名段。
-         *  注意：guwen 不在分类白名单——古文只有收录了名段（famous_lines）才进日推，
-         *  避免"整篇长文上今日页"（D-011）。 */
-        private const val CURATED_WHERE =
-            "category IN ('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei') " +
-                "OR tags LIKE '%\"唐诗三百首\"%' " +
-                "OR EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id)"
-
         @Volatile
         private var instance: PoemsDb? = null
 
@@ -58,17 +55,24 @@ class PoemsDb private constructor(context: Context) :
     private val prefs = appContext.getSharedPreferences("jigu_data", Context.MODE_PRIVATE)
     private val readyLatch = CountDownLatch(1)
 
+    @Volatile
+    private var database: SQLiteDatabase? = null
+
     init {
         Thread {
             try {
                 val dbFile = appContext.getDatabasePath(DB_NAME)
+                val required = readAssetDataVersion(appContext)
                 val installed = prefs.getInt("data_version", -1)
-                if (!dbFile.exists() || installed != REQUIRED_DATA_VERSION) {
+                if (!dbFile.exists() || installed != required) {
                     val kept = if (dbFile.exists()) readFavoritesRaw(dbFile) else emptyList()
                     copyFromAssets(dbFile)
                     if (kept.isNotEmpty()) restoreFavorites(dbFile, kept)
-                    prefs.edit().putInt("data_version", REQUIRED_DATA_VERSION).apply()
+                    prefs.edit().putInt("data_version", required).apply()
                 }
+                database = SQLiteDatabase.openDatabase(
+                    dbFile.path, null, SQLiteDatabase.OPEN_READWRITE,
+                )
             } catch (t: Throwable) {
                 android.util.Log.e("PoemsDb", "数据拷库失败", t)
             } finally {
@@ -77,18 +81,23 @@ class PoemsDb private constructor(context: Context) :
         }.start()
     }
 
+    private fun readAssetDataVersion(context: Context): Int = runCatching {
+        JSONObject(context.assets.open("data/version.json").bufferedReader().readText())
+            .getInt("data_version")
+    }.getOrDefault(-1)
+
     private fun awaitData() {
         readyLatch.await()
     }
 
     private fun rdb(): SQLiteDatabase {
         awaitData()
-        return readableDatabase
+        return database ?: throw IllegalStateException("数据库未就绪（拷库失败？见 logcat PoemsDb）")
     }
 
     private fun wdb(): SQLiteDatabase {
         awaitData()
-        return writableDatabase
+        return database ?: throw IllegalStateException("数据库未就绪（拷库失败？见 logcat PoemsDb）")
     }
 
     private fun copyFromAssets(dbFile: File) {
@@ -126,9 +135,6 @@ class PoemsDb private constructor(context: Context) :
             }
         }
     }
-
-    override fun onCreate(db: SQLiteDatabase?) = Unit
-    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) = Unit
 
     // ---------- 模型 ----------
 
@@ -290,6 +296,24 @@ class PoemsDb private constructor(context: Context) :
     @Volatile
     private var cachedTypes: Map<String, Int>? = null
 
+    fun themeCounts(): Map<String, Int> {
+        awaitData()
+        cachedThemes?.let { return it }
+        val out = rdb().rawQuery(
+            "SELECT t.name, count(*) FROM poem_theme pt " +
+                "JOIN themes t ON t.id = pt.theme_id GROUP BY t.name ORDER BY 2 DESC", null,
+        ).use { c ->
+            val m = mutableMapOf<String, Int>()
+            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+            m
+        }
+        cachedThemes = out
+        return out
+    }
+
+    @Volatile
+    private var cachedThemes: Map<String, Int>? = null
+
     fun tagCount(tag: String): Int {
         awaitData()
         return rdb().rawQuery(
@@ -348,24 +372,6 @@ class PoemsDb private constructor(context: Context) :
         "$POEM_SELECT WHERE p.type = ? ORDER BY p.id LIMIT ? OFFSET ?",
         arrayOf(type, limit.toString(), offset.toString()),
     )
-
-    fun themeCounts(): Map<String, Int> {
-        awaitData()
-        cachedThemes?.let { return it }
-        val out = rdb().rawQuery(
-            "SELECT t.name, count(*) FROM poem_theme pt " +
-                "JOIN themes t ON t.id = pt.theme_id GROUP BY t.name ORDER BY 2 DESC", null,
-        ).use { c ->
-            val m = mutableMapOf<String, Int>()
-            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
-            m
-        }
-        cachedThemes = out
-        return out
-    }
-
-    @Volatile
-    private var cachedThemes: Map<String, Int>? = null
 
     fun listByTheme(theme: String, limit: Int, offset: Int): List<Poem> = queryPoems(
         "$POEM_SELECT JOIN poem_theme pt ON pt.poem_id = p.id " +

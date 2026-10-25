@@ -35,7 +35,7 @@ from opencc import OpenCC
 T2S = OpenCC("t2s")
 
 SCHEMA_VERSION = 5
-DATA_VERSION = 7
+DATA_VERSION = 8
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -966,6 +966,13 @@ def main():
     zip_out.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         z.write(full_out, "jigu.db")
+    # 版本清单：App 从这里读版本号（杜绝 Kotlin 侧硬编码版本与管线脱节的整类 bug）
+    version_json = zip_out.parent / "version.json"
+    version_json.write_text(
+        json.dumps({"data_version": DATA_VERSION, "schema_version": SCHEMA_VERSION},
+                   ensure_ascii=False),
+        encoding="utf-8",
+    )
     print(f"== 打包 {full_out.stat().st_size/1e6:.0f}MB -> {zip_out} ({zip_out.stat().st_size/1e6:.0f}MB) ==")
 
 
