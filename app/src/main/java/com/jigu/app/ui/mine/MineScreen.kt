@@ -11,8 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Row as LayoutRow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,9 +24,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.jigu.app.data.DailyPush
+import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,9 +71,29 @@ fun MineScreen() {
         Info("数据", dataInfo)
         Spacer(Modifier.height(20.dp))
 
-        Setting("节气换肤", "阶段 4 上线")
-        Setting("每日推送", "阶段 5 上线")
-        Setting("桌面小部件", "阶段 5 上线")
+        // 真实开关：画意 / 每日推送
+        var artOn by remember { mutableStateOf(JiguSettings.artEnabled(context)) }
+        var pushOn by remember { mutableStateOf(JiguSettings.pushEnabled(context)) }
+        ToggleRow(
+            title = "画意",
+            note = "界面淡入节气配画；关闭则为纯文字",
+            checked = artOn,
+            onChecked = {
+                artOn = it
+                JiguSettings.setArtEnabled(context, it)
+            },
+        )
+        ToggleRow(
+            title = "每日推送",
+            note = if (pushOn) "每天 07:30 推送今日名句" else "已关闭",
+            checked = pushOn,
+            onChecked = {
+                pushOn = it
+                JiguSettings.setPushEnabled(context, it)
+                if (it) DailyPush.schedule(context) else DailyPush.cancel(context)
+            },
+        )
+        Setting("桌面小部件", "桌面长按添加「汲古 · 今日一首」")
         Spacer(Modifier.height(24.dp))
 
         Info("数据来源", "chinese-poetry（MIT）· 维基文库（CC BY-SA）· 台北故宫 Open Data · cnlunar")
@@ -105,6 +132,32 @@ private fun Setting(title: String, note: String) {
             note,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    Spacer(Modifier.height(14.dp))
+}
+
+@Composable
+private fun ToggleRow(title: String, note: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
+    LayoutRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                note,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onChecked,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+            ),
         )
     }
     Spacer(Modifier.height(14.dp))

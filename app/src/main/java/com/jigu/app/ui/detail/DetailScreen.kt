@@ -1,8 +1,10 @@
 package com.jigu.app.ui.detail
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,12 +35,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jigu.app.data.ArtworkRepo
+import com.jigu.app.data.JiguCalendar
+import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.theme.PoemTitleStyle
 import com.jigu.app.ui.theme.PoemTextStyle
@@ -175,6 +183,60 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                     )
                 }
                 Spacer(Modifier.height(24.dp))
+            }
+
+            // 赏画（D 手法：默认收起，展开才见画；深色模式隐藏）
+            val artEnabled = JiguSettings.artEnabled(context)
+            val dArt = if (artEnabled && !isSystemInDarkTheme()) {
+                ArtworkRepo.forTerm(JiguCalendar.currentTerm(java.time.LocalDate.now()))
+            } else null
+            if (dArt != null) {
+                var artBitmap by remember(dArt.file) {
+                    mutableStateOf<android.graphics.Bitmap?>(null)
+                }
+                LaunchedEffect(dArt.file) {
+                    artBitmap = withContext(Dispatchers.IO) { ArtworkRepo.decode(context, dArt) }
+                }
+                var artOpen by remember(dArt.file) { mutableStateOf(false) }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { artOpen = !artOpen }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "赏画 · ${dArt.title}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = if (artOpen) "收起" else "展开",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (artOpen) {
+                    artBitmap?.let { bmp ->
+                        Image(
+                            bitmap = bmp.asImageBitmap(),
+                            contentDescription = "节气配画",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(260.dp)
+                                .alpha(0.9f),
+                            contentScale = ContentScale.Crop,
+                        )
+                        Text(
+                            text = "${dArt.artist}《${dArt.title}》 ${dArt.date} ｜ ${dArt.credit}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 16.dp),
+                        )
+                    }
+                }
             }
 
             // 相关诗词

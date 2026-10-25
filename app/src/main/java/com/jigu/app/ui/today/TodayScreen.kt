@@ -1,7 +1,9 @@
 package com.jigu.app.ui.today
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,10 +32,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jigu.app.data.ArtworkRepo
+import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemOfDay
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.share.PoemCard
@@ -79,12 +87,38 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
         poem.paragraphs.firstOrNull().orEmpty()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 28.dp),
-    ) {
+    // 角隅山水：当前节气的画，右下角淡出（A 手法）；深色模式隐藏；画意开关可全关
+    val artEnabled = JiguSettings.artEnabled(context)
+    val artwork = if (artEnabled && !isSystemInDarkTheme()) {
+        ArtworkRepo.forTerm(badge)
+    } else null
+    var artBitmap by remember(artwork?.file) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(artwork?.file) {
+        artBitmap = artwork?.let {
+            withContext(Dispatchers.IO) { ArtworkRepo.decode(context, it) }
+        }?.asImageBitmap()
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        val bmp = artBitmap
+        if (bmp != null) {
+            Image(
+                bitmap = bmp,
+                contentDescription = "节气配画",
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 8.dp, bottom = 72.dp)
+                    .size(width = 168.dp, height = 224.dp)
+                    .alpha(0.32f),
+                contentScale = ContentScale.Crop,
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 28.dp),
+        ) {
         // 顶部：左日期，右节气/节日角标
         Row(
             modifier = Modifier
@@ -155,15 +189,17 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                 Text("收藏", fontSize = 14.sp)
             }
             TextButton(onClick = {
-                // 渲染诗卡并唤起系统分享
+                // 渲染诗卡（带节气配画）并唤起系统分享
                 scope.launch {
+                    val art = ArtworkRepo.forTerm(badge)
                     val card = withContext(Dispatchers.IO) {
-                        runCatching { PoemCard.render(context, poem) }.getOrNull()
+                        runCatching { PoemCard.render(context, poem, art) }.getOrNull()
                     }
                     card?.let { PoemCard.share(context, it) }
                 }
             }) { Text("做卡片", fontSize = 14.sp) }
             TextButton(onClick = { /* 下一增量：TTS 朗诵 */ }) { Text("朗读", fontSize = 14.sp) }
+        }
         }
     }
 }

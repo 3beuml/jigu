@@ -1,0 +1,242 @@
+[
+ {
+  "term": "立春",
+  "pinyin": "lichun",
+  "file": "term_01_lichun.webp",
+  "title": "Ink Plum",
+  "artist": "Peng Xu (Chinese, active 1488–1521)",
+  "date": "late 1400s–early 1500s",
+  "object_id": 145430,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "雨水",
+  "pinyin": "yushui",
+  "file": "term_02_yushui.webp",
+  "title": "Willow and Magpie",
+  "artist": "Fachang Muqi (Chinese, 1220–1280)",
+  "date": "mid-1200s",
+  "object_id": 151005,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "惊蛰",
+  "pinyin": "jingzhe",
+  "file": "term_03_jingzhe.webp",
+  "title": "Spring Landscape",
+  "artist": "Kuncan (Chinese, 1612–c. 1673)",
+  "date": "1666",
+  "object_id": 142642,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "春分",
+  "pinyin": "chunfen",
+  "file": "term_04_chunfen.webp",
+  "title": "Bird on a Flowering Branch",
+  "artist": "佚名",
+  "date": "1100s",
+  "object_id": 152556,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "清明",
+  "pinyin": "qingming",
+  "file": "term_05_qingming.webp",
+  "title": "Spring Mist over Jiangnan",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1697",
+  "object_id": 131335,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "谷雨",
+  "pinyin": "guyu",
+  "file": "term_06_guyu.webp",
+  "title": "Zhao Mengfu Writing the Heart (Hridaya) Sutra in Exchange for Tea",
+  "artist": "Qiu Ying (Chinese, 1494–1552)",
+  "date": "1542–43",
+  "object_id": 138688,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立夏",
+  "pinyin": "lixia",
+  "file": "term_07_lixia.webp",
+  "title": "Paintings after Ancient Masters: Lotus and Rocks",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149612,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小满",
+  "pinyin": "xiaoman",
+  "file": "term_08_xiaoman.webp",
+  "title": "Bamboo in the Wind",
+  "artist": "Puming (Xuechuang) (Chinese, active before 1274–after 1329)",
+  "date": "1300s",
+  "object_id": 130496,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "芒种",
+  "pinyin": "mangzhong",
+  "file": "term_09_mangzhong.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 7",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148242,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "夏至",
+  "pinyin": "xiazhi",
+  "file": "term_10_xiazhi.webp",
+  "title": "Swallow and Lotus",
+  "artist": "Fachang Muqi (Chinese, 1220–1280)",
+  "date": "mid-1200s",
+  "object_id": 150469,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小暑",
+  "pinyin": "xiaoshu",
+  "file": "term_11_xiaoshu.webp",
+  "title": "Purification at the Orchid Pavilion",
+  "artist": "Fan Yi (Chinese, c. 1615–before 1688)",
+  "date": "1671",
+  "object_id": 149116,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大暑",
+  "pinyin": "dashu",
+  "file": "term_12_dashu.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 2",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148237,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立秋",
+  "pinyin": "liqiu",
+  "file": "term_13_liqiu.webp",
+  "title": "Conversation in Autumn",
+  "artist": "Hua Yan (Chinese, 1682–c. 1765)",
+  "date": "1732",
+  "object_id": 131673,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "处暑",
+  "pinyin": "chushu",
+  "file": "term_14_chushu.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142579,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "白露",
+  "pinyin": "bailu",
+  "file": "term_15_bailu.webp",
+  "title": "Landscape with Flying Geese",
+  "artist": "Ma Lin (Chinese, c. 1185–after 1260)",
+  "date": "mid-1200s",
+  "object_id": 129861,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "秋分",
+  "pinyin": "qiufen",
+  "file": "term_16_qiufen.webp",
+  "title": "Landscape Album in Various Styles: Shibiao Waiting for the Moon",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132923,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "寒露",
+  "pinyin": "hanlu",
+  "file": "term_17_hanlu.webp",
+  "title": "Paintings after Ancient Masters: Chrysanthemum and Rock",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149615,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "霜降",
+  "pinyin": "shuangjiang",
+  "file": "term_18_shuangjiang.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 8",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148243,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立冬",
+  "pinyin": "lidong",
+  "file": "term_19_lidong.webp",
+  "title": "Album of Seasonal Landscapes, Leaf H (previous leaf 8)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132841,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小雪",
+  "pinyin": "xiaoxue",
+  "file": "term_20_xiaoxue.webp",
+  "title": "Bamboo in Snow",
+  "artist": "Hong Fan (Chinese, active late 1700s–early 1800s)",
+  "date": "1818",
+  "object_id": 543409,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大雪",
+  "pinyin": "daxue",
+  "file": "term_21_daxue.webp",
+  "title": "The Mountain of Five Cataracts",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "c. 1630",
+  "object_id": 142641,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "冬至",
+  "pinyin": "dongzhi",
+  "file": "term_22_dongzhi.webp",
+  "title": "Album of Seasonal Landscapes, Leaf G (previous leaf 7)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132840,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小寒",
+  "pinyin": "xiaohan",
+  "file": "term_23_xiaohan.webp",
+  "title": "Plum Blossoms and Peonies",
+  "artist": "Gao Fenghan (Chinese, 1683–1749)",
+  "date": "1741",
+  "object_id": 149891,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大寒",
+  "pinyin": "dahan",
+  "file": "term_24_dahan.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 9",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148244,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ }
+]

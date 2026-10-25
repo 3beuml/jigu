@@ -10,6 +10,7 @@ import android.graphics.Typeface
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.jigu.app.R
+import com.jigu.app.data.ArtworkRepo
 import com.jigu.app.data.PoemsDb
 import java.io.File
 
@@ -19,7 +20,7 @@ object PoemCard {
     private const val W = 1080
     private const val H = 1620
 
-    fun render(context: Context, poem: PoemsDb.Poem): File {
+    fun render(context: Context, poem: PoemsDb.Poem, artwork: ArtworkRepo.Artwork? = null): File {
         val tf = Typeface.create(
             ResourcesCompat_typeface(context),
             Typeface.NORMAL,
@@ -30,6 +31,33 @@ object PoemCard {
         // 宣纸底
         val paper = Paint().apply { color = 0xFFF7F3EA.toInt() }
         canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), paper)
+
+        // 配画：右下角，淡墨处理（低透明 + 纸色渐隐罩）
+        val artBmp = artwork?.let { ArtworkRepo.decode(context, it) }
+        if (artBmp != null) {
+            val aw = 620f
+            val ah = aw * 4f / 3f
+            val dst = RectF(W - aw - 96f, H - ah - 190f, W - 96f, H - 190f)
+            val artPaint = Paint().apply { alpha = 82 }
+            canvas.drawBitmap(artBmp, null, dst, artPaint)
+            val fade = Paint().apply {
+                shader = android.graphics.LinearGradient(
+                    0f, dst.top, 0f, dst.top + 220f,
+                    0xF2F7F3EA.toInt(), 0x00F7F3EA, android.graphics.Shader.TileMode.CLAMP,
+                )
+            }
+            canvas.drawRect(dst.left, dst.top, dst.right, dst.top + 220f, fade)
+            val caption = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = 0xFF8A8272.toInt()
+                textSize = 28f
+                typeface = tf
+            }
+            canvas.drawText(
+                "赏画 · ${artwork.title}",
+                dst.left + 8f, dst.bottom - 16f, caption,
+            )
+            artBmp.recycle()
+        }
 
         // 界格双线
         val frame = Paint().apply {

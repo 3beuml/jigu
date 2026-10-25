@@ -34,6 +34,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguCalendar
+import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
@@ -59,8 +60,12 @@ class MainActivity : ComponentActivity() {
                 JiguCalendar.load(this@MainActivity)
                 PoemsDb.get(this@MainActivity) // 触发首启拷库
                 term = JiguCalendar.currentTerm(java.time.LocalDate.now())
-                // 每日推送（默认 07:30）+ 通知权限（Android 13+ 运行时申请）
-                DailyPush.schedule(this@MainActivity)
+                // 每日推送（默认 07:30，可关）+ 通知权限（Android 13+ 运行时申请）
+                if (JiguSettings.pushEnabled(this@MainActivity)) {
+                    DailyPush.schedule(this@MainActivity)
+                } else {
+                    DailyPush.cancel(this@MainActivity)
+                }
                 if (android.os.Build.VERSION.SDK_INT >= 33 &&
                     ContextCompat.checkSelfPermission(
                         this@MainActivity, Manifest.permission.POST_NOTIFICATIONS,
