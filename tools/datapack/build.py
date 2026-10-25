@@ -34,7 +34,7 @@ from opencc import OpenCC
 T2S = OpenCC("t2s")
 
 SCHEMA_VERSION = 1
-DATA_VERSION = 1
+DATA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -333,6 +333,92 @@ def it_yuanqu(dataset: Path):
         }
 
 
+# ---------- 意象标签 v0（循物寻诗）与节气/节日配诗：启发式匹配，先跑通后精修 ----------
+
+# 单字物象：正文字符集命中即打标（快、准）
+SINGLE_IMAGERY = "月雪雨云风山江海花柳松竹梅兰菊荷桃雁燕鹤蝉马剑琴酒茶梦愁春秋冬夏夜舟桥楼灯笛箫"
+
+# 复合意象：任意关键词子串命中即打标（启发式，宁滥勿缺，人工精修随阶段推进）
+COMPOUND_IMAGERY = {
+    "思乡": ["思乡", "乡书", "故乡", "故园", "还乡", "客路", "客心", "归梦"],
+    "离别": ["送别", "相送", "离别", "别离", "赠"],
+    "边塞": ["边塞", "关山", "胡马", "烽火", "征人", "大漠", "阴山", "玉门关"],
+    "田园": ["田园", "村", "耕", "桑", "篱"],
+    "隐逸": ["隐", "幽居", "山居", "归去", "闲居"],
+    "咏史": ["咏史", "怀古", "兴亡", "六朝", "吴宫"],
+    "壮志": ["壮志", "报国", "从军", "封侯"],
+    "闺情": ["闺", "罗帐", "玉阶", "红妆", "相思"],
+}
+
+# 节气/节日 -> 配诗关键词（calendar_map 种子表；每个键取前 20 条，按 id 稳定序）
+CALENDAR_KEYWORDS = {
+    "solar_term": {
+        "立春": ["春", "东风"], "雨水": ["雨"], "惊蛰": ["雷", "蛰"], "春分": ["春分", "燕"],
+        "清明": ["清明"], "谷雨": ["谷雨", "茶"], "立夏": ["夏"], "小满": ["麦"],
+        "芒种": ["芒种", "麦"], "夏至": ["夏至", "荷"], "小暑": ["暑", "蝉"], "大暑": ["暑"],
+        "立秋": ["秋"], "处暑": ["处暑", "凉"], "白露": ["白露", "露"], "秋分": ["秋分", "月"],
+        "寒露": ["寒露", "菊"], "霜降": ["霜", "枫"], "立冬": ["冬"], "小雪": ["小雪", "雪"],
+        "大雪": ["大雪", "雪"], "冬至": ["冬至", "寒"], "小寒": ["小寒", "寒梅"], "大寒": ["大寒", "冰"],
+    },
+    "festival": {
+        "春节": ["元日", "爆竹", "屠苏", "守岁", "桃符", "迎春"],
+        "元宵": ["元宵", "上元", "花灯", "灯市"],
+        "清明": ["清明"],
+        "端午": ["端午", "端阳", "屈原", "粽", "龙舟", "汨罗"],
+        "七夕": ["七夕", "鹊桥", "牵牛", "乞巧"],
+        "中秋": ["中秋", "婵娟", "月圆", "桂花"],
+        "重阳": ["重阳", "登高", "茱萸"],
+        "除夕": ["守岁", "除夕", "岁除", "爆竹"],
+        "腊八": ["腊八", "粥"],
+    },
+}
+
+# calendar_map 配诗只从韵文类取
+POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "shijing", "chuci", "han_wei")
+
+
+def annotate(conn):
+    """单遍扫描正文：打意象标签 + 填 calendar_map。"""
+    # 意象词表
+    names = list(SINGLE_IMAGERY) + list(COMPOUND_IMAGERY)
+    for n in names:
+        conn.execute("INSERT OR IGNORE INTO imagery(name) VALUES (?)", (n,))
+    name_ids = {n: i for i, n in conn.execute("SELECT id, name FROM imagery")}
+
+    poetry_cats = set(POETRY_CATEGORIES)
+    cal_keys = [(kind, key, kws) for kind, m in CALENDAR_KEYWORDS.items() for key, kws in m.items()]
+    cal_hits: dict[tuple, list[int]] = {}
+
+    pi_rows = []
+    for pid, body, cat in conn.execute("SELECT id, body, category FROM poems"):
+        chars = set(body)
+        hits = [SINGLE_IMAGERY[i] for i, ch in enumerate(SINGLE_IMAGERY) if ch in chars]
+        hits += [name for name, kws in COMPOUND_IMAGERY.items() if any(k in body for k in kws)]
+        for h in hits:
+            pi_rows.append((pid, name_ids[h]))
+        if cat in poetry_cats:
+            for kind, key, kws in cal_keys:
+                ok = False
+                for k in kws:
+                    if len(k) == 1:
+                        if k in chars:
+                            ok = True
+                            break
+                    elif k in body:
+                        ok = True
+                        break
+                if ok and len(cal_hits.get((kind, key), [])) < 20:
+                    cal_hits.setdefault((kind, key), []).append(pid)
+
+    conn.executemany("INSERT OR IGNORE INTO poem_imagery(poem_id, imagery_id) VALUES (?,?)", pi_rows)
+    for (kind, key), ids in cal_hits.items():
+        for pid in ids:
+            conn.execute(
+                "INSERT INTO calendar_map(kind, key, name, poem_id) VALUES (?,?,?,?)",
+                (kind, key, key, pid),
+            )
+
+
 # ---------- 组装 ----------
 
 CORE_SOURCES = [
@@ -372,6 +458,11 @@ def build(db_path: Path, dataset: Path, label: str, full: bool):
                 if n % 20000 == 0 and n:
                     print(f"  [{label}] {name}: {n} …", flush=True)
             print(f"  [{label}] {name}: {n} 条")
+    t0 = time.time()
+    annotate(db.conn)
+    print(f"  [{label}] 意象打标 + 节气节日配诗完成（{time.time()-t0:.0f}s）："
+          f"意象 {db.conn.execute('SELECT count(*) FROM imagery').fetchone()[0]} 类，"
+          f"配诗键 {db.conn.execute('SELECT count(DISTINCT key) FROM calendar_map').fetchone()[0]} 个")
     db.finish(label)
     total = sum(db.counts.values())
     print(f"  [{label}] 合计 {total} 条，重出剔除 {sum(db.dups.values())} 条 -> {db_path}")

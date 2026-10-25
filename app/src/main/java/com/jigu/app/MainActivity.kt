@@ -4,42 +4,92 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.jigu.app.data.JiguCalendar
+import com.jigu.app.data.PoemsDb
+import com.jigu.app.ui.library.LibraryScreen
+import com.jigu.app.ui.mine.MineScreen
+import com.jigu.app.ui.theme.JiguTheme
+import com.jigu.app.ui.today.TodayScreen
+import com.jigu.app.ui.detail.DetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Skeleton()
-                }
+            JiguTheme {
+                JiguApp()
             }
         }
     }
 }
 
 @Composable
-private fun Skeleton() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "汲古", fontSize = 64.sp)
-        Text(
-            text = "v0.1.0 骨架",
-            fontSize = 14.sp,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 48.dp)
-        )
+fun JiguApp() {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        JiguCalendar.load(context)
+        PoemsDb.get(context) // 触发首启拷库
+    }
+
+    val nav = rememberNavController()
+    val openDetail: (Int) -> Unit = { id -> nav.navigate("detail/$id") }
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = currentRoute(nav) == "today",
+                    onClick = { nav.navigate("today") { launchSingleTop = true; popUpTo("today") { inclusive = true } } },
+                    icon = { Icon(Icons.Filled.Home, contentDescription = null) },
+                    label = { Text("今日") },
+                )
+                NavigationBarItem(
+                    selected = currentRoute(nav) == "library",
+                    onClick = { nav.navigate("library") { launchSingleTop = true } },
+                    icon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    label = { Text("书库") },
+                )
+                NavigationBarItem(
+                    selected = currentRoute(nav) == "mine",
+                    onClick = { nav.navigate("mine") { launchSingleTop = true } },
+                    icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                    label = { Text("我的") },
+                )
+            }
+        },
+    ) { padding ->
+        NavHost(nav, startDestination = "today", modifier = Modifier.padding(padding)) {
+            composable("today") { TodayScreen(onOpen = openDetail) }
+            composable("library") { LibraryScreen(onOpen = openDetail) }
+            composable("mine") { MineScreen() }
+            composable("detail/{id}") { back ->
+                DetailScreen(
+                    id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
+        }
     }
 }
+
+private fun currentRoute(nav: androidx.navigation.NavController): String? =
+    nav.currentBackStackEntry?.destination?.route
