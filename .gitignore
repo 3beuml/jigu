@@ -27,3 +27,6 @@ build-datapack/
 
 # 数据包与字体子集为构建产物（管线可复现），不进 git
 app/src/main/assets/data/
+
+# Python 缓存
+__pycache__/
