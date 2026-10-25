@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jigu.app.data.PoemOfDay
 import com.jigu.app.data.PoemsDb
+import com.jigu.app.ui.share.PoemCard
 import com.jigu.app.ui.theme.PoemTextStyle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -48,6 +51,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun TodayScreen(onOpen: (Int) -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<PoemOfDay.Result?>(null) }
     var fav by remember { mutableStateOf(false) }
 
@@ -150,8 +154,16 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                 )
                 Text("收藏", fontSize = 14.sp)
             }
-            TextButton(onClick = { /* 阶段5：分享卡片 */ }) { Text("做卡片", fontSize = 14.sp) }
-            TextButton(onClick = { /* 阶段5：TTS 朗诵 */ }) { Text("朗读", fontSize = 14.sp) }
+            TextButton(onClick = {
+                // 渲染诗卡并唤起系统分享
+                scope.launch {
+                    val card = withContext(Dispatchers.IO) {
+                        runCatching { PoemCard.render(context, poem) }.getOrNull()
+                    }
+                    card?.let { PoemCard.share(context, it) }
+                }
+            }) { Text("做卡片", fontSize = 14.sp) }
+            TextButton(onClick = { /* 下一增量：TTS 朗诵 */ }) { Text("朗读", fontSize = 14.sp) }
         }
     }
 }

@@ -1,9 +1,14 @@
 package com.jigu.app
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -27,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.AuthorIndexScreen
@@ -46,10 +52,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             var term by remember { mutableStateOf<String?>(null) }
+            val permLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission(),
+            ) { }
             LaunchedEffect(Unit) {
                 JiguCalendar.load(this@MainActivity)
                 PoemsDb.get(this@MainActivity) // 触发首启拷库
                 term = JiguCalendar.currentTerm(java.time.LocalDate.now())
+                // 每日推送（默认 07:30）+ 通知权限（Android 13+ 运行时申请）
+                DailyPush.schedule(this@MainActivity)
+                if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                    ContextCompat.checkSelfPermission(
+                        this@MainActivity, Manifest.permission.POST_NOTIFICATIONS,
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    permLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
             JiguTheme(term = term) {
                 JiguApp()
