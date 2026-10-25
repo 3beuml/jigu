@@ -17,10 +17,10 @@ class PoemsDb private constructor(context: Context) :
         const val DB_NAME = "jigu.db"
 
         /** 随数据包版本升级（tools/datapack/build.py 的 DATA_VERSION）；不一致则重拷库 */
-        const val REQUIRED_DATA_VERSION = 4
+        const val REQUIRED_DATA_VERSION = 5
 
         /** 必须与 build.py 的 SCHEMA_VERSION 一致（即库文件 PRAGMA user_version） */
-        const val HELPER_DB_VERSION = 2
+        const val HELPER_DB_VERSION = 3
         private const val CORE_COLUMNS =
             "p.id, p.category, p.title, IFNULL(a.name,'佚名') AS author, IFNULL(a.brief,'') AS brief, " +
                 "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, p.body, IFNULL(a.dynasty,'') AS dynasty"
@@ -178,6 +178,101 @@ class PoemsDb private constructor(context: Context) :
         readableDatabase.rawQuery(
             "SELECT count(*) FROM poems WHERE tags LIKE ?", arrayOf("%\"$tag\"%"),
         ).use { c -> c.moveToFirst(); c.getInt(0) }
+
+    // ---------- 多维浏览：朝代 / 诗人 / 体裁 ----------
+
+    data class Author(
+        val id: Int,
+        val name: String,
+        val dynasty: String,
+        val brief: String,
+        val birthYear: Int?,
+        val deathYear: Int?,
+        val workCount: Int,
+    )
+
+    private val AUTHOR_COLUMNS =
+        "a.id, a.name, a.dynasty, a.brief, a.birth_year, a.death_year, count(p.id) AS cnt"
+
+    private fun android.database.Cursor.toAuthor(): Author {
+        val c = this
+        return Author(
+            id = c.getInt(0),
+            name = c.getString(1),
+            dynasty = c.getString(2) ?: "",
+            brief = c.getString(3) ?: "",
+            birthYear = if (c.isNull(4)) null else c.getInt(4),
+            deathYear = if (c.isNull(5)) null else c.getInt(5),
+            workCount = c.getInt(6),
+        )
+    }
+
+    fun eraCounts(): Map<String, Int> {
+        cachedEras?.let { return it }
+        val out = readableDatabase.rawQuery(
+            "SELECT a.dynasty, count(*) FROM poems p " +
+                "JOIN authors a ON a.id = p.author_id GROUP BY a.dynasty", null,
+        ).use { c ->
+            val m = mutableMapOf<String, Int>()
+            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+            m
+        }
+        cachedEras = out
+        return out
+    }
+
+    @Volatile
+    private var cachedEras: Map<String, Int>? = null
+
+    /** 朝代内作者：按生年排序（无生年者垫底，按作品量），名家用量可见 */
+    fun authorsByEra(era: String, limit: Int, offset: Int): List<Author> =
+        readableDatabase.rawQuery(
+            "SELECT $AUTHOR_COLUMNS FROM authors a LEFT JOIN poems p ON p.author_id = a.id " +
+                "WHERE a.dynasty = ? GROUP BY a.id " +
+                "ORDER BY (a.birth_year IS NULL) ASC, a.birth_year ASC, cnt DESC, a.name ASC " +
+                "LIMIT ? OFFSET ?",
+            arrayOf(era, limit.toString(), offset.toString()),
+        ).use { c ->
+            val out = mutableListOf<Author>()
+            while (c.moveToNext()) out += c.toAuthor()
+            out
+        }
+
+    /** 诗人索引：全量作者按作品量排序（名家居前） */
+    fun authorIndex(limit: Int, offset: Int): List<Author> =
+        readableDatabase.rawQuery(
+            "SELECT $AUTHOR_COLUMNS FROM authors a LEFT JOIN poems p ON p.author_id = a.id " +
+                "GROUP BY a.id ORDER BY cnt DESC, a.name ASC LIMIT ? OFFSET ?",
+            arrayOf(limit.toString(), offset.toString()),
+        ).use { c ->
+            val out = mutableListOf<Author>()
+            while (c.moveToNext()) out += c.toAuthor()
+            out
+        }
+
+    fun authorById(id: Int): Author? =
+        readableDatabase.rawQuery(
+            "SELECT $AUTHOR_COLUMNS FROM authors a LEFT JOIN poems p ON p.author_id = a.id " +
+                "WHERE a.id = ? GROUP BY a.id",
+            arrayOf(id.toString()),
+        ).use { c -> if (c.moveToFirst()) c.toAuthor() else null }
+
+    fun poemsByAuthor(authorId: Int, limit: Int, offset: Int): List<Poem> = queryPoems(
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
+            "LEFT JOIN authors a ON a.id = p.author_id WHERE p.author_id = ? " +
+            "ORDER BY p.id LIMIT ? OFFSET ?",
+        arrayOf(authorId.toString(), limit.toString(), offset.toString()),
+    )
+
+    fun listByGenres(categories: List<String>, limit: Int, offset: Int): List<Poem> {
+        val marks = categories.joinToString(",") { "?" }
+        return queryPoems(
+            "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
+                "LEFT JOIN authors a ON a.id = p.author_id WHERE p.category IN ($marks) " +
+                "ORDER BY p.id LIMIT ? OFFSET ?",
+            (categories + listOf(limit.toString(), offset.toString())).toTypedArray(),
+        )
+    }
 
     private fun queryPoem(sql: String, args: Array<String>): Poem? =
         readableDatabase.rawQuery(sql, args).use { c ->

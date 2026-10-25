@@ -29,6 +29,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.PoemsDb
+import com.jigu.app.ui.library.AuthorIndexScreen
+import com.jigu.app.ui.library.AuthorScreen
+import com.jigu.app.ui.library.ERA_ORDER
+import com.jigu.app.ui.library.EraAuthorsScreen
+import com.jigu.app.ui.library.GENRES
+import com.jigu.app.ui.library.GenreScreen
 import com.jigu.app.ui.library.LibraryScreen
 import com.jigu.app.ui.library.ModuleScreen
 import com.jigu.app.ui.mine.MineScreen
@@ -94,12 +100,46 @@ fun JiguApp() {
             composable("library") {
                 LibraryScreen(
                     onOpenModule = { key -> nav.navigate("module/$key") },
+                    onOpenEra = { era -> nav.navigate("era/$era") },
+                    onOpenAuthors = { nav.navigate("authors") },
+                    onOpenAuthor = { id -> nav.navigate("author/$id") },
+                    onOpenGenre = { g -> nav.navigate("genre/$g") },
                     onOpen = openDetail,
                 )
             }
             composable("module/{key}") { back ->
                 ModuleScreen(
                     key = back.arguments?.getString("key") ?: "",
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
+            composable("era/{era}") { back ->
+                EraAuthorsScreen(
+                    era = back.arguments?.getString("era") ?: "",
+                    onBack = { nav.popBackStack() },
+                    onOpenAuthor = { id -> nav.navigate("author/$id") },
+                )
+            }
+            composable("authors") {
+                AuthorIndexScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenAuthor = { id -> nav.navigate("author/$id") },
+                )
+            }
+            composable("author/{id}") { back ->
+                AuthorScreen(
+                    authorId = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
+            composable("genre/{g}") { back ->
+                val g = back.arguments?.getString("g")?.toIntOrNull() ?: 0
+                val genre = GENRES[g.coerceIn(0, GENRES.size - 1)]
+                GenreScreen(
+                    categories = genre.second,
+                    title = genre.first,
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )

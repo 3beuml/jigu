@@ -30,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,35 +42,40 @@ import com.jigu.app.ui.theme.PoemTitleStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** 书库模块（京墨式）：category = 按分类浏览；tag = 按标签筛选（如三百首） */
-private data class Module(
-    val key: String,
-    val title: String,
-    val brief: String,
-    val kind: String,
-    val tag: String? = null,
+/** 书架（选本层）：真正的"书" */
+private val BOOK_MODULES = listOf(
+    Triple("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵"),
+    Triple("诗经", "shijing", "风雅颂 · 先秦歌谣"),
+    Triple("楚辞", "chuci", "骚体 · 浪漫之源"),
+    Triple("古文观止", "guwen", "散文正宗 · 十二卷"),
+    Triple("纳兰词", "qing_ci", "清词第一"),
+    Triple("幽梦影", "youmengying", "清言小品 · 带评点"),
+    Triple("论语", "lunyu", "语录即文章"),
+    Triple("孟子", "sishu", "雄辩滔滔"),
+    Triple("曹操诗集", "han_wei", "建安风骨"),
 )
 
-private val MODULES = listOf(
-    Module("tang_poem", "全唐诗", "《全唐诗》· 补录全收", "category"),
-    Module("song_poem", "全宋诗", "两宋诗集大成", "category"),
-    Module("ci", "全宋词", "词的黄金时代", "category"),
-    Module("yuan_qu", "元曲", "散曲小令 · 杂剧", "category"),
-    Module("tang_poem", "唐诗三百首", "家塾课本 · 熟读成诵", "tag", "唐诗三百首"),
-    Module("shijing", "诗经", "风雅颂 · 先秦歌谣", "category"),
-    Module("chuci", "楚辞", "骚体 · 浪漫之源", "category"),
-    Module("guwen", "古文观止", "散文正宗 · 十二卷", "category"),
-    Module("qing_ci", "纳兰词", "清词第一", "category"),
-    Module("youmengying", "幽梦影", "清言小品 · 带评点", "category"),
-    Module("lunyu", "论语", "语录即文章", "category"),
-    Module("sishu", "孟子", "雄辩滔滔", "category"),
-    Module("han_wei", "曹操诗集", "建安风骨", "category"),
+/** 体裁分组（多维浏览之一）；MainActivity 按下标取组 */
+internal val GENRES = listOf(
+    Triple("诗", listOf("shijing", "chuci", "han_wei", "tang_poem", "song_poem"), "从诗经到宋诗"),
+    Triple("词", listOf("ci", "qing_ci"), "长短句 · 婉约豪放"),
+    Triple("曲", listOf("yuan_qu"), "散曲小令 · 杂剧"),
+    Triple("文", listOf("guwen", "lunyu", "sishu", "youmengying"), "散文与清言小品"),
 )
 
+/** 书库：搜索 + 四维浏览（书架 / 朝代 / 诗人 / 体裁） */
 @Composable
-fun LibraryScreen(onOpenModule: (String) -> Unit, onOpen: (Int) -> Unit) {
+fun LibraryScreen(
+    onOpenModule: (String) -> Unit,
+    onOpenEra: (String) -> Unit,
+    onOpenAuthors: () -> Unit,
+    onOpenAuthor: (Int) -> Unit,
+    onOpenGenre: (Int) -> Unit,
+    onOpen: (Int) -> Unit,
+) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
+    var dim by rememberSaveable { mutableIntStateOf(0) }
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var tagCount by remember { mutableIntStateOf(0) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
@@ -82,11 +88,8 @@ fun LibraryScreen(onOpenModule: (String) -> Unit, onOpen: (Int) -> Unit) {
         }
     }
     LaunchedEffect(query) {
-        if (query.isBlank()) {
-            results = emptyList()
-        } else {
-            withContext(Dispatchers.IO) { results = PoemsDb.get(context).search(query) }
-        }
+        if (query.isBlank()) results = emptyList()
+        else withContext(Dispatchers.IO) { results = PoemsDb.get(context).search(query) }
     }
 
     Column(
@@ -104,28 +107,23 @@ fun LibraryScreen(onOpenModule: (String) -> Unit, onOpen: (Int) -> Unit) {
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
         )
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(10.dp))
 
-        if (query.isBlank()) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(MODULES, key = { it.title }) { m ->
-                    val count = if (m.kind == "tag") tagCount else counts[m.key] ?: 0
-                    ModuleCard(
-                        title = m.title,
-                        brief = m.brief,
-                        count = count,
-                        onClick = {
-                            onOpenModule(if (m.kind == "tag") "tag:${m.tag}" else m.key)
-                        },
-                    )
+        // 维度切换
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            listOf("书架", "朝代", "诗人", "体裁").forEachIndexed { index, label ->
+                DimensionChip(label = label, selected = dim == index && query.isBlank()) {
+                    query = ""
+                    dim = index
                 }
             }
-        } else {
+        }
+        Spacer(Modifier.height(12.dp))
+
+        if (query.isNotBlank()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(results.size, key = { results[it].id }) { index ->
                     PoemRow(results[index], onClick = { onOpen(results[index].id) })
@@ -141,6 +139,165 @@ fun LibraryScreen(onOpenModule: (String) -> Unit, onOpen: (Int) -> Unit) {
                     }
                 }
             }
+            return@Column
+        }
+
+        when (dim) {
+            0 -> ShelfGrid(onOpenModule)
+            1 -> EraDimContent(counts, onOpenEra)
+            2 -> AuthorDimContent(onOpenAuthors)
+            3 -> GenreDimContent(counts, onOpenGenre)
+        }
+    }
+}
+
+@Composable
+private fun DimensionChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
+}
+
+/** 书架：9 本选本 */
+@Composable
+private fun ShelfGrid(onOpenModule: (String) -> Unit) {
+    val context = LocalContext.current
+    var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var tagCount by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            counts = db.categoryCounts()
+            tagCount = db.tagCount("唐诗三百首")
+        }
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+    ) {
+        items(BOOK_MODULES, key = { it.second }) { (title, route, brief) ->
+            val count = if (route.startsWith("tag:")) tagCount else counts[route] ?: 0
+            ModuleCard(title = title, brief = brief, count = count) { onOpenModule(route) }
+        }
+    }
+}
+
+/** 朝代维度：时间轴列表 */
+@Composable
+private fun EraDimContent(counts: Map<String, Int>, onOpenEra: (String) -> Unit) {
+    val eraCounts = counts.filterKeys { it in ERA_ORDER }
+    val eras = ERA_ORDER.filter { (eraCounts[it] ?: 0) > 0 }
+    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        items(eras.size, key = { eras[it] }) { index ->
+            val era = eras[index]
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenEra(era) }
+                    .padding(vertical = 16.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = era,
+                        style = PoemTitleStyle.copy(
+                            fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = ERA_YEARS[era] ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    text = "${eraCounts[era] ?: 0} 篇",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        item { Spacer(Modifier.height(16.dp)) }
+    }
+}
+
+/** 诗人维度：入口说明 + 索引入口 */
+@Composable
+private fun AuthorDimContent(onOpenAuthors: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Spacer(Modifier.height(8.dp))
+        val briefs = listOf(
+            "作品量最多的作者排在最前——名家用量一目了然",
+            "点进作者可见小传与全部作品",
+            "想按时代看人？请用「朝代」维度",
+        )
+        briefs.forEach {
+            Text(
+                text = "· $it",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenAuthors),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    "进入诗人索引",
+                    style = PoemTitleStyle,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    "全部作者 · 按作品量排序",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** 体裁维度：诗 / 词 / 曲 / 文 */
+@Composable
+private fun GenreDimContent(counts: Map<String, Int>, onOpenGenre: (Int) -> Unit) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+    ) {
+        items(GENRES.size, key = { GENRES[it].first }) { index ->
+            val (name, cats, brief) = GENRES[index]
+            ModuleCard(
+                title = name,
+                brief = brief,
+                count = cats.sumOf { counts[it] ?: 0 },
+            ) { onOpenGenre(index) }
         }
     }
 }
@@ -177,17 +334,14 @@ private fun ModuleCard(title: String, brief: String, count: Int, onClick: () -> 
     }
 }
 
-/**
- * 模块浏览页：key 为 "分类名" 或 "tag:标签名"；大模块分页加载。
- * 路由约定：LibraryScreen 的 onOpenModule 传 "tang_poem" 或 "tag:唐诗三百首"。
- */
+/** 书架模块浏览页：key 为分类名或 "tag:标签名"，分页加载 */
 @Composable
 fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
     val tagMode = key.startsWith("tag:")
     val category = if (tagMode) "tang_poem" else key
     val tag = if (tagMode) key.removePrefix("tag:") else null
-    val label = if (tagMode) tag ?: key else MODULES.firstOrNull { it.key == key }?.title ?: key
+    val label = if (tagMode) tag ?: key else BOOK_MODULES.firstOrNull { it.second == key }?.first ?: key
 
     var poems by remember(key) { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
     var hasMore by remember(key) { mutableStateOf(true) }

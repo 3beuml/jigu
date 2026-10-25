@@ -33,17 +33,19 @@ from opencc import OpenCC
 
 T2S = OpenCC("t2s")
 
-SCHEMA_VERSION = 2
-DATA_VERSION = 4
+SCHEMA_VERSION = 3
+DATA_VERSION = 5
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
 CREATE TABLE authors(
-  id      INTEGER PRIMARY KEY,
-  name    TEXT NOT NULL,
-  dynasty TEXT NOT NULL DEFAULT '',
-  brief   TEXT NOT NULL DEFAULT '',
+  id         INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL,
+  dynasty    TEXT NOT NULL DEFAULT '',
+  brief      TEXT NOT NULL DEFAULT '',
+  birth_year INTEGER,
+  death_year INTEGER,
   UNIQUE(name, dynasty)
 );
 
@@ -128,6 +130,39 @@ def s(text: str) -> str:
     return T2S.convert(text).strip()
 
 
+# 朝代归一：时间轴按此分组；先秦含诸子，两汉并入汉
+ERA_MAP = {
+    "唐代": "唐", "宋朝": "宋", "宋代": "宋", "汉朝": "汉", "两汉": "汉",
+    "战国": "先秦", "明代": "明", "清朝": "清", "元朝": "元", "隋朝": "隋",
+    "五代十国": "五代", "三国": "三国",
+}
+
+# 主要作者生卒年种子（负数=公元前）。只收把握大的；无年份者时间轴内排在其朝代末尾。
+BIRTH_DEATH = [
+    ("孔子", -551, -479), ("孟子", -372, -289), ("屈原", -340, -278),
+    ("曹操", 155, 220),
+    ("骆宾王", 619, 687), ("王勃", 650, 676), ("贺知章", 659, 744), ("陈子昂", 661, 702),
+    ("张九龄", 678, 740), ("王之涣", 688, 742), ("孟浩然", 689, 740), ("王昌龄", 698, 757),
+    ("王维", 701, 761), ("李白", 701, 762), ("高适", 704, 765), ("岑参", 718, 769),
+    ("杜甫", 712, 770), ("张继", 715, 779), ("刘长卿", 726, 786), ("韦应物", 737, 792),
+    ("卢纶", 739, 799), ("韩愈", 768, 824), ("孟郊", 751, 814), ("张籍", 766, 830),
+    ("王建", 768, 835), ("刘禹锡", 772, 842), ("白居易", 772, 846), ("元稹", 779, 831),
+    ("贾岛", 779, 843), ("李贺", 790, 816), ("杜牧", 803, 852), ("李商隐", 813, 858),
+    ("温庭筠", 812, 866), ("皮日休", 834, 883), ("韦庄", 836, 910), ("杜荀鹤", 846, 904),
+    ("李益", 748, 829),
+    ("寇准", 961, 1023), ("林逋", 967, 1028), ("柳永", 984, 1053), ("晏殊", 991, 1055),
+    ("梅尧臣", 1002, 1060), ("欧阳修", 1007, 1072), ("苏洵", 1009, 1066), ("曾巩", 1019, 1083),
+    ("司马光", 1019, 1086), ("王安石", 1021, 1086), ("苏轼", 1037, 1101), ("晏几道", 1038, 1110),
+    ("苏辙", 1039, 1112), ("黄庭坚", 1045, 1105), ("秦观", 1049, 1100), ("贺铸", 1052, 1125),
+    ("晁补之", 1053, 1110), ("陈师道", 1053, 1102), ("周邦彦", 1056, 1121),
+    ("李清照", 1084, 1155), ("陈与义", 1090, 1139), ("岳飞", 1103, 1142),
+    ("陆游", 1125, 1210), ("范成大", 1126, 1193), ("杨万里", 1127, 1206), ("朱熹", 1130, 1200),
+    ("张孝祥", 1132, 1170), ("辛弃疾", 1140, 1207), ("姜夔", 1154, 1221), ("文天祥", 1236, 1283),
+    ("白朴", 1226, 1306), ("张养浩", 1270, 1329),
+    ("纳兰性德", 1655, 1685), ("郑燮", 1693, 1765), ("袁枚", 1716, 1798), ("龚自珍", 1792, 1841),
+]
+
+
 def j(obj) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
@@ -145,7 +180,9 @@ class Db:
         self.dups: dict[str, int] = {}
 
     def author(self, name: str, dynasty: str, brief: str = "") -> int:
-        name, dynasty, brief = s(name), s(dynasty), s(brief)
+        name, brief = s(name), s(brief)
+        dynasty = s(dynasty)
+        dynasty = ERA_MAP.get(dynasty, dynasty)
         key = (name, dynasty)
         if key in self.authors:
             aid = self.authors[key]
@@ -420,6 +457,17 @@ FAMOUS_LINES = [
 ]
 
 
+def fill_birth_death(conn):
+    n = 0
+    for name, birth, death in BIRTH_DEATH:
+        cur = conn.execute(
+            "UPDATE authors SET birth_year = ?, death_year = ? WHERE name = ?",
+            (birth, death, name),
+        )
+        n += cur.rowcount
+    print(f"  生卒年回填: {n} 位作者")
+
+
 def fill_famous_lines(conn):
     n = 0
     for title_hint, line_hint in FAMOUS_LINES:
@@ -523,6 +571,7 @@ def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True
                     print(f"  [{label}] {name}: {n} …", flush=True)
             print(f"  [{label}] {name}: {n} 条")
     t0 = time.time()
+    fill_birth_death(db.conn)
     fill_famous_lines(db.conn)
     annotate(db.conn)
     print(f"  [{label}] 意象打标 + 节气节日配诗完成（{time.time()-t0:.0f}s）："
