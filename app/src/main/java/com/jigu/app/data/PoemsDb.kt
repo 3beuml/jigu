@@ -11,10 +11,16 @@ import java.io.File
  * 首次启动把库拷到内部存储；收藏写回同一文件（favorites 表随库自带）。
  */
 class PoemsDb private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, DB_NAME, null, 1) {
+    SQLiteOpenHelper(context.applicationContext, DB_NAME, null, HELPER_DB_VERSION) {
 
     companion object {
         const val DB_NAME = "jigu.db"
+
+        /** 随数据包版本升级（tools/datapack/build.py 的 DATA_VERSION）；不一致则重拷库 */
+        const val REQUIRED_DATA_VERSION = 3
+
+        /** 必须与 build.py 的 SCHEMA_VERSION 一致（即库文件 PRAGMA user_version） */
+        const val HELPER_DB_VERSION = 2
         private const val CORE_COLUMNS =
             "p.id, p.category, p.title, IFNULL(a.name,'佚名') AS author, IFNULL(a.brief,'') AS brief, " +
                 "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, p.body, IFNULL(a.dynasty,'') AS dynasty"
@@ -24,7 +30,7 @@ class PoemsDb private constructor(context: Context) :
                 "JOIN imagery i ON i.id = pi.imagery_id WHERE pi.poem_id = p.id)"
 
         private const val FAMOUS_SUB =
-            "(SELECT f.line FROM famous_lines f WHERE f.poem_id = p.id) AS famous_line"
+            "(SELECT f.line FROM famous_lines f WHERE f.poem_id = p.id)"
 
         @Volatile
         private var instance: PoemsDb? = null
@@ -34,10 +40,39 @@ class PoemsDb private constructor(context: Context) :
     }
 
     private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences("jigu_data", Context.MODE_PRIVATE)
 
     init {
         val dbFile = appContext.getDatabasePath(DB_NAME)
-        if (!dbFile.exists()) copyFromAssets(dbFile)
+        val installed = prefs.getInt("data_version", -1)
+        if (!dbFile.exists() || installed != REQUIRED_DATA_VERSION) {
+            // 升级重拷前保留用户收藏（favorites 与诗同库）
+            val kept = if (dbFile.exists()) readFavoritesRaw(dbFile) else emptyList()
+            copyFromAssets(dbFile)
+            if (kept.isNotEmpty()) restoreFavorites(dbFile, kept)
+            prefs.edit().putInt("data_version", REQUIRED_DATA_VERSION).apply()
+        }
+    }
+
+    private fun readFavoritesRaw(dbFile: File): List<Pair<Int, Long>> = runCatching {
+        SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            val out = mutableListOf<Pair<Int, Long>>()
+            db.rawQuery("SELECT poem_id, created_at FROM favorites", null).use { c ->
+                while (c.moveToNext()) out += c.getInt(0) to c.getLong(1)
+            }
+            out
+        }
+    }.getOrDefault(emptyList())
+
+    private fun restoreFavorites(dbFile: File, rows: List<Pair<Int, Long>>) {
+        runCatching {
+            SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+                db.execSQL("DELETE FROM favorites")
+                rows.forEach { (id, ts) ->
+                    db.execSQL("INSERT INTO favorites(poem_id, created_at) VALUES (?,?)", arrayOf(id, ts))
+                }
+            }
+        }
     }
 
     private fun copyFromAssets(dbFile: File) {
@@ -168,7 +203,7 @@ class PoemsDb private constructor(context: Context) :
         return if (q.length >= 3) {
             runCatching {
                 queryPoems(
-                    "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery FROM poems_fts " +
+                    "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems_fts " +
                         "JOIN poems p ON p.id = poems_fts.rowid " +
                         "LEFT JOIN authors a ON a.id = p.author_id " +
                         "WHERE poems_fts MATCH ? LIMIT ?",
