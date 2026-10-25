@@ -89,9 +89,10 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
         ?: ""
 
     // 角隅山水：当前节气的画，右下角淡出（A 手法）；深色模式隐藏；画意开关可全关；
-    // 护栏"文字区净空"：长文（>4 段）不配画，避免压字
+    // 护栏"文字区净空"：总字数 >64（长文/长调）不配画，避免压字
     val artEnabled = JiguSettings.artEnabled(context)
-    val artwork = if (artEnabled && !isSystemInDarkTheme() && poem.paragraphs.size <= 4) {
+    val shortPoem = poem.paragraphs.sumOf { it.length } <= 64
+    val artwork = if (artEnabled && !isSystemInDarkTheme() && shortPoem) {
         ArtworkRepo.forTerm(context, badge)
     } else null
     var artBitmap by remember(artwork?.file) { mutableStateOf<ImageBitmap?>(null) }
