@@ -16,6 +16,7 @@ captures/
 keystore.properties
 .gt_token.txt
 .gh_token.txt
+.jigu_token.txt
 
 # 系统
 .DS_Store
