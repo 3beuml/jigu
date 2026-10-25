@@ -34,8 +34,8 @@ from opencc import OpenCC
 
 T2S = OpenCC("t2s")
 
-SCHEMA_VERSION = 4
-DATA_VERSION = 6
+SCHEMA_VERSION = 5
+DATA_VERSION = 7
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -66,6 +66,7 @@ CREATE TABLE poems(
   notes      TEXT NOT NULL DEFAULT '[]',
   hash       TEXT NOT NULL,
   source_id  TEXT NOT NULL DEFAULT '',
+  popularity INTEGER NOT NULL DEFAULT 0,
   UNIQUE(category, hash)
 );
 CREATE INDEX idx_poems_category ON poems(category);
@@ -94,6 +95,17 @@ CREATE TABLE calendar_map(
   name    TEXT NOT NULL DEFAULT '',
   poem_id INTEGER REFERENCES poems(id),
   note    TEXT NOT NULL DEFAULT ''
+);
+
+-- 主题（题材）标签：诗词专用，与意象体系同构
+CREATE TABLE themes(
+  id   INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE
+);
+CREATE TABLE poem_theme(
+  poem_id  INTEGER REFERENCES poems(id),
+  theme_id INTEGER REFERENCES themes(id),
+  PRIMARY KEY(poem_id, theme_id)
 );
 
 -- 循物寻诗（阶段 1 建表，词表 v0 随后填充）
@@ -131,8 +143,77 @@ CREATE TABLE favorites(
 
 
 def s(text: str) -> str:
-    """繁->简 + 清理不可见空白。"""
-    return T2S.convert(text).strip()
+    """繁->简 + 清理不可见空白 + 字形门闩（文楷缺字替换为 Unihan 可映射的通行字）+ 清洗 PUA 乱码。"""
+    out = T2S.convert(text).strip()
+    out = "".join(ch for ch in out if not (0xE000 <= ord(ch) <= 0xF8FF))
+    if GLYPH_GATE["cmap"]:
+        out = "".join(_gate_char(ch) for ch in out)
+    return out
+
+
+# 字形门闩状态（main 里加载）
+GLYPH_GATE: dict = {"cmap": set(), "variants": {}, "cache": {}, "stats": {}}
+
+
+def _gate_char(ch: str) -> str:
+    cp = ord(ch)
+    if cp < 0x2E80:  # ASCII/标点/符号不查
+        return ch
+    cached = GLYPH_GATE["cache"].get(cp)
+    if cached is not None:
+        return cached
+    rep = ch
+    if cp not in GLYPH_GATE["cmap"]:
+        cands = GLYPH_GATE["variants"].get(cp, {})
+        for prio in sorted(cands):
+            found = next((chr(c) for c in sorted(cands[prio]) if c in GLYPH_GATE["cmap"]), None)
+            if found:
+                rep = found
+                break
+    if rep != ch:
+        GLYPH_GATE["stats"][f"{ch}->{rep}"] = GLYPH_GATE["stats"].get(f"{ch}->{rep}", 0) + 1
+    GLYPH_GATE["cache"][cp] = rep
+    return rep
+
+
+def load_glyph_gate(font_path: Path, unihan_zip: Path):
+    """文楷 cmap + Unihan 变体索引：kSimplifiedVariant > kZVariant > kSemanticVariant > kSpecializedSemanticVariant"""
+    from fontTools.ttLib import TTFont
+    import zipfile
+    import io
+
+    cmap = TTFont(str(font_path)).getBestCmap()
+    GLYPH_GATE["cmap"] = set(cmap.keys())
+
+    variants: dict[int, dict[int, set[int]]] = {}
+    fields = [
+        ("Unihan_OtherMappings.txt", "kSimplifiedVariant", 0),
+        ("Unihan_Variants.txt", "kZVariant", 1),
+        ("Unihan_Variants.txt", "kSemanticVariant", 2),
+        ("Unihan_Variants.txt", "kSpecializedSemanticVariant", 3),
+    ]
+    z = zipfile.ZipFile(str(unihan_zip))
+    for fname, field, prio in fields:
+        with z.open(fname) as f:
+            for raw in io.TextIOWrapper(f, encoding="utf-8"):
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split("\t")
+                if len(parts) < 3 or parts[1] != field:
+                    continue
+                try:
+                    cp = int(parts[0].lstrip("U+"), 16)
+                except ValueError:
+                    continue
+                for cand in parts[2].split():
+                    try:
+                        c = int(cand.lstrip("U+"), 16)
+                    except ValueError:
+                        continue
+                    variants.setdefault(cp, {}).setdefault(prio, set()).add(c)
+    GLYPH_GATE["variants"] = variants
+    print(f"  字形门闩：文楷 {len(GLYPH_GATE['cmap'])} 字形，Unihan 变体索引 {len(variants)} 字")
 
 
 # ---------- 体裁分类（移植 chinese-poetry-api classifier 的判定链） ----------
@@ -439,6 +520,21 @@ def it_yuanqu(dataset: Path):
         }
 
 
+def it_songci300(dataset: Path):
+    """宋词三百首（宋词/宋词三百首.json）：自带 tags，进精选池与书架"""
+    p = dataset / "宋词" / "宋词三百首.json"
+    if not p.exists():
+        print("    [蒙学] 宋词三百首.json 缺失")
+        return
+    for r in load_json(p):
+        yield {
+            "category": "ci", "title": r.get("rhythmic", "") or "无题",
+            "author": r.get("author", ""), "dynasty": "宋",
+            "paragraphs": r["paragraphs"], "rhythmic": r.get("rhythmic", ""),
+            "tags": r.get("tags", []),
+        }
+
+
 def it_wudai_ci(dataset: Path):
     """花间集 + 南唐二主词等：结构同形 {title, paragraphs, author, rhythmic, notes}"""
     for p in sorted((dataset / "五代诗词" / "huajianji").glob("huajianji-*.json")):
@@ -513,6 +609,7 @@ def iter_nested(node):
 
 
 # 蒙学补全：语料里剩余的全部蒙书（文件名是拼音, 书名, 朝代）
+# 条例剔除《文字蒙求》：古文字字形字典，546/547 字不在任何可用字体，展示不可行（D-010 条例3）
 MENGXUE_BOOKS = [
     ("shenglvqimeng.json", "声律启蒙", "清"),
     ("youxueqionglin.json", "幼学琼林", "明"),
@@ -521,7 +618,6 @@ MENGXUE_BOOKS = [
     ("qianziwen.json", "千字文", "南北朝"),
     ("dizigui.json", "弟子规", "清"),
     ("baijiaxing.json", "百家姓", "宋"),
-    ("wenzimengqiu.json", "文字蒙求", "清"),
 ]
 
 
@@ -561,7 +657,24 @@ COMPOUND_IMAGERY = {
     "闺情": ["闺", "罗帐", "玉阶", "红妆", "相思"],
 }
 
-# 节气/节日 -> 配诗关键词（calendar_map 种子表；每个键取前 20 条，按 id 稳定序）
+# 主题（题材）规则：诗词专用（文/蒙学不参与），关键词子串命中即打标
+THEME_RULES = [
+    ("咏史", ["咏史", "怀古", "兴亡", "六朝", "吴宫", "前朝"]),
+    ("田园", ["田园", "村", "耕", "桑", "篱", "炊烟", "牧童"]),
+    ("边塞", ["边塞", "关山", "胡马", "烽火", "征人", "大漠", "阴山", "玉门", "楼兰", "燕然"]),
+    ("送别", ["送别", "相送", "离别", "别离", "长亭", "折柳", "劳劳"]),
+    ("思乡", ["思乡", "乡书", "故乡", "故园", "还乡", "客路", "客心", "归梦", "望乡"]),
+    ("相思", ["相思", "红豆", "锦书", "两地"]),
+    ("山水", ["山水", "溪", "峰", "瀑布", "烟霞", "林泉", "山色"]),
+    ("节令", ["春节", "元日", "元宵", "清明", "端午", "七夕", "中秋", "重阳", "除夕",
+              "冬至", "岁暮", "新正", "守岁", "寒食", "立春", "立秋"]),
+    ("饮酒", ["酒", "醉", "樽", "酌", "觞", "醅"]),
+    ("悼亡", ["悼亡", "挽歌", "祭"]),
+]
+
+POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
+                     "shijing", "chuci", "han_wei")
+
 CALENDAR_KEYWORDS = {
     "solar_term": {
         "立春": ["春", "东风"], "雨水": ["雨"], "惊蛰": ["雷", "蛰"], "春分": ["春分", "燕"],
@@ -585,7 +698,9 @@ CALENDAR_KEYWORDS = {
 }
 
 # calendar_map 配诗只从韵文类取
-POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "shijing", "chuci", "han_wei")
+POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
+                     "shijing", "chuci", "han_wei")
+
 
 # 名句种子：(题目关键词, 名句关键词)。命中即把该句登记为该诗的"名句"；
 # 未命中的打印跳过。首版覆盖三百首/诗经/楚辞/纳兰（精选库可解析），宋词条目仅全量库生效。
@@ -613,6 +728,26 @@ FAMOUS_LINES = [
     ("将进酒", "君不见黄河之水"), ("琵琶引", "同是天涯沦落人"),
     ("关雎", "关关雎鸠"), ("蒹葭", "蒹葭苍苍"), ("桃夭", "桃之夭夭"), ("采薇", "昔我往矣"),
     ("离骚", "路漫漫"),
+    # 古文观止名段（文类名段：今日页亮选段，详情见全文）
+    ("兰亭集序", "永和九年"), ("桃花源记", "晋太元中"), ("归去来兮辞", "田园将芜"),
+    ("归去来兮辞", "悟已往之不谏"), ("滕王阁序", "落霞与孤鹜"), ("岳阳楼记", "先天下之忧而忧"),
+    ("醉翁亭记", "醉翁之意不在酒"), ("师说", "古之学者必有师"), ("马说", "世有伯乐"),
+    ("陋室铭", "山不在高"), ("爱莲说", "出淤泥而不染"), ("小石潭记", "青树翠蔓"),
+    ("赤壁赋", "清风徐来"), ("后赤壁赋", "霜露既降"), ("出师表", "先帝创业未半"),
+    ("报任安书", "人固有一死"), ("过秦论", "秦孝公据崤函"), ("阿房宫赋", "六王毕，四海一"),
+    ("郑伯克段于鄢", "多行不义必自毙"), ("曹刿论战", "一鼓作气"), ("邹忌讽齐王纳谏", "吾妻之美我者"),
+    ("冯谖客孟尝君", "长铗归来乎"), ("触龙说赵太后", "父母之爱子"), ("谏太宗十思疏", "居安思危"),
+    ("答司马谏议书", "而议事每不合"), ("读孟尝君传", "世皆称孟尝君能得士"),
+    ("游褒禅山记", "世之奇伟"), ("记承天寺夜游", "积水空明"), ("喜雨亭记", "亭以雨名"),
+    ("超然台记", "凡物皆有可观"), ("六国论", "六国破灭"), ("伶官传序", "忧劳可以兴国"),
+    ("秋声赋", "欧阳子方夜读书"), ("五柳先生传", "先生不知何许人"), ("与朱元思书", "风烟俱净"),
+    ("三峡", "自三峡七百里中"), ("答谢中书书", "山川之美"), ("卜居", "千里之驹"),
+    ("渔父", "沧浪之水"), ("祭十二郎文", "吾年未四十"), ("柳子厚墓志铭", "士穷乃见节义"),
+    ("原道", "博爱之谓仁"), ("原毁", "其责己也重以周"), ("进学解", "业精于勤"),
+    ("送孟东野序", "不得其平则鸣"), ("送李愿归盘谷序", "大丈夫之遇知于天子"),
+    ("相州昼锦堂记", "仕宦而至将相"), ("卖柑者言", "金玉其外"), ("五人墓碑记", "亦以明死生之大"),
+    ("深虑论", "虑天下者"), ("瘗旅文", "连峰际天"), ("梅圣俞诗集序", "穷而后工"),
+    ("货殖列传序", "仓廪实而知礼节"), ("滑稽列传", "一鸣惊人"), ("伯夷列传", "天道无亲"),
     ("长相思", "山一程"), ("木兰花令", "人生若只如初见"), ("画堂春", "一生一代一双人"),
     # 全量库才有的宋词/宋诗
     ("水调歌头", "明月几时有"), ("念奴娇", "大江东去"), ("雨霖铃", "执手相看泪眼"),
@@ -657,25 +792,41 @@ def fill_famous_lines(conn):
 
 
 def annotate(conn):
-    """单遍扫描正文：打意象标签 + 填 calendar_map。"""
+    """单遍扫描正文：打意象标签 + 主题标签 + 填 calendar_map。"""
     # 意象词表
     names = list(SINGLE_IMAGERY) + list(COMPOUND_IMAGERY)
     for n in names:
         conn.execute("INSERT OR IGNORE INTO imagery(name) VALUES (?)", (n,))
     name_ids = {n: i for i, n in conn.execute("SELECT id, name FROM imagery")}
 
+    # 主题词表
+    theme_names = [n for n, _ in THEME_RULES] + ["咏物"]
+    for n in theme_names:
+        conn.execute("INSERT OR IGNORE INTO themes(name) VALUES (?)", (n,))
+    theme_ids = {n: i for i, n in conn.execute("SELECT id, name FROM themes")}
+
     poetry_cats = set(POETRY_CATEGORIES)
     cal_keys = [(kind, key, kws) for kind, m in CALENDAR_KEYWORDS.items() for key, kws in m.items()]
     cal_hits: dict[tuple, list[int]] = {}
 
     pi_rows = []
-    for pid, body, cat in conn.execute("SELECT id, body, category FROM poems"):
+    pt_rows = []
+    for pid, title, body, cat in conn.execute("SELECT id, title, body, category FROM poems"):
         chars = set(body)
         hits = [SINGLE_IMAGERY[i] for i, ch in enumerate(SINGLE_IMAGERY) if ch in chars]
         hits += [name for name, kws in COMPOUND_IMAGERY.items() if any(k in body for k in kws)]
         for h in hits:
             pi_rows.append((pid, name_ids[h]))
         if cat in poetry_cats:
+            # 主题打标（咏史优先，咏物只收“咏X”标题且非咏史）
+            theme_hits = []
+            for name, kws in THEME_RULES:
+                if any(k in body for k in kws):
+                    theme_hits.append(name)
+            if "咏史" not in theme_hits and title.startswith("咏"):
+                theme_hits.append("咏物")
+            for t in theme_hits:
+                pt_rows.append((pid, theme_ids[t]))
             for kind, key, kws in cal_keys:
                 ok = False
                 for k in kws:
@@ -690,6 +841,7 @@ def annotate(conn):
                     cal_hits.setdefault((kind, key), []).append(pid)
 
     conn.executemany("INSERT OR IGNORE INTO poem_imagery(poem_id, imagery_id) VALUES (?,?)", pi_rows)
+    conn.executemany("INSERT OR IGNORE INTO poem_theme(poem_id, theme_id) VALUES (?,?)", pt_rows)
     for (kind, key), ids in cal_hits.items():
         for pid in ids:
             conn.execute(
@@ -703,6 +855,7 @@ def annotate(conn):
 CORE_SOURCES = [
     ("唐诗三百首", lambda ds: it_tang300(ds, author_desc(ds, "authors.tang.json"))),
     ("千家诗", lambda ds: it_qianjiashi(ds)),
+    ("宋词三百首", lambda ds: it_songci300(ds)),
     ("诗经", lambda ds: it_shijing(ds)),
     ("楚辞", lambda ds: it_chuci(ds)),
     ("五代词", lambda ds: it_wudai_ci(ds)),
@@ -726,6 +879,31 @@ FULL_EXTRA_SOURCES = [
 ]
 
 
+def fill_popularity(conn, dataset: Path):
+    """rank/ 搜索热度（百度/360/必应/谷歌之和）按 作者+标题 回填 popularity 列"""
+    import glob
+    pop: dict[tuple[str, str], int] = {}
+    for f in glob.glob(str(dataset / "rank" / "*" / "*.json")):
+        try:
+            for r in load_json(Path(f)):
+                t, a = s(r.get("title", "")), s(r.get("author", ""))
+                v = sum(int(r.get(k) or 0) for k in ("baidu", "so360", "bing", "google"))
+                key = (t, a)
+                if v > pop.get(key, 0):
+                    pop[key] = v
+        except Exception:
+            continue
+    names = dict(conn.execute("SELECT id, name FROM authors"))
+    rows = []
+    for pid, title, aid in conn.execute("SELECT id, title, author_id FROM poems"):
+        v = pop.get((title, names.get(aid, "")))
+        if v:
+            rows.append((v, pid))
+    conn.executemany("UPDATE poems SET popularity = ? WHERE id = ?", rows)
+    top = conn.execute("SELECT title FROM poems ORDER BY popularity DESC LIMIT 5").fetchall()
+    print(f"  名气回填: {len(rows)} 首 | 热度Top5: {[t[0] for t in top]}")
+
+
 def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True):
     db = Db(db_path)
     for name, fn in CORE_SOURCES:
@@ -747,6 +925,8 @@ def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True
     fill_birth_death(db.conn)
     fill_famous_lines(db.conn)
     annotate(db.conn)
+    if full:
+        fill_popularity(db.conn, dataset)
     print(f"  [{label}] 意象打标 + 节气节日配诗完成（{time.time()-t0:.0f}s）："
           f"意象 {db.conn.execute('SELECT count(*) FROM imagery').fetchone()[0]} 类，"
           f"配诗键 {db.conn.execute('SELECT count(DISTINCT key) FROM calendar_map').fetchone()[0]} 个")
@@ -759,7 +939,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", required=True, type=Path, help="chinese-poetry 克隆目录")
     ap.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2])
+    ap.add_argument("--font", type=Path, default=Path("C:/Work/scratch/fonts/wenkai.ttf"),
+                    help="文楷原始字体（取 cmap 做字形门闩）")
+    ap.add_argument("--unihan", type=Path, default=Path("C:/Work/scratch/fonts/Unihan.zip"),
+                    help="Unihan.zip（变体映射）")
     args = ap.parse_args()
+
+    if args.font.exists() and args.unihan.exists():
+        load_glyph_gate(args.font, args.unihan)
+    else:
+        print("  ⚠️ 字形门闩未启用（字体或 Unihan 缺失），缺字将原样保留")
 
     core_out = args.repo / "build-datapack/jigu-core.db"
     full_out = args.repo / "build-datapack/jigu-full.db"

@@ -1,0 +1,53 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出汲古
+        uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Python 3.10 + 管线依赖
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install fonttools opencc-python-reimplemented cnlunar pillow
+
+      - name: 检出语料数据集
+        run: git clone --depth 1 https://github.com/chinese-poetry/chinese-poetry.git "$RUNNER_TEMP/chinese-poetry"
+
+      - name: 下载文楷字体
+        run: |
+          curl -sL --max-time 180 -o "$RUNNER_TEMP/wenkai.ttf" \
+            "https://raw.githubusercontent.com/lxgw/LxgwWenKai/main/fonts/TTF/LXGWWenKai-Regular.ttf"
+
+      - name: 数据管线（含测试）
+        run: |
+          python tools/datapack/test_pipeline.py
+          python tools/datapack/build.py --dataset "$RUNNER_TEMP/chinese-poetry" \
+            --font "$RUNNER_TEMP/wenkai.ttf" --unihan "$RUNNER_TEMP/Unihan.zip" || true
+          curl -sL --max-time 180 -o "$RUNNER_TEMP/Unihan.zip" "https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip"
+          python tools/datapack/build.py --dataset "$RUNNER_TEMP/chinese-poetry" \
+            --font "$RUNNER_TEMP/wenkai.ttf"
+          python tools/datapack/build_calendar.py
+          python tools/fonts/subset_font.py --font "$RUNNER_TEMP/wenkai.ttf"
+
+      - name: Gradle assembleDebug
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: 上传 APK 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: jigu-debug
+          path: app/build/outputs/apk/debug/app-debug.apk

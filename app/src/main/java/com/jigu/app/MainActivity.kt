@@ -39,8 +39,10 @@ import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
 import com.jigu.app.ui.library.EraAuthorsScreen
+import com.jigu.app.ui.favorites.FavoritesScreen
 import com.jigu.app.ui.library.LibraryScreen
 import com.jigu.app.ui.library.ModuleScreen
+import com.jigu.app.ui.library.ThemePoemsScreen
 import com.jigu.app.ui.library.TypeScreen
 import com.jigu.app.ui.mine.MineScreen
 import com.jigu.app.ui.theme.JiguTheme
@@ -60,9 +62,13 @@ class MainActivity : ComponentActivity() {
                 JiguCalendar.load(this@MainActivity)
                 PoemsDb.get(this@MainActivity) // 触发首启拷库
                 term = JiguCalendar.currentTerm(java.time.LocalDate.now())
-                // 每日推送（默认 07:30，可关）+ 通知权限（Android 13+ 运行时申请）
+                // 每日推送（用户设定时刻，默认 07:30，可关）+ 通知权限（Android 13+ 运行时申请）
                 if (JiguSettings.pushEnabled(this@MainActivity)) {
-                    DailyPush.schedule(this@MainActivity)
+                    DailyPush.schedule(
+                        this@MainActivity,
+                        JiguSettings.pushHour(this@MainActivity),
+                        JiguSettings.pushMinute(this@MainActivity),
+                    )
                 } else {
                     DailyPush.cancel(this@MainActivity)
                 }
@@ -125,6 +131,20 @@ fun JiguApp() {
                     onOpenAuthors = { nav.navigate("authors") },
                     onOpenAuthor = { id -> nav.navigate("author/$id") },
                     onOpenType = { name -> nav.navigate("type/$name") },
+                    onOpenTheme = { name -> nav.navigate("theme/$name") },
+                    onOpen = openDetail,
+                )
+            }
+            composable("theme/{name}") { back ->
+                ThemePoemsScreen(
+                    theme = back.arguments?.getString("name") ?: "",
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
+            composable("favorites") {
+                FavoritesScreen(
+                    onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )
             }
@@ -162,7 +182,7 @@ fun JiguApp() {
                     onOpen = openDetail,
                 )
             }
-            composable("mine") { MineScreen() }
+            composable("mine") { MineScreen(onOpenFavorites = { nav.navigate("favorites") }) }
             composable("detail/{id}") { back ->
                 DetailScreen(
                     id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,

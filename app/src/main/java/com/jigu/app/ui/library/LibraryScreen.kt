@@ -1,6 +1,7 @@
 package com.jigu.app.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,7 +59,7 @@ private val BOOK_MODULES = listOf(
     Triple("曹操诗集", "han_wei", "建安风骨"),
 )
 
-/** 书库：搜索 + 四维浏览（书架 / 朝代 / 诗人 / 体裁） */
+/** 书库：搜索 + 五维浏览（书架 / 朝代 / 诗人 / 体裁 / 主题） */
 @Composable
 fun LibraryScreen(
     onOpenModule: (String) -> Unit,
@@ -66,6 +67,7 @@ fun LibraryScreen(
     onOpenAuthors: () -> Unit,
     onOpenAuthor: (Int) -> Unit,
     onOpenType: (String) -> Unit,
+    onOpenTheme: (String) -> Unit,
     onOpen: (Int) -> Unit,
 ) {
     val context = LocalContext.current
@@ -74,6 +76,7 @@ fun LibraryScreen(
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var eraCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var themeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var tagCount by remember { mutableIntStateOf(0) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
 
@@ -83,6 +86,7 @@ fun LibraryScreen(
             counts = db.categoryCounts()
             eraCounts = db.eraCounts()
             typeCounts = db.typeCounts()
+            themeCounts = db.themeCounts()
             tagCount = db.tagCount("唐诗三百首")
         }
     }
@@ -110,10 +114,12 @@ fun LibraryScreen(
 
         // 维度切换
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            listOf("书架", "朝代", "诗人", "体裁").forEachIndexed { index, label ->
+            listOf("书架", "朝代", "诗人", "体裁", "主题").forEachIndexed { index, label ->
                 DimensionChip(label = label, selected = dim == index && query.isBlank()) {
                     query = ""
                     dim = index
@@ -146,6 +152,7 @@ fun LibraryScreen(
             1 -> EraDimContent(eraCounts, onOpenEra)
             2 -> AuthorDimContent(onOpenAuthors)
             3 -> TypeDimContent(typeCounts, onOpenType)
+            4 -> ThemeDimContent(themeCounts, onOpenTheme)
         }
     }
 }
@@ -294,6 +301,24 @@ private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) ->
         items(types.size, key = { types[it].key }) { index ->
             val (name, count) = types[index]
             ModuleCard(title = name, brief = "", count = count) { onOpenType(name) }
+        }
+    }
+}
+
+/** 主题维度：题材分类卡片（咏史/田园/边塞/送别…，情感门类） */
+@Composable
+private fun ThemeDimContent(themeCounts: Map<String, Int>, onOpenTheme: (String) -> Unit) {
+    val themes = themeCounts.entries.sortedByDescending { it.value }.toList()
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+    ) {
+        items(themes.size, key = { themes[it].key }) { index ->
+            val (name, count) = themes[index]
+            ModuleCard(title = name, brief = "题材分类", count = count) { onOpenTheme(name) }
         }
     }
 }

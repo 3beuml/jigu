@@ -83,4 +83,15 @@ object JiguSettings {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_PUSH, value).apply()
     }
+
+    fun pushHour(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt("push_hour", 7)
+
+    fun pushMinute(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt("push_minute", 30)
+
+    fun setPushTime(context: Context, hour: Int, minute: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putInt("push_hour", hour).putInt("push_minute", minute).apply()
+    }
 }

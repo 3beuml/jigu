@@ -296,6 +296,18 @@ fun TypeScreen(type: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     }
 }
 
+/** 主题 -> 作品列表（咏史/田园/边塞/送别…题材门类） */
+@Composable
+fun ThemePoemsScreen(theme: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+    val context = LocalContext.current
+    val pager = rememberPagedPoems(theme) { page ->
+        PoemsDb.get(context).listByTheme(theme, PAGE, page * PAGE)
+    }
+    BrowseScaffold(title = theme, subtitle = "题材", onBack = onBack) {
+        PagedPoemList(pager, onOpen)
+    }
+}
+
 /** 浏览页公共骨架：返回 + 标题 + 副题（纪年等） */
 @Composable
 private fun BrowseScaffold(

@@ -347,6 +347,31 @@ class PoemsDb private constructor(context: Context) :
         arrayOf(type, limit.toString(), offset.toString()),
     )
 
+    fun themeCounts(): Map<String, Int> {
+        awaitData()
+        cachedThemes?.let { return it }
+        val out = rdb().rawQuery(
+            "SELECT t.name, count(*) FROM poem_theme pt " +
+                "JOIN themes t ON t.id = pt.theme_id GROUP BY t.name ORDER BY 2 DESC", null,
+        ).use { c ->
+            val m = mutableMapOf<String, Int>()
+            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+            m
+        }
+        cachedThemes = out
+        return out
+    }
+
+    @Volatile
+    private var cachedThemes: Map<String, Int>? = null
+
+    fun listByTheme(theme: String, limit: Int, offset: Int): List<Poem> = queryPoems(
+        "$POEM_SELECT JOIN poem_theme pt ON pt.poem_id = p.id " +
+            "JOIN themes t ON t.id = pt.theme_id WHERE t.name = ? " +
+            "ORDER BY p.id LIMIT ? OFFSET ?",
+        arrayOf(theme, limit.toString(), offset.toString()),
+    )
+
     fun listByGenres(categories: List<String>, limit: Int, offset: Int): List<Poem> {
         val marks = categories.joinToString(",") { "?" }
         return queryPoems(

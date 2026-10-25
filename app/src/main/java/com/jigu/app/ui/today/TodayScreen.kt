@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jigu.app.data.ArtworkRepo
+import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemOfDay
 import com.jigu.app.data.PoemsDb
@@ -201,6 +202,29 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                     card?.let { PoemCard.share(context, it) }
                 }
             }) { Text("做卡片", fontSize = 14.sp) }
+            TextButton(onClick = {
+                // 换一首：当日精选池内顺位后移，重开 App 不变
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        val db = PoemsDb.get(context)
+                        val prefs = context.getSharedPreferences(
+                            "jigu_prefs", android.content.Context.MODE_PRIVATE,
+                        )
+                        val day = LocalDate.now().toEpochDay()
+                        val key = "swap_$day"
+                        val next = prefs.getInt(key, 0) + 1
+                        prefs.edit().putInt(key, next).apply()
+                        val n = db.curatedCount()
+                        if (n > 0) {
+                            val off = (((day + next) % n + n) % n).toInt()
+                            db.curatedAtOffset(off)?.let { p ->
+                                result = PoemOfDay.Result(p, JiguCalendar.currentTerm(LocalDate.now()))
+                                fav = db.isFavorite(p.id)
+                            }
+                        }
+                    }
+                }
+            }) { Text("换一首", fontSize = 14.sp) }
             TextButton(onClick = { /* 下一增量：TTS 朗诵 */ }) { Text("朗读", fontSize = 14.sp) }
         }
         }
