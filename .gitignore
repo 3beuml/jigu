@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# 签名与令牌 —— 永不入库（工作区铁律）
+*.jks
+*.keystore
+keystore.properties
+.gt_token.txt
+.gh_token.txt
+
+# 系统
+.DS_Store
+Thumbs.db

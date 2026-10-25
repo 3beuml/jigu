@@ -1,0 +1,8 @@
+* text=auto
+*.kt text
+*.kts text
+*.md text
+*.toml text
+*.png binary
+*.webp binary
+*.jks binary

@@ -1,0 +1,6 @@
+# ai-memory 项目标签
+# 由 ai-memory.template.toml 改名而来。规矩：project 与文件夹同名，workspace 保持 default。
+# 若日后文件夹改名（比如最终定名后），只需同步改这一行 project。
+
+workspace = "default"
+project = "jigu"
