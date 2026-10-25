@@ -33,13 +33,13 @@ def collect_chars(db_path: Path) -> set[str]:
         " SELECT p.title, IFNULL(a.name,'') AS author_alias, p.paragraphs, p.tags, p.notes, p.body AS brief"
         " FROM poems p LEFT JOIN authors a ON a.id = p.author_id)"
     ):
-        chars.update(text)
+        chars.update(ch for ch in text if ord(ch) >= 0x20)
     for (text,) in db.execute("SELECT name || IFNULL(brief,'') FROM authors"):
-        chars.update(text)
+        chars.update(ch for ch in text if ord(ch) >= 0x20)
     for (text,) in db.execute("SELECT name || note FROM imagery"):
-        chars.update(text)
+        chars.update(ch for ch in text if ord(ch) >= 0x20)
     for (text,) in db.execute("SELECT name || note FROM calendar_map"):
-        chars.update(text)
+        chars.update(ch for ch in text if ord(ch) >= 0x20)
     db.close()
     # 控制可见 ASCII + 常用标点与符号
     chars.update(chr(c) for c in range(0x20, 0x7F))
@@ -59,6 +59,14 @@ def main():
         return 1
     chars = collect_chars(args.dataset)
     print(f"字符集规模: {len(chars)}")
+
+    # 覆盖检查：原字体就没有的字（这些只能依赖系统字体兜底，是潜在豆腐块）
+    from fontTools.ttLib import TTFont
+    cmap = TTFont(str(args.font)).getBestCmap()
+    not_in_font = sorted(ch for ch in chars if ord(ch) not in cmap)
+    if not_in_font:
+        print(f"⚠️ 原字体不包含 {len(not_in_font)} 个字（依赖系统兜底）: "
+              + "".join(not_in_font[:60]))
 
     opts = Options()
     opts.name_IDs = ["*"]

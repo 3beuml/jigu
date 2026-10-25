@@ -23,7 +23,8 @@ class PoemsDb private constructor(context: Context) :
         const val HELPER_DB_VERSION = 3
         private const val CORE_COLUMNS =
             "p.id, p.category, p.title, IFNULL(a.name,'佚名') AS author, IFNULL(a.brief,'') AS brief, " +
-                "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, p.body, IFNULL(a.dynasty,'') AS dynasty"
+                "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, p.body, " +
+                "IFNULL(a.dynasty,'') AS dynasty, p.type AS type, p.era AS era"
 
         private const val IMAGERY_SUB =
             "(SELECT GROUP_CONCAT(i.name, '、') FROM poem_imagery pi " +
@@ -112,6 +113,8 @@ class PoemsDb private constructor(context: Context) :
         val dynasty: String,
         val imagery: List<String>,
         val famousLine: String,
+        val type: String,
+        val era: String,
     )
 
     // ---------- 基础查询 ----------
@@ -274,6 +277,30 @@ class PoemsDb private constructor(context: Context) :
         )
     }
 
+    /** 体裁分布（结构化分类：五言绝句/七言律诗/词/文…） */
+    fun typeCounts(): Map<String, Int> {
+        cachedTypes?.let { return it }
+        val out = readableDatabase.rawQuery(
+            "SELECT type, count(*) FROM poems WHERE type != '' GROUP BY type ORDER BY 2 DESC", null,
+        ).use { c ->
+            val m = mutableMapOf<String, Int>()
+            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+            m
+        }
+        cachedTypes = out
+        return out
+    }
+
+    @Volatile
+    private var cachedTypes: Map<String, Int>? = null
+
+    fun listByType(type: String, limit: Int, offset: Int): List<Poem> = queryPoems(
+        "SELECT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line FROM poems p " +
+            "LEFT JOIN authors a ON a.id = p.author_id WHERE p.type = ? " +
+            "ORDER BY p.id LIMIT ? OFFSET ?",
+        arrayOf(type, limit.toString(), offset.toString()),
+    )
+
     private fun queryPoem(sql: String, args: Array<String>): Poem? =
         readableDatabase.rawQuery(sql, args).use { c ->
             if (c.moveToFirst()) c.toPoem() else null
@@ -305,6 +332,8 @@ class PoemsDb private constructor(context: Context) :
             imagery = (if (i.isNull(13)) "" else i.getString(13))
                 .split('、').filter { it.isNotBlank() },
             famousLine = if (i.isNull(14)) "" else i.getString(14) ?: "",
+            type = i.getString(15) ?: "",
+            era = i.getString(16) ?: "",
         )
     }
 

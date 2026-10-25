@@ -31,12 +31,10 @@ import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
-import com.jigu.app.ui.library.ERA_ORDER
 import com.jigu.app.ui.library.EraAuthorsScreen
-import com.jigu.app.ui.library.GENRES
-import com.jigu.app.ui.library.GenreScreen
 import com.jigu.app.ui.library.LibraryScreen
 import com.jigu.app.ui.library.ModuleScreen
+import com.jigu.app.ui.library.TypeScreen
 import com.jigu.app.ui.mine.MineScreen
 import com.jigu.app.ui.theme.JiguTheme
 import com.jigu.app.ui.today.TodayScreen
@@ -103,7 +101,7 @@ fun JiguApp() {
                     onOpenEra = { era -> nav.navigate("era/$era") },
                     onOpenAuthors = { nav.navigate("authors") },
                     onOpenAuthor = { id -> nav.navigate("author/$id") },
-                    onOpenGenre = { g -> nav.navigate("genre/$g") },
+                    onOpenType = { name -> nav.navigate("type/$name") },
                     onOpen = openDetail,
                 )
             }
@@ -134,12 +132,9 @@ fun JiguApp() {
                     onOpen = openDetail,
                 )
             }
-            composable("genre/{g}") { back ->
-                val g = back.arguments?.getString("g")?.toIntOrNull() ?: 0
-                val genre = GENRES[g.coerceIn(0, GENRES.size - 1)]
-                GenreScreen(
-                    categories = genre.second,
-                    title = genre.first,
+            composable("type/{name}") { back ->
+                TypeScreen(
+                    type = back.arguments?.getString("name") ?: "",
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )

@@ -78,10 +78,15 @@
   （魅族21 Note / Android 16 / JDK21 / Gradle 8.9 华为云镜像 / adb 路径 / Flyme USB 安装开关）。
 - 状态：✅ 已通读并依赖。待办：复制成汲古项目级 skill 并并入汲古包名/路径。
 
-### hitokoto 一言 / 诗泉 chinese-poetry-api —— 模式参考 ❑
+### hitokoto 一言 / 诗泉 chinese-poetry-api —— 模式参考 ◐→✅
 - hitokoto：社区投稿+API 运营模式；https://github.com/hitokoto-osc
 - 诗泉：Go 高性能古诗词 API（REST/GraphQL）；https://github.com/palemoky/chinese-poetry-api
-- 状态：❑ 思路级，暂无需深入。
+- 状态：✅ 已克隆研读其 internal/classifier——**体裁判定链**（来源直接映射 > 词牌 > 乐府标题 >
+  句数×字数结构分析）与**朝代纪年表**（先秦-2070～清1912）已移植进汲古管线（build.py classify_type）。
+
+### 京墨数据模型补充（2026-10-25 深入）◐→✅
+- ClassicPoemEntity：朝代/作者冗余进诗行（浏览零 JOIN）；PeopleEntity：独立人物表带生卒年。
+- 汲古对应：poems 加 type/era 冗余列（schema v4）；authors 加生卒年（schema v3）。
 
 ## 三、数据集与工具（管线依赖）
 

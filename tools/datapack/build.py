@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sqlite3
 import sys
 import time
@@ -33,8 +34,8 @@ from opencc import OpenCC
 
 T2S = OpenCC("t2s")
 
-SCHEMA_VERSION = 3
-DATA_VERSION = 5
+SCHEMA_VERSION = 4
+DATA_VERSION = 6
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -52,6 +53,8 @@ CREATE TABLE authors(
 CREATE TABLE poems(
   id         INTEGER PRIMARY KEY,
   category   TEXT NOT NULL,
+  type       TEXT NOT NULL DEFAULT '',
+  era        TEXT NOT NULL DEFAULT '',
   title      TEXT NOT NULL,
   author_id  INTEGER REFERENCES authors(id),
   rhythmic   TEXT NOT NULL DEFAULT '',
@@ -66,6 +69,8 @@ CREATE TABLE poems(
   UNIQUE(category, hash)
 );
 CREATE INDEX idx_poems_category ON poems(category);
+CREATE INDEX idx_poems_type     ON poems(type);
+CREATE INDEX idx_poems_era      ON poems(era);
 CREATE INDEX idx_poems_author   ON poems(author_id);
 CREATE INDEX idx_poems_title    ON poems(title);
 
@@ -128,6 +133,59 @@ CREATE TABLE favorites(
 def s(text: str) -> str:
     """繁->简 + 清理不可见空白。"""
     return T2S.convert(text).strip()
+
+
+# ---------- 体裁分类（移植 chinese-poetry-api classifier 的判定链） ----------
+# 优先级：来源直接映射 > 词牌 > 乐府标题 > 句数×每句字数的结构分析
+SENT_SPLIT = re.compile(r"[，。！？；、：]")
+
+
+def classify_type(category: str, title: str, rhythmic: str, paragraphs: list[str]) -> str:
+    if category == "shijing":
+        return "诗经体"
+    if category == "chuci":
+        return "骚体"
+    if category in ("lunyu", "sishu", "guwen", "youmengying", "mengxue"):
+        return "文"
+    if category == "yuan_qu":
+        return "曲"
+    if category in ("ci", "qing_ci", "wudai_ci") or rhythmic:
+        return "词"
+
+    if title and (any(k in title for k in ("乐府", "曲辞")) or title.endswith(("行", "引", "歌", "吟"))):
+        return "乐府"
+
+    lines = [seg for p in paragraphs for seg in SENT_SPLIT.split(p) if seg.strip()]
+
+    def clen(seg: str) -> int:
+        return sum(1 for ch in seg if "\u4e00" <= ch <= "\u9fff")
+
+    if not lines:
+        return "其他"
+    counts = [clen(x) for x in lines]
+    first = counts[0]
+    if first == 0 or not all(c == first for c in counts):
+        return "古体诗"
+    n = len(lines)
+    if n == 4 and first == 5:
+        return "五言绝句"
+    if n == 4 and first == 7:
+        return "七言绝句"
+    if n == 8 and first == 5:
+        return "五言律诗"
+    if n == 8 and first == 7:
+        return "七言律诗"
+    if n > 8 and first == 5:
+        return "五言排律"
+    if n > 8 and first == 7:
+        return "七言排律"
+    if first == 4:
+        return "四言诗"
+    if first == 5:
+        return "五言古诗"
+    if first == 7:
+        return "七言古诗"
+    return "古体诗"
 
 
 # 朝代归一：时间轴按此分组；先秦含诸子，两汉并入汉
@@ -200,20 +258,22 @@ class Db:
         return cur.lastrowid
 
     def poem(self, rec: dict) -> bool:
-        """rec: category/title/author/dynasty/paragraphs[/rhythmic/chapter/section/tags/notes/source_id/brief]"""
-        paras = [s(p) for p in rec["paragraphs"] if p and p.strip()]
+        """rec: category/title/author/dynasty/paragraphs[/rhythmic/chapter/section/tags/notes/source_id/brief/type]"""
+        paras = [s(p) for p in rec["paragraphs"] if isinstance(p, str) and p.strip()]
         if not paras:
             return False
         body = "\n".join(paras)
         title = s(rec.get("title") or "无题")
         h = hashlib.md5(f"{title}|{s(rec.get('author',''))}|{body}".encode()).hexdigest()
         cat = rec["category"]
+        era = ERA_MAP.get(s(rec.get("dynasty", "")), s(rec.get("dynasty", "")))
+        typ = rec.get("type") or classify_type(cat, title, s(rec.get("rhythmic", "")), paras)
         try:
             cur = self.conn.execute(
-                "INSERT INTO poems(category,title,author_id,rhythmic,chapter,section,"
-                "paragraphs,body,tags,notes,hash,source_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO poems(category,type,era,title,author_id,rhythmic,chapter,section,"
+                "paragraphs,body,tags,notes,hash,source_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
-                    cat, title,
+                    cat, typ, era, title,
                     self.author(rec.get("author", ""), rec.get("dynasty", ""), rec.get("brief", "")),
                     s(rec.get("rhythmic", "")), s(rec.get("chapter", "")), s(rec.get("section", "")),
                     j(paras), body, j(rec.get("tags", [])), j(rec.get("notes", [])),
@@ -379,6 +439,111 @@ def it_yuanqu(dataset: Path):
         }
 
 
+def it_wudai_ci(dataset: Path):
+    """花间集 + 南唐二主词等：结构同形 {title, paragraphs, author, rhythmic, notes}"""
+    for p in sorted((dataset / "五代诗词" / "huajianji").glob("huajianji-*.json")):
+        for r in load_json(p):
+            yield {
+                "category": "wudai_ci", "title": r["title"], "author": r["author"],
+                "dynasty": "五代", "paragraphs": r["paragraphs"],
+                "rhythmic": r.get("rhythmic", ""), "notes": r.get("notes", []),
+            }
+    nt = dataset / "五代诗词" / "nantang" / "poetrys.json"
+    if nt.exists():
+        for r in load_json(nt):
+            yield {
+                "category": "wudai_ci", "title": r["title"], "author": r["author"],
+                "dynasty": "五代", "paragraphs": r["paragraphs"],
+                "rhythmic": r.get("rhythmic", ""), "notes": r.get("notes", []),
+            }
+
+
+def it_shuimotangshi(dataset: Path):
+    p = dataset / "水墨唐诗" / "shuimotangshi.json"
+    if not p.exists():
+        return
+    for r in load_json(p):
+        yield {
+            "category": "tang_poem", "title": r["title"], "author": r["author"],
+            "dynasty": "唐", "paragraphs": r["paragraphs"], "tags": ["水墨唐诗"],
+        }
+
+
+def it_qianjiashi(dataset: Path):
+    """千家诗：分四卷，卷名即体裁（五言绝句/五言律诗/七言绝句/七言律诗）；组诗（其一/其二）展开为多条"""
+    d = load_json(dataset / "蒙学" / "qianjiashi.json")
+    for vol in d["content"]:
+        t = s(vol.get("type", ""))
+        for r in vol["content"]:
+            chapter = s(r.get("chapter", ""))
+            author = re.sub(r"^（[^）]*）", "", s(r.get("author", "")))
+            paras = r.get("paragraphs", [])
+            if paras and isinstance(paras[0], dict):
+                for sub in paras:
+                    sub_t = s(sub.get("subchapter", ""))
+                    yield {
+                        "category": "qianjiashi",
+                        "title": f"{chapter}·{sub_t}" if sub_t else chapter,
+                        "author": author, "dynasty": "",
+                        "paragraphs": sub.get("paragraphs", []), "type": t,
+                    }
+            else:
+                yield {
+                    "category": "qianjiashi", "title": chapter,
+                    "author": author, "dynasty": "",
+                    "paragraphs": paras, "type": t,
+                }
+
+
+def iter_nested(node):
+    """递归产出 (章节标题, 段落列表)：兼容 卷->篇 两层与一层 dict/list 混合。"""
+    if isinstance(node, dict):
+        yield from iter_nested([node])
+        return
+    for it in node:
+        if not isinstance(it, dict):
+            continue
+        title = it.get("title") or it.get("chapter") or ""
+        paras = it.get("paragraphs") or it.get("content")
+        if isinstance(paras, list) and paras and isinstance(paras[0], str):
+            yield title, paras
+        elif isinstance(paras, list):
+            for t2, p2 in iter_nested(paras):
+                yield (f"{title}·{t2}" if title and t2 else (t2 or title)), p2
+
+
+# 蒙学补全：语料里剩余的全部蒙书（文件名是拼音, 书名, 朝代）
+MENGXUE_BOOKS = [
+    ("shenglvqimeng.json", "声律启蒙", "清"),
+    ("youxueqionglin.json", "幼学琼林", "明"),
+    ("zengguangxianwen.json", "增广贤文", "明"),
+    ("zhuzijiaxun.json", "朱子家训", "清"),
+    ("qianziwen.json", "千字文", "南北朝"),
+    ("dizigui.json", "弟子规", "清"),
+    ("baijiaxing.json", "百家姓", "宋"),
+    ("wenzimengqiu.json", "文字蒙求", "清"),
+]
+
+
+def it_mengxue_extra(dataset: Path):
+    for fname, book, era in MENGXUE_BOOKS:
+        p = dataset / "蒙学" / fname
+        if not p.exists():
+            print(f"    [蒙学] 缺文件: {fname}")
+            continue
+        d = load_json(p)
+        author = d.get("author", "") if isinstance(d.get("author", ""), str) else ""
+        body = d.get("content") or d.get("paragraphs")
+        if isinstance(body, list) and body and isinstance(body[0], str):
+            yield {"category": "mengxue", "title": book, "author": author,
+                   "dynasty": era, "paragraphs": body}
+        else:
+            for chapter, paras in iter_nested(body or []):
+                title = f"{book}·{chapter}" if chapter else book
+                yield {"category": "mengxue", "title": title, "author": author,
+                       "dynasty": era, "paragraphs": paras}
+
+
 # ---------- 意象标签 v0（循物寻诗）与节气/节日配诗：启发式匹配，先跑通后精修 ----------
 
 # 单字物象：正文字符集命中即打标（快、准）
@@ -535,14 +700,19 @@ def annotate(conn):
 
 CORE_SOURCES = [
     ("唐诗三百首", lambda ds: it_tang300(ds, author_desc(ds, "authors.tang.json"))),
+    ("千家诗", lambda ds: it_qianjiashi(ds)),
     ("诗经", lambda ds: it_shijing(ds)),
     ("楚辞", lambda ds: it_chuci(ds)),
+    ("五代词", lambda ds: it_wudai_ci(ds)),
     ("论语", lambda ds: it_chapters(ds, "论语/lunyu.json", "lunyu", "先秦")),
     ("四书五经", lambda ds: it_chapters(ds, "四书五经/mengzi.json", "sishu", "战国")),
+    ("四书五经", lambda ds: it_chapters(ds, "四书五经/daxue.json", "sishu", "先秦")),
+    ("四书五经", lambda ds: it_chapters(ds, "四书五经/zhongyong.json", "sishu", "先秦")),
     ("古文观止", lambda ds: it_guwen(ds)),
     ("幽梦影", lambda ds: it_youmengying(ds)),
     ("纳兰词", lambda ds: it_nalan(ds)),
     ("曹操诗集", lambda ds: it_caocao(ds)),
+    ("蒙学补全", lambda ds: it_mengxue_extra(ds)),
 ]
 
 FULL_EXTRA_SOURCES = [
@@ -550,6 +720,7 @@ FULL_EXTRA_SOURCES = [
     ("全宋诗", lambda ds, d: it_tang_song(ds, "poet.song", "song_poem", "宋", author_desc(ds, "authors.song.json"))),
     ("全宋词", lambda ds, d: it_ci(ds)),
     ("元曲", lambda ds, d: it_yuanqu(ds)),
+    ("水墨唐诗", lambda ds, d: it_shuimotangshi(ds)),
 ]
 
 

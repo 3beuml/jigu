@@ -45,22 +45,17 @@ import kotlinx.coroutines.withContext
 /** 书架（选本层）：真正的"书" */
 private val BOOK_MODULES = listOf(
     Triple("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵"),
+    Triple("千家诗", "qianjiashi", "分体选本 · 唐宋名篇"),
     Triple("诗经", "shijing", "风雅颂 · 先秦歌谣"),
     Triple("楚辞", "chuci", "骚体 · 浪漫之源"),
+    Triple("五代词", "wudai_ci", "花间集 · 南唐二主"),
     Triple("古文观止", "guwen", "散文正宗 · 十二卷"),
     Triple("纳兰词", "qing_ci", "清词第一"),
+    Triple("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种"),
     Triple("幽梦影", "youmengying", "清言小品 · 带评点"),
     Triple("论语", "lunyu", "语录即文章"),
     Triple("孟子", "sishu", "雄辩滔滔"),
     Triple("曹操诗集", "han_wei", "建安风骨"),
-)
-
-/** 体裁分组（多维浏览之一）；MainActivity 按下标取组 */
-internal val GENRES = listOf(
-    Triple("诗", listOf("shijing", "chuci", "han_wei", "tang_poem", "song_poem"), "从诗经到宋诗"),
-    Triple("词", listOf("ci", "qing_ci"), "长短句 · 婉约豪放"),
-    Triple("曲", listOf("yuan_qu"), "散曲小令 · 杂剧"),
-    Triple("文", listOf("guwen", "lunyu", "sishu", "youmengying"), "散文与清言小品"),
 )
 
 /** 书库：搜索 + 四维浏览（书架 / 朝代 / 诗人 / 体裁） */
@@ -70,13 +65,15 @@ fun LibraryScreen(
     onOpenEra: (String) -> Unit,
     onOpenAuthors: () -> Unit,
     onOpenAuthor: (Int) -> Unit,
-    onOpenGenre: (Int) -> Unit,
+    onOpenType: (String) -> Unit,
     onOpen: (Int) -> Unit,
 ) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var dim by rememberSaveable { mutableIntStateOf(0) }
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var eraCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var tagCount by remember { mutableIntStateOf(0) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
 
@@ -84,6 +81,8 @@ fun LibraryScreen(
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
             counts = db.categoryCounts()
+            eraCounts = db.eraCounts()
+            typeCounts = db.typeCounts()
             tagCount = db.tagCount("唐诗三百首")
         }
     }
@@ -144,9 +143,9 @@ fun LibraryScreen(
 
         when (dim) {
             0 -> ShelfGrid(onOpenModule)
-            1 -> EraDimContent(counts, onOpenEra)
+            1 -> EraDimContent(eraCounts, onOpenEra)
             2 -> AuthorDimContent(onOpenAuthors)
-            3 -> GenreDimContent(counts, onOpenGenre)
+            3 -> TypeDimContent(typeCounts, onOpenType)
         }
     }
 }
@@ -281,9 +280,10 @@ private fun AuthorDimContent(onOpenAuthors: () -> Unit) {
     }
 }
 
-/** 体裁维度：诗 / 词 / 曲 / 文 */
+/** 体裁维度：结构化分类卡片（五言绝句/七言律诗/词/文…，按存量排序） */
 @Composable
-private fun GenreDimContent(counts: Map<String, Int>, onOpenGenre: (Int) -> Unit) {
+private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) -> Unit) {
+    val types = typeCounts.entries.sortedByDescending { it.value }.toList()
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
@@ -291,13 +291,9 @@ private fun GenreDimContent(counts: Map<String, Int>, onOpenGenre: (Int) -> Unit
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
     ) {
-        items(GENRES.size, key = { GENRES[it].first }) { index ->
-            val (name, cats, brief) = GENRES[index]
-            ModuleCard(
-                title = name,
-                brief = brief,
-                count = cats.sumOf { counts[it] ?: 0 },
-            ) { onOpenGenre(index) }
+        items(types.size, key = { types[it].key }) { index ->
+            val (name, count) = types[index]
+            ModuleCard(title = name, brief = "", count = count) { onOpenType(name) }
         }
     }
 }

@@ -284,14 +284,14 @@ fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     }
 }
 
-/** 体裁 -> 作品列表（诗/词/曲/文） */
+/** 体裁 -> 作品列表（结构化分类：五言绝句/词/文…） */
 @Composable
-fun GenreScreen(categories: List<String>, title: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+fun TypeScreen(type: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
-    val pager = rememberPagedPoems(categories.joinToString(",")) { page ->
-        PoemsDb.get(context).listByGenres(categories, PAGE, page * PAGE)
+    val pager = rememberPagedPoems(type) { page ->
+        PoemsDb.get(context).listByType(type, PAGE, page * PAGE)
     }
-    BrowseScaffold(title = title, subtitle = "", onBack = onBack) {
+    BrowseScaffold(title = type, subtitle = "", onBack = onBack) {
         PagedPoemList(pager, onOpen)
     }
 }

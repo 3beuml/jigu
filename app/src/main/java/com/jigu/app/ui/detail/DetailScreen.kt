@@ -229,14 +229,13 @@ private fun TextButton2(text: String, onClick: () -> Unit) {
 }
 
 private fun attributionLine(p: PoemsDb.Poem): String {
-    val era = p.dynasty.ifBlank { "" }
-    val who = p.author.ifBlank { "佚名" }
-    val extra = listOf(p.rhythmic, p.chapter, p.section).firstOrNull { it.isNotBlank() }
-    return listOfNotNull(
-        era.takeIf { it.isNotBlank() },
-        who,
-        extra?.takeIf { it.isNotBlank() }?.let { if (it == p.rhythmic) "〔$it〕" else "· $it" },
-    ).joinToString(" · ")
+    val parts = buildList {
+        p.era.ifBlank { p.dynasty }.takeIf { it.isNotBlank() }?.let { add(it) }
+        add(p.author.ifBlank { "佚名" })
+        p.rhythmic.takeIf { it.isNotBlank() }?.let { add("〔$it〕") }
+        p.section.takeIf { it.isNotBlank() }?.let { add(it) }
+    }
+    return parts.joinToString(" · ")
 }
 
 /** 竖排（v0）：段落分列、列内自上而下；用 RTL 布局方向实现段与列自右向左。标点暂随字竖排 */
