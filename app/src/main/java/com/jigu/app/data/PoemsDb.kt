@@ -39,9 +39,11 @@ class PoemsDb private constructor(context: Context) :
         private const val AUTHOR_COLUMNS =
             "a.id, a.name, a.dynasty, a.brief, a.birth_year, a.death_year, count(p.id) AS cnt"
 
-        /** 精选池（日推普通日子）：公版经典 + 三百首 + 名句 */
+        /** 精选池（日推普通日子）：公版经典 + 三百首 + 名句/名段。
+         *  注意：guwen 不在分类白名单——古文只有收录了名段（famous_lines）才进日推，
+         *  避免"整篇长文上今日页"（D-011）。 */
         private const val CURATED_WHERE =
-            "category IN ('shijing','chuci','qing_ci','youmengying','guwen','lunyu','sishu','han_wei') " +
+            "category IN ('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei') " +
                 "OR tags LIKE '%\"唐诗三百首\"%' " +
                 "OR EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id)"
 
