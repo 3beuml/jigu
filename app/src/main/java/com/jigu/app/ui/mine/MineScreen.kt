@@ -162,7 +162,7 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
 
         Info("数据来源", "chinese-poetry（MIT）· cnlunar（MIT）· 霞鹜文楷（OFL）· 节气配画：克利夫兰艺术博物馆（CC0）")
         Spacer(Modifier.height(8.dp))
-        Info("字体", "霞鹜文楷子集（OFL）+ 全字庫正楷體补生僻字（政府开放数据授权）+ 系统衬线兜底")
+        Info("字体", "霞鹜文楷子集（OFL）+ Jigmo 补生僻字（MIT）+ 系统衬线兜底")
         Spacer(Modifier.height(8.dp))
         Info("许可", "代码 Apache-2.0；各来源署名见上方与数据包 meta")
         Spacer(Modifier.height(8.dp))

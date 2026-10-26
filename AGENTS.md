@@ -30,7 +30,7 @@
 ```bash
 python tools/datapack/build.py --dataset C:/Work/scratch/chinese-poetry   # 全量库 zip 进 assets
 python tools/datapack/build_calendar.py                                   # 节气/节日 JSON
-python tools/fonts/subset_font.py --font C:/Work/scratch/fonts/wenkai.ttf # 字体子集
+python tools/fonts/subset_font.py --font C:/Work/scratch/fonts/wenkai.ttf --supplement C:/Work/scratch/fonts  # 字体子集（--supplement 用 Jigmo 补 Ext-B+ 生僻字形）
 python tools/datapack/test_pipeline.py                                    # 单元测试（必跑）
 python tools/datapack/inspect_db.py --full -n 2                           # 抽查
 python tools/artwork/fetch_artworks.py --force                            # 节气配画（需外网）
@@ -63,4 +63,4 @@ git tag 对应 GitHub Release（draft，正文用户自写）。CI：`.github/wo
 ## 当前待办
 
 见 `docs/DECISIONS.md` 尾部「当前遗留」。摘要：TTS 朗读、APK 瘦身、纸纹质感、
-古文文体标注（222 篇）、名句表扩容、补充字体（全字庫/花園明朝源已侦察）、小传白话化三选一。
+古文文体标注（222 篇）、名句表扩容（生僻字形已由 Jigmo 嫁接解决）、小传白话化三选一。
