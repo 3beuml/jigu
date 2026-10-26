@@ -296,10 +296,8 @@ private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) ->
     val context = LocalContext.current
     var door by rememberSaveable { mutableStateOf<String?>(null) }
     var chapters by remember { mutableStateOf<Map<String, Map<String, Int>>>(emptyMap()) }
-    LaunchedEffect(door) {
-        if (door == "文") withContext(Dispatchers.IO) {
-            chapters = PoemsDb.get(context).chapterCounts()
-        }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { chapters = PoemsDb.get(context).chapterCounts() }
     }
     val poemTypes = listOf(
         "五言绝句", "七言绝句", "五言律诗", "七言律诗", "五言排律", "七言排律",

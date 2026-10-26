@@ -35,7 +35,7 @@ from opencc import OpenCC
 T2S = OpenCC("t2s")
 
 SCHEMA_VERSION = 6
-DATA_VERSION = 10  # +1: 主题词表权重制（一正一负用例）+ 题材四门 + 古文文体 13 类 + famous_lines.source
+DATA_VERSION = 11  # +1: 通行本异文手工覆盖（静夜思/江南春）+ 组诗热度合并（抗搜索收录噪音）
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -859,6 +859,57 @@ def fill_genre(conn):
     print(f"  古文文体 13 类标注: {n} 篇 | 分布 {dist}")
 
 
+# 通行本异文手工覆盖（谨慎清单，逐条一正一负验证；不动整体校勘）——用户读感"失败与课本不一致"
+TEXT_OVERRIDES = [
+    ("静夜思", "床前看月光", "床前明月光"),
+    ("静夜思", "举头望山月", "举头望明月"),
+    ("江南春绝句", "千里莺啼绿映江", "千里莺啼绿映红"),
+]
+
+
+def apply_text_overrides(conn):
+    n = 0
+    for title, old, new in TEXT_OVERRIDES:
+        rows = conn.execute("SELECT id, body, paragraphs FROM poems WHERE title = ?", (title,)).fetchall()
+        for pid, body, paras in rows:
+            if old not in body:
+                continue
+            conn.execute("UPDATE poems SET body=? WHERE id=?", (body.replace(old, new), pid))
+            conn.execute("UPDATE poems SET paragraphs=? WHERE id=?", (paras.replace(old, new), pid))
+            n += 1
+    print(f"  异文覆盖: {n} 处（{[(t, o, nw) for t, o, nw in TEXT_OVERRIDES]}）")
+
+
+def smooth_grouped_popularity(conn):
+    """组诗热度合并（保守抗噪）：仅对"同分类 + 同作者 + 标题去掉'  其N'后缀后相同"的组，
+    把各分篇 popularity 统一为组内最大值。只平滑组诗分裂，不改任何其他数；单篇组零改动。"""
+    import re as _re
+
+    rows = conn.execute(
+        "SELECT p.id, p.category, IFNULL(a.name,''), p.title, p.popularity FROM poems p "
+        "LEFT JOIN authors a ON a.id = p.author_id WHERE p.title LIKE '%其%'"
+    ).fetchall()
+    groups: dict[tuple, list[int]] = {}
+    pops: dict[int, int] = {}
+    for pid, cat, author, title, pop in rows:
+        base = _re.sub(r"\s*其[一二三四五六七八九十百]+$", "", title.strip())
+        if base == title.strip():
+            continue  # 非组诗分篇（正文含"其"而非分篇标题），不动
+        groups.setdefault((cat, author, base), []).append(pid)
+        pops[pid] = pop
+    updated = 0
+    for members in groups.values():
+        if len(members) < 2:
+            continue
+        top = max(pops[pid] for pid in members)
+        if top <= 0 or all(pops[pid] == top for pid in members):
+            continue
+        for pid in members:
+            conn.execute("UPDATE poems SET popularity=? WHERE id=?", (top, pid))
+        updated += len(members)
+    print(f"  组诗热度合并: {len(groups)} 组，改 {updated} 行")
+
+
 def fill_famous_lines(conn):
     n = 0
     # 第一轮：手写种子（优先；line=sentence anchor）
@@ -890,7 +941,8 @@ def fill_famous_lines(conn):
     TARGET = 300
     CURATED_CATS = "('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei','qianjiashi','wudai_ci','guwen','mengxue')"
     rank = conn.execute(
-        "SELECT id FROM poems ORDER BY "
+        "SELECT id FROM poems WHERE title NOT LIKE '%其%' AND title NOT LIKE '%□%' "  # 组诗分篇/缺字符不入名句池
+        "ORDER BY "
         f"CASE WHEN category IN {CURATED_CATS} OR tags LIKE '%\"唐诗三百首\"%' THEN 0 ELSE 1 END, "
         "popularity DESC NULLS LAST, id LIMIT 3000"
     ).fetchall()
@@ -1044,10 +1096,12 @@ def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True
     t0 = time.time()
     fill_birth_death(db.conn)
     fill_genre(db.conn)
-    fill_famous_lines(db.conn)
-    annotate(db.conn)
+    apply_text_overrides(db.conn)
     if full:
         fill_popularity(db.conn, dataset)
+        smooth_grouped_popularity(db.conn)  # 必须在名气回填之后（热度为 0 时无组可合）
+    fill_famous_lines(db.conn)
+    annotate(db.conn)
     print(f"  [{label}] 意象打标 + 节气节日配诗完成（{time.time()-t0:.0f}s）："
           f"意象 {db.conn.execute('SELECT count(*) FROM imagery').fetchone()[0]} 类，"
           f"配诗键 {db.conn.execute('SELECT count(DISTINCT key) FROM calendar_map').fetchone()[0]} 个")

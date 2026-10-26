@@ -354,7 +354,12 @@ class PoemsDb private constructor(context: Context) {
                 val ch = c.getString(1)
                 m.getOrPut(cat) { linkedMapOf() }[ch] = c.getInt(2)
             }
-            m.entries.sortedBy { order[it.key] ?: 9 }.associate { it.key to it.value.toMap() }
+            m.entries.sortedBy { order[it.key] ?: 9 }
+                .associate { (cat, vol) ->
+                    cat to vol.entries
+                        .sortedWith(compareBy({ it.key.toVolumeKey().first }, { it.key.toVolumeKey().second }))
+                        .associate { (ch, n) -> ch to n }
+                }
         }
         cachedChapters = out
         return out
@@ -362,6 +367,17 @@ class PoemsDb private constructor(context: Context) {
 
     @Volatile
     private var cachedChapters: Map<String, Map<String, Int>>? = null
+
+    /** "卷十二·明文" -> (0,12)；"为政篇" 等 -> (1,0)：先书类序，再卷序自然递增 */
+    private fun String.toVolumeKey(): Pair<Int, Int> {
+        val map = mapOf(
+            "一" to 1, "二" to 2, "三" to 3, "四" to 4, "五" to 5,
+            "六" to 6, "七" to 7, "八" to 8, "九" to 9, "十" to 10,
+            "十一" to 11, "十二" to 12,
+        )
+        val match = Regex("卷([一二三四五六七八九十]+)").find(this)
+        return if (match != null) 0 to (map[match.groupValues[1]] ?: 99) else 1 to 0
+    }
 
     @Volatile
     private var cachedThemes: Map<String, Int>? = null
