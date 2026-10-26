@@ -38,6 +38,7 @@ import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
+import com.jigu.app.ui.library.ChapterScreen
 import com.jigu.app.ui.library.EraAuthorsScreen
 import com.jigu.app.ui.favorites.FavoritesScreen
 import com.jigu.app.ui.library.LibraryScreen
@@ -132,6 +133,14 @@ fun JiguApp() {
                     onOpenAuthor = { id -> nav.navigate("author/$id") },
                     onOpenType = { name -> nav.navigate("type/$name") },
                     onOpenTheme = { name -> nav.navigate("theme/$name") },
+                    onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
+                    onOpen = openDetail,
+                )
+            }
+            composable("chapter/{chapter}") { back ->
+                ChapterScreen(
+                    chapter = back.arguments?.getString("chapter") ?: "",
+                    onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )
             }

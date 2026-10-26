@@ -296,6 +296,18 @@ fun TypeScreen(type: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     }
 }
 
+/** 书卷 -> 作品列表（古文观止 12 卷 / 论语 20 篇 / 四书篇目） */
+@Composable
+fun ChapterScreen(chapter: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+    val context = LocalContext.current
+    val pager = rememberPagedPoems(chapter) { page ->
+        PoemsDb.get(context).listByChapter(chapter, PAGE, page * PAGE)
+    }
+    BrowseScaffold(title = chapter, subtitle = "书卷", onBack = onBack) {
+        PagedPoemList(pager, onOpen)
+    }
+}
+
 /** 主题 -> 作品列表（咏史/田园/边塞/送别…题材门类） */
 @Composable
 fun ThemePoemsScreen(theme: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {

@@ -72,6 +72,7 @@ fun LibraryScreen(
     onOpenAuthor: (Int) -> Unit,
     onOpenType: (String) -> Unit,
     onOpenTheme: (String) -> Unit,
+    onOpenChapter: (String) -> Unit,
     onOpen: (Int) -> Unit,
 ) {
     val context = LocalContext.current
@@ -80,7 +81,6 @@ fun LibraryScreen(
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var eraCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-    var themeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var tagCount by remember { mutableIntStateOf(0) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
 
@@ -90,7 +90,6 @@ fun LibraryScreen(
             counts = db.categoryCounts()
             eraCounts = db.eraCounts()
             typeCounts = db.typeCounts()
-            themeCounts = db.themeCounts()
             tagCount = db.tagCount("唐诗三百首")
         }
     }
@@ -155,8 +154,8 @@ fun LibraryScreen(
             0 -> ShelfGrid(onOpenModule)
             1 -> EraDimContent(eraCounts, onOpenEra)
             2 -> AuthorDimContent(onOpenAuthors)
-            3 -> TypeDimContent(typeCounts, onOpenType)
-            4 -> ThemeDimContent(themeCounts, onOpenTheme)
+            3 -> TypeDimContent(typeCounts, onOpenType, onOpenChapter)
+            4 -> ThemeDimContent(onOpenTheme)
         }
     }
 }
@@ -291,38 +290,147 @@ private fun AuthorDimContent(onOpenAuthors: () -> Unit) {
     }
 }
 
-/** 体裁维度：结构化分类卡片（五言绝句/七言律诗/词/文…，按存量排序） */
+/** 文体维度：诗/词/曲/文 四门（诗→子体裁；词/曲→题型列表；文→书卷卷次） */
 @Composable
-private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) -> Unit) {
-    val types = typeCounts.entries.sortedByDescending { it.value }.toList()
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
-    ) {
-        items(types.size, key = { types[it].key }) { index ->
-            val (name, count) = types[index]
-            ModuleCard(title = name, brief = "", count = count) { onOpenType(name) }
+private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) -> Unit, onOpenChapter: (String) -> Unit) {
+    val context = LocalContext.current
+    var door by rememberSaveable { mutableStateOf<String?>(null) }
+    var chapters by remember { mutableStateOf<Map<String, Map<String, Int>>>(emptyMap()) }
+    LaunchedEffect(door) {
+        if (door == "文") withContext(Dispatchers.IO) {
+            chapters = PoemsDb.get(context).chapterCounts()
+        }
+    }
+    val poemTypes = listOf(
+        "五言绝句", "七言绝句", "五言律诗", "七言律诗", "五言排律", "七言排律",
+        "古体诗", "五言古诗", "七言古诗", "乐府", "四言诗", "诗经体", "骚体",
+    )
+    val counts = { t: String -> typeCounts[t] ?: 0 }
+    when (door) {
+        null -> LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+        ) {
+            item(key = "诗") {
+                val n = poemTypes.sumOf(counts)
+                ModuleCard("诗", "绝句·律诗·排律·古体·乐府", n) { door = "诗" }
+            }
+            item(key = "词") { ModuleCard("词", "小令·中调·长调", counts("词")) { onOpenType("词") } }
+            item(key = "曲") { ModuleCard("曲", "散曲小令·套数", counts("曲")) { onOpenType("曲") } }
+            item(key = "文") {
+                ModuleCard("文", "书卷：古文观止·论语·四书", chapters.values.sumOf { it.values.sum() }) { door = "文" }
+            }
+        }
+        "诗" -> {
+            Column(Modifier.fillMaxSize()) {
+                TextButton(onClick = { door = null }) { Text("〈 返回四门") }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+                ) {
+                    poemTypes.forEach { t ->
+                        if (counts(t) > 0) item(key = t) {
+                            ModuleCard(t, "", counts(t)) { onOpenType(t) }
+                        }
+                    }
+                }
+            }
+        }
+        "文" -> { // 书卷两级
+            Column(Modifier.fillMaxSize()) {
+                TextButton(onClick = { door = null }) { Text("〈 返回四门") }
+                LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    chapters.forEach { (cat, vol) ->
+                        val bookName = mapOf("guwen" to "古文观止", "lunyu" to "论语", "sishu" to "四书")[cat] ?: cat
+                        item(key = cat) {
+                            Text(
+                                bookName,
+                                style = PoemTitleStyle,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(vertical = 6.dp),
+                            )
+                        }
+                        vol.forEach { (chapter, count) ->
+                            item(key = chapter) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onOpenChapter(chapter) }
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(chapter, style = PoemTitleStyle, color = MaterialTheme.colorScheme.onBackground)
+                                    }
+                                    Text(
+                                        "$count 篇",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    item { Spacer(Modifier.height(16.dp)) }
+                }
+            }
         }
     }
 }
 
-/** 主题维度：题材分类卡片（咏史/田园/边塞/送别…，情感门类） */
+/** 主题维度：题材两级（四门 → 细类），点细类走列表页 */
 @Composable
-private fun ThemeDimContent(themeCounts: Map<String, Int>, onOpenTheme: (String) -> Unit) {
-    val themes = themeCounts.entries.sortedByDescending { it.value }.toList()
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
-    ) {
-        items(themes.size, key = { themes[it].key }) { index ->
-            val (name, count) = themes[index]
-            ModuleCard(title = name, brief = "题材分类", count = count) { onOpenTheme(name) }
+private fun ThemeDimContent(onOpenTheme: (String) -> Unit) {
+    val context = LocalContext.current
+    var groups by remember { mutableStateOf<Map<String, Map<String, Int>>>(emptyMap()) }
+    var door by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { groups = PoemsDb.get(context).themeGroups() }
+    }
+    val doorOrder = listOf("写景", "抒怀", "咏物", "世情")
+    val selected = door
+    if (selected == null) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+        ) {
+            doorOrder.forEachIndexed { i, name ->
+                val fine = groups[name].orEmpty()
+                val total = fine.values.sum()
+                item(key = name) {
+                    ModuleCard(
+                        title = name,
+                        brief = fine.keys.take(3).joinToString("·").ifBlank { "题材门类" },
+                        count = total,
+                    ) { door = name }
+                }
+            }
+        }
+    } else {
+        val fine = groups[selected].orEmpty().entries.sortedByDescending { it.value }.toList()
+        Column(Modifier.fillMaxSize()) {
+            TextButton(onClick = { door = null }) { Text("〈 返回四门") }
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+            ) {
+                items(fine.size, key = { fine[it].key }) { index ->
+                    val (name, count) = fine[index]
+                    ModuleCard(title = name, brief = selected, count = count) { onOpenTheme(name) }
+                }
+            }
         }
     }
 }

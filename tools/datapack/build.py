@@ -34,8 +34,8 @@ from opencc import OpenCC
 
 T2S = OpenCC("t2s")
 
-SCHEMA_VERSION = 5
-DATA_VERSION = 9  # +1: 名句改两句型（C 联句抽取 + popularity 自动补种）
+SCHEMA_VERSION = 6
+DATA_VERSION = 10  # +1: 主题词表权重制（一正一负用例）+ 题材四门 + 古文文体 13 类 + famous_lines.source
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -54,6 +54,7 @@ CREATE TABLE poems(
   id         INTEGER PRIMARY KEY,
   category   TEXT NOT NULL,
   type       TEXT NOT NULL DEFAULT '',
+  genre      TEXT NOT NULL DEFAULT '',    -- 古文文体 13 类（古文观止；诗词为空）
   era        TEXT NOT NULL DEFAULT '',
   title      TEXT NOT NULL,
   author_id  INTEGER REFERENCES authors(id),
@@ -80,6 +81,7 @@ CREATE TABLE famous_lines(
   id      INTEGER PRIMARY KEY,
   poem_id INTEGER NOT NULL REFERENCES poems(id),
   line    TEXT NOT NULL,
+  source  TEXT NOT NULL DEFAULT 'manual',  -- manual=种子 / auto=热度补种（精修时按此筛）
   UNIQUE(poem_id)
 );
 
@@ -100,7 +102,8 @@ CREATE TABLE calendar_map(
 -- 主题（题材）标签：诗词专用，与意象体系同构
 CREATE TABLE themes(
   id   INTEGER PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  grp  TEXT NOT NULL DEFAULT ''            -- 题材四门：写景/抒怀/咏物/世情
 );
 CREATE TABLE poem_theme(
   poem_id  INTEGER REFERENCES poems(id),
@@ -140,6 +143,24 @@ CREATE TABLE favorites(
   created_at INTEGER NOT NULL
 );
 """
+
+
+def theme_hits_for(title: str, body: str) -> list[str]:
+    """主题打标 v2（权重制纯函数）：标题词命中即成；正文词需 >=2 处；负向词命中即弃。
+    "咏物"特判：标题以"咏"开头且非咏史怀古（防止"咏史诗"被记咏物）。"""
+    hits = []
+    for name, grp, t_kws, b_kws, negs in THEME_RULES:
+        if name == "咏物":
+            continue
+        if any(k in title or k in body for k in negs):
+            continue
+        t_hit = any(k in title for k in t_kws)
+        b_count = sum(body.count(k) for k in b_kws)
+        if t_hit or b_count >= 2:
+            hits.append(name)
+    if not ("咏史怀古" in hits or title.startswith("咏史")) and title.startswith("咏"):
+        hits.append("咏物")
+    return hits
 
 
 def s(text: str) -> str:
@@ -658,18 +679,23 @@ COMPOUND_IMAGERY = {
 }
 
 # 主题（题材）规则：诗词专用（文/蒙学不参与），关键词子串命中即打标
+# 主题词表 v2（权重制四元组）：(细类名, 四门 grp, 标题词, 正文词, 负向词)
+#   - 标题词命中即成；正文词需 >=2 处命中（根治单字"酒"扫全库的误伤）；负向词命中即放弃。
+#   - 改词表必跑 tools/datapack/test_pipeline.py（含一正一负用例）。低频细类延批（先 12 类）。
 THEME_RULES = [
-    ("咏史", ["咏史", "怀古", "兴亡", "六朝", "吴宫", "前朝"]),
-    ("田园", ["田园", "村", "耕", "桑", "篱", "炊烟", "牧童"]),
-    ("边塞", ["边塞", "关山", "胡马", "烽火", "征人", "大漠", "阴山", "玉门", "楼兰", "燕然"]),
-    ("送别", ["送别", "相送", "离别", "别离", "长亭", "折柳", "劳劳"]),
-    ("思乡", ["思乡", "乡书", "故乡", "故园", "还乡", "客路", "客心", "归梦", "望乡"]),
-    ("相思", ["相思", "红豆", "锦书", "两地"]),
-    ("山水", ["山水", "溪", "峰", "瀑布", "烟霞", "林泉", "山色"]),
-    ("节令", ["春节", "元日", "元宵", "清明", "端午", "七夕", "中秋", "重阳", "除夕",
-              "冬至", "岁暮", "新正", "守岁", "寒食", "立春", "立秋"]),
-    ("饮酒", ["酒", "醉", "樽", "酌", "觞", "醅"]),
-    ("悼亡", ["悼亡", "挽歌", "祭"]),
+    ("山水",     "写景", ("山水", "溪山", "山行", "游山"), ("溪", "峰", "瀑布", "烟霞", "林泉", "山色", "云壑"), ()),
+    ("田园",     "写景", ("田园", "村居", "归园", "归田"), ("耕", "桑", "篱", "炊烟", "牧童", "田家", "禾"), ("塞", "戍", "军")),
+    ("送别",     "抒怀", ("送", "赠别", "别"), ("长亭", "折柳", "劳劳", "南浦", "别离", "歧路"), ()),
+    ("思乡",     "抒怀", ("思乡", "乡思", "旅思"), ("乡书", "故乡", "故园", "还乡", "客路", "客心", "归梦", "望乡", "砧"), ()),
+    ("相思",     "抒怀", ("相思", "怀人", "忆内"), ("相思", "红豆", "锦书", "两地", "鸿雁", "雁字"), ()),
+    ("悼亡",     "抒怀", ("悼亡", "挽歌", "哭"), ("悼亡", "挽", "孤坟", "哀词"), ()),
+    ("咏史怀古", "抒怀", ("咏史", "怀古", "览古", "六朝", "金陵"), ("兴亡", "前朝", "六朝", "吴宫", "故垒", "秦淮"), ()),
+    ("边塞",     "世情", ("塞下", "塞上", "从军", "出塞", "入塞"), ("关山", "胡马", "烽火", "征人", "大漠", "阴山", "玉门", "楼兰", "燕然", "羌笛"), ()),
+    ("闺怨",     "抒怀", ("闺怨", "闺情", "春怨"), ("罗帏", "绣帘", "空闺", "画眉", "深院", "玉阶"), ()),
+    ("饮酒",     "咏物", ("饮", "对酒", "醉后", "酒后"), ("酒", "醉", "樽", "酌", "觞", "醅", "盏"), ()),
+    ("节令",     "世情", ("人日", "元日", "上元", "清明", "寒食", "重九", "七夕", "中秋", "腊八", "除夕", "冬至"),
+     ("春节", "元日", "元宵", "清明", "端午", "七夕", "中秋", "重阳", "除夕", "冬至", "岁暮", "新正", "守岁", "寒食", "立春", "立秋"), ()),
+    ("咏物",     "咏物", (), (), ()),  # 特判：标题以"咏"开头（且非咏史/咏物怀古）单独打
 ]
 
 POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
@@ -788,6 +814,51 @@ def extract_two_clause(paragraph: str) -> str | None:
     return None
 
 
+def classify_genre(title: str) -> str:
+    """古文文体 13 类（《古文辞类纂》框架；杂记兜底）——古文观止 222 篇标注（D-011 欠账项）。
+    标题判定优先序：辞赋→哀祭→诏令→碑志→传状→箴铭→颂赞→赠序/序跋→奏议→书说→论辨→杂记。"""
+    t = title.strip()
+    if not t:
+        return "杂记"
+    if t.endswith(("赋", "骚")):
+        return "辞赋"
+    if any(k in t for k in ("祭", "吊", "哀词", "哀辞", "殇")):
+        return "哀祭"
+    if any(k in t for k in ("诏", "令", "檄", "誓", "移")):
+        return "诏令"
+    if any(k in t for k in ("碑", "墓表", "墓志", "圹志", "阡表")):
+        return "碑志"
+    if t.endswith("传") or "行状" in t or "事略" in t:
+        return "传状"
+    if t.endswith(("铭", "箴")):
+        return "箴铭"
+    if t.endswith(("颂", "赞")):
+        return "颂赞"
+    if t.endswith("序"):
+        if t.startswith(("送", "赠")):
+            return "赠序"
+        return "序跋"
+    if t.endswith(("表", "疏", "策", "对", "议", "章")):
+        return "奏议"
+    if len(t) > 1 and t.endswith("书"):
+        return "书说"
+    if t.endswith(("论", "说", "辨", "辩", "驳", "解")):
+        return "论辨"
+    if t.endswith("记"):
+        return "杂记"
+    return "杂记"
+
+
+def fill_genre(conn):
+    rows = conn.execute("SELECT id, title FROM poems WHERE category='guwen'").fetchall()
+    for pid, title in rows:
+        conn.execute("UPDATE poems SET genre=? WHERE id=?", (classify_genre(title), pid))
+    n = len(rows)
+    # 分布统计（打印给建库日志）
+    dist = dict(conn.execute("SELECT genre, count(*) FROM poems WHERE category='guwen' GROUP BY genre ORDER BY 2 DESC"))
+    print(f"  古文文体 13 类标注: {n} 篇 | 分布 {dist}")
+
+
 def fill_famous_lines(conn):
     n = 0
     # 第一轮：手写种子（优先；line=sentence anchor）
@@ -810,7 +881,7 @@ def fill_famous_lines(conn):
         if not pair or len(pair) < 6:
             continue
         conn.execute(
-            "INSERT OR IGNORE INTO famous_lines(poem_id, line) VALUES (?,?)",
+            "INSERT OR IGNORE INTO famous_lines(poem_id, line, source) VALUES (?,?,'manual')",
             (pid, pair),
         )
         n += 1
@@ -834,7 +905,7 @@ def fill_famous_lines(conn):
         if not pair or len(pair) < 10 or len(pair) > 40:
             continue
         conn.execute(
-            "INSERT OR IGNORE INTO famous_lines(poem_id, line) VALUES (?,?)",
+            "INSERT OR IGNORE INTO famous_lines(poem_id, line, source) VALUES (?,?,'auto')",
             (pid, pair),
         )
         n += 1
@@ -850,10 +921,14 @@ def annotate(conn):
         conn.execute("INSERT OR IGNORE INTO imagery(name) VALUES (?)", (n,))
     name_ids = {n: i for i, n in conn.execute("SELECT id, name FROM imagery")}
 
-    # 主题词表
-    theme_names = [n for n, _ in THEME_RULES] + ["咏物"]
+    # 主题词表（含四门 grp）
+    grp_of = {n: grp for n, grp, *_ in THEME_RULES}
+    theme_names = list(grp_of)
     for n in theme_names:
-        conn.execute("INSERT OR IGNORE INTO themes(name) VALUES (?)", (n,))
+        conn.execute(
+            "INSERT INTO themes(name, grp) VALUES (?,?) ON CONFLICT(name) DO UPDATE SET grp=excluded.grp",
+            (n, grp_of[n]),
+        )
     theme_ids = {n: i for i, n in conn.execute("SELECT id, name FROM themes")}
 
     poetry_cats = set(POETRY_CATEGORIES)
@@ -869,13 +944,7 @@ def annotate(conn):
         for h in hits:
             pi_rows.append((pid, name_ids[h]))
         if cat in poetry_cats:
-            # 主题打标（咏史优先，咏物只收“咏X”标题且非咏史）
-            theme_hits = []
-            for name, kws in THEME_RULES:
-                if any(k in body for k in kws):
-                    theme_hits.append(name)
-            if "咏史" not in theme_hits and title.startswith("咏"):
-                theme_hits.append("咏物")
+            theme_hits = theme_hits_for(title, body)
             for t in theme_hits:
                 pt_rows.append((pid, theme_ids[t]))
             for kind, key, kws in cal_keys:
@@ -974,6 +1043,7 @@ def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True
             print(f"  [{label}] {name}: {n} 条")
     t0 = time.time()
     fill_birth_death(db.conn)
+    fill_genre(db.conn)
     fill_famous_lines(db.conn)
     annotate(db.conn)
     if full:

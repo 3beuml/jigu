@@ -10,7 +10,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build import ERA_MAP, classify_type, s  # noqa: E402
+from build import (  # noqa: E402
+    ERA_MAP,
+    THEME_RULES,
+    classify_genre,
+    classify_type,
+    extract_two_clause,
+    s,
+    theme_hits_for,
+)
 
 
 def test_era_map():
@@ -62,9 +70,62 @@ def test_classify_qianjiashi_type_passthrough():
     print("ok  千家诗体裁透传约定")
 
 
+def test_theme_rules_grounded():
+    # 词表自检：每类必非空四元组，四个门全覆盖
+    grps = {grp for _, grp, *_ in THEME_RULES}
+    assert {"写景", "抒怀", "咏物", "世情"} <= grps, grps
+    print("ok  主题词表自检（四门齐备）")
+
+
+def test_theme_hits_positive_negative():
+    # —— 正例 ——
+    # 静夜思无两边正词（不是好样本），不设断言；正例看下面各条
+    assert "送别" in theme_hits_for("送杜少府之任蜀州",
+                                   "城阙辅三秦，风烟望五津。与君离别意，同是宦游人。海内存知己，天涯若比邻。无为在歧路，儿女共沾巾。")
+    assert "咏史怀古" in theme_hits_for("越中览古", "越王勾践破吴归，义士还乡尽锦衣。宫女如花满春殿，只今惟有鹧鸪飞。")
+    # —— 负例（v2 权重制的核心目的）——
+    # 单字"酒"出现 1 次不足以打"饮酒"（旧版会误伤 4.9 万首）
+    assert "饮酒" not in theme_hits_for("枫桥夜泊", "月落乌啼霜满天，江枫渔父对愁眠。姑苏城外寒山寺，夜半钟声到客船。")
+    assert "饮酒" in theme_hits_for("月下独酌", "花间一壶酒，独酌无相亲。举杯邀明月，对影成三人。"
+                                              "月既不解饮，影徒随我身。暂伴月将影，行乐须及春。")
+    # "田园"被塞字负向词挡住军事诗
+    assert "田园" not in theme_hits_for("塞下曲", "月黑雁飞高，单于夜遁逃。欲将轻骑逐，大雪满弓刀。")
+    print("ok  主题双例（标题权重/正文两处/负向词）")
+
+
+def test_extract_two_clause():
+    assert extract_two_clause("国破山河在，城春草木深。感时花溅泪，恨别鸟惊心。") == "国破山河在，城春草木深。"
+    assert extract_two_clause("床前明月光，疑是地上霜。") == "床前明月光，疑是地上霜。"
+    assert extract_two_clause("无边落木萧萧下，不尽长江滚滚来。") == "无边落木萧萧下，不尽长江滚滚来。"
+    # 不等长/无逗号 -> None
+    assert extract_two_clause("_hello") is None
+    print("ok  名句两句型抽取")
+
+
+def test_classify_genre():
+    assert classify_genre("小石潭记") == "杂记"
+    assert classify_genre("岳阳楼记") == "杂记"
+    assert classify_genre("出师表") == "奏议"
+    assert classify_genre("报任安书") == "书说"
+    assert classify_genre("过秦论") == "论辨"
+    assert classify_genre("赤壁赋") == "辞赋"
+    assert classify_genre("祭十二郎文") == "哀祭"
+    assert classify_genre("兰亭集序") == "序跋"
+    assert classify_genre("送东阳马生序") == "赠序"
+    assert classify_genre("钴鉧潭西小丘记") == "杂记"
+    assert classify_genre("捕蛇者说") == "论辨"
+    assert classify_genre("五柳先生传") == "传状"
+    assert classify_genre("陋室铭") == "箴铭"
+    print("ok  古文文体 13 类映射")
+
+
 if __name__ == "__main__":
     test_era_map()
     test_simplify()
     test_classify_type()
     test_classify_qianjiashi_type_passthrough()
+    test_theme_rules_grounded()
+    test_theme_hits_positive_negative()
+    test_extract_two_clause()
+    test_classify_genre()
     print("全部通过")

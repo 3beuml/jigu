@@ -293,6 +293,7 @@ private fun attributionLine(p: PoemsDb.Poem): String {
         p.era.ifBlank { p.dynasty }.takeIf { it.isNotBlank() }?.let { add(it) }
         add(p.author.ifBlank { "佚名" })
         p.rhythmic.takeIf { it.isNotBlank() }?.let { add("〔$it〕") }
+        p.genre.takeIf { it.isNotBlank() }?.let { add("[$it]") }
         p.section.takeIf { it.isNotBlank() }?.let { add(it) }
     }
     return parts.joinToString(" · ")

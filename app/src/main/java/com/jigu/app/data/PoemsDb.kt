@@ -32,7 +32,7 @@ class PoemsDb private constructor(context: Context) {
         private const val CORE_COLUMNS =
             "p.id, p.category, p.title, IFNULL(a.name,'佚名') AS author, IFNULL(a.brief,'') AS brief, " +
                 "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, p.body, " +
-                "IFNULL(a.dynasty,'') AS dynasty, p.type AS type, p.era AS era"
+                "IFNULL(a.dynasty,'') AS dynasty, p.type AS type, p.era AS era, p.genre AS genre"
 
         private const val IMAGERY_SUB =
             "(SELECT GROUP_CONCAT(i.name, '、') FROM poem_imagery pi " +
@@ -156,6 +156,7 @@ class PoemsDb private constructor(context: Context) {
         val famousLine: String,
         val type: String,
         val era: String,
+        val genre: String,
     )
 
     data class Author(
@@ -191,6 +192,7 @@ class PoemsDb private constructor(context: Context) {
             famousLine = if (i.isNull(14)) "" else i.getString(14) ?: "",
             type = i.getString(15) ?: "",
             era = i.getString(16) ?: "",
+            genre = i.getString(17) ?: "",
         )
     }
 
@@ -311,6 +313,56 @@ class PoemsDb private constructor(context: Context) {
         return out
     }
 
+    /** 题材两级：四门（写景/抒怀/咏物/世情）→ 细类计数（schema v6 的 themes.grp） */
+    fun themeGroups(): Map<String, Map<String, Int>> {
+        awaitData()
+        cachedThemeGroups?.let { return it }
+        val out = rdb().rawQuery(
+            "SELECT t.grp, t.name, count(*) FROM poem_theme pt " +
+                "JOIN themes t ON t.id = pt.theme_id GROUP BY t.grp, t.name ORDER BY 3 DESC", null,
+        ).use { c ->
+            val m = mutableMapOf<String, MutableMap<String, Int>>()
+            while (c.moveToNext()) {
+                val grp = c.getString(0)
+                val name = c.getString(1)
+                val cnt = c.getInt(2)
+                if (grp.isBlank()) continue
+                m.getOrPut(grp) { mutableMapOf() }[name] = cnt
+            }
+            m
+        }
+        cachedThemeGroups = out
+        return out
+    }
+
+    @Volatile
+    private var cachedThemeGroups: Map<String, Map<String, Int>>? = null
+
+    /** 文体→文：书卷（古文观止 12 卷 / 论语 20 篇 / 四书篇目），供卷次两级页 */
+    fun chapterCounts(): Map<String, Map<String, Int>> {
+        awaitData()
+        cachedChapters?.let { return it }
+        val out = rdb().rawQuery(
+            "SELECT category, chapter, count(*) FROM poems " +
+                "WHERE category IN ('guwen','lunyu','sishu') AND chapter != '' " +
+                "GROUP BY category, chapter", null,
+        ).use { c ->
+            val m = linkedMapOf<String, MutableMap<String, Int>>()
+            val order = mapOf("guwen" to 0, "lunyu" to 1, "sishu" to 2)
+            while (c.moveToNext()) {
+                val cat = c.getString(0)
+                val ch = c.getString(1)
+                m.getOrPut(cat) { linkedMapOf() }[ch] = c.getInt(2)
+            }
+            m.entries.sortedBy { order[it.key] ?: 9 }.associate { it.key to it.value.toMap() }
+        }
+        cachedChapters = out
+        return out
+    }
+
+    @Volatile
+    private var cachedChapters: Map<String, Map<String, Int>>? = null
+
     @Volatile
     private var cachedThemes: Map<String, Int>? = null
 
@@ -378,6 +430,11 @@ class PoemsDb private constructor(context: Context) {
             "JOIN themes t ON t.id = pt.theme_id WHERE t.name = ? " +
             "ORDER BY p.id LIMIT ? OFFSET ?",
         arrayOf(theme, limit.toString(), offset.toString()),
+    )
+
+    fun listByChapter(chapter: String, limit: Int, offset: Int): List<Poem> = queryPoems(
+        "$POEM_SELECT WHERE p.chapter = ? ORDER BY p.id LIMIT ? OFFSET ?",
+        arrayOf(chapter, limit.toString(), offset.toString()),
     )
 
     fun listByGenres(categories: List<String>, limit: Int, offset: Int): List<Poem> {
