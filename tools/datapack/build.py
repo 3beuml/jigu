@@ -35,7 +35,7 @@ from opencc import OpenCC
 T2S = OpenCC("t2s")
 
 SCHEMA_VERSION = 5
-DATA_VERSION = 8
+DATA_VERSION = 9  # +1: 名句改两句型（C 联句抽取 + popularity 自动补种）
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -770,8 +770,27 @@ def fill_birth_death(conn):
     print(f"  生卒年回填: {n} 位作者")
 
 
+def extract_two_clause(paragraph: str) -> str | None:
+    """从一段里抽「两句型」名句（X，Y。）：恰一个逗号、两侧等长、≥4 字。
+    「两句类型（一个'，'算一句）」为今日页名句的标准形态（用户定案）。"""
+    import re as _re
+
+    parts = _re.split(r"(?<=[。！？])", paragraph)
+    for seg in parts:
+        seg = seg.strip(" 　")
+        if not seg or "，" not in seg:
+            continue
+        seg = seg + ("。" if not seg.endswith(("。", "！", "？")) else "")
+        left, _, right = seg[:-1].partition("，")
+        l, r = left.strip(" 　"), right.strip(" 　")
+        if len(l) == len(r) and len(l) >= 4 and not any(c in "，,、；;：:" for c in l + r):
+            return seg
+    return None
+
+
 def fill_famous_lines(conn):
     n = 0
+    # 第一轮：手写种子（优先；line=sentence anchor）
     for title_hint, line_hint in FAMOUS_LINES:
         row = conn.execute(
             "SELECT id, paragraphs FROM poems WHERE title LIKE ? AND body LIKE ? ORDER BY id LIMIT 1",
@@ -782,15 +801,45 @@ def fill_famous_lines(conn):
             continue
         pid, paras_json = row
         paras = json.loads(paras_json)
-        line = next((p for p in paras if line_hint in p), None)
-        if not line or len(line) < 6:  # 防御：不落短行/脏行
+        # 优选含种子句的段落；两句型不足时回退整段（名句宁长勿缺）
+        anchor = next((p for p in paras if line_hint in p), None)
+        pair = extract_two_clause(anchor or "")
+        if not pair:
+            pair = next((extract_two_clause(p) for p in paras if extract_two_clause(p)), None)
+            pair = pair or anchor
+        if not pair or len(pair) < 6:
             continue
         conn.execute(
             "INSERT OR IGNORE INTO famous_lines(poem_id, line) VALUES (?,?)",
-            (pid, line),
+            (pid, pair),
         )
         n += 1
-    print(f"  名句表: {n}/{len(FAMOUS_LINES)} 条解析成功")
+    seeded = n
+    # 第二轮：popularity 自动补种到目标量 —— 陈列层优先，全藏层高热度诗只做末位补充
+    TARGET = 300
+    CURATED_CATS = "('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei','qianjiashi','wudai_ci','guwen','mengxue')"
+    rank = conn.execute(
+        "SELECT id FROM poems ORDER BY "
+        f"CASE WHEN category IN {CURATED_CATS} OR tags LIKE '%\"唐诗三百首\"%' THEN 0 ELSE 1 END, "
+        "popularity DESC NULLS LAST, id LIMIT 3000"
+    ).fetchall()
+    for (pid,) in rank:
+        if n >= TARGET:
+            break
+        if conn.execute("SELECT 1 FROM famous_lines WHERE poem_id = ?", (pid,)).fetchone():
+            continue
+        row = conn.execute("SELECT paragraphs, body FROM poems WHERE id = ?", (pid,)).fetchone()
+        paras, body = json.loads(row[0]), row[1]
+        pair = next((extract_two_clause(p) for p in paras if extract_two_clause(p)), None)
+        if not pair or len(pair) < 10 or len(pair) > 40:
+            continue
+        conn.execute(
+            "INSERT OR IGNORE INTO famous_lines(poem_id, line) VALUES (?,?)",
+            (pid, pair),
+        )
+        n += 1
+    auto = n - seeded
+    print(f"  名句表: 种子 {seeded} + 自动补 {auto} = {n} 条（两句型标准）")
 
 
 def annotate(conn):

@@ -49,7 +49,6 @@ import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.theme.PoemTitleStyle
-import com.jigu.app.ui.theme.PoemTextStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -113,24 +112,23 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
                 ),
                 color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
             Text(
                 text = attributionLine(p),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp, bottom = 20.dp),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp, bottom = 20.dp),
             )
 
             if (vertical) {
                 VerticalPoem(p.paragraphs)
             } else {
-                p.paragraphs.forEach { line ->
-                    Text(
-                        text = line,
-                        style = PoemTextStyle,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
+                PoemBody(p.paragraphs, p.category)
             }
             Spacer(Modifier.height(28.dp))
 

@@ -43,21 +43,25 @@ import com.jigu.app.ui.theme.PoemTitleStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** 书架（选本层）：真正的"书" */
+/** 书架（选本层）：真正的"书"。
+ *  顺序按书的「内容时代」（用户定案：内容优先，非成书年代）——曹操虽是汉魏选集但内容最古的依次往前。
+ *  era 仅用于排序展示，不进库。 */
+private data class BookModule(val title: String, val route: String, val brief: String, val era: Int)
+
 private val BOOK_MODULES = listOf(
-    Triple("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵"),
-    Triple("千家诗", "qianjiashi", "分体选本 · 唐宋名篇"),
-    Triple("诗经", "shijing", "风雅颂 · 先秦歌谣"),
-    Triple("楚辞", "chuci", "骚体 · 浪漫之源"),
-    Triple("五代词", "wudai_ci", "花间集 · 南唐二主"),
-    Triple("古文观止", "guwen", "散文正宗 · 十二卷"),
-    Triple("纳兰词", "qing_ci", "清词第一"),
-    Triple("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种"),
-    Triple("幽梦影", "youmengying", "清言小品 · 带评点"),
-    Triple("论语", "lunyu", "语录即文章"),
-    Triple("孟子", "sishu", "雄辩滔滔"),
-    Triple("曹操诗集", "han_wei", "建安风骨"),
-)
+    BookModule("诗经", "shijing", "风雅颂 · 先秦歌谣", 0),
+    BookModule("楚辞", "chuci", "骚体 · 浪漫之源", 1),
+    BookModule("论语", "lunyu", "语录即文章", 2),
+    BookModule("孟子", "sishu", "雄辩滔滔", 3),
+    BookModule("曹操诗集", "han_wei", "建安风骨", 4),
+    BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 5),
+    BookModule("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵", 6),
+    BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 7),
+    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 8),
+    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 9),
+    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 10),
+    BookModule("纳兰词", "qing_ci", "清词第一", 11),
+).sortedBy { it.era }
 
 /** 书库：搜索 + 五维浏览（书架 / 朝代 / 诗人 / 体裁 / 主题） */
 @Composable
@@ -195,9 +199,9 @@ private fun ShelfGrid(onOpenModule: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
     ) {
-        items(BOOK_MODULES, key = { it.second }) { (title, route, brief) ->
-            val count = if (route.startsWith("tag:")) tagCount else counts[route] ?: 0
-            ModuleCard(title = title, brief = brief, count = count) { onOpenModule(route) }
+        items(BOOK_MODULES, key = { it.route }) { book ->
+            val count = if (book.route.startsWith("tag:")) tagCount else counts[book.route] ?: 0
+            ModuleCard(title = book.title, brief = book.brief, count = count) { onOpenModule(book.route) }
         }
     }
 }
@@ -362,7 +366,7 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val tagMode = key.startsWith("tag:")
     val category = if (tagMode) "tang_poem" else key
     val tag = if (tagMode) key.removePrefix("tag:") else null
-    val label = if (tagMode) tag ?: key else BOOK_MODULES.firstOrNull { it.second == key }?.first ?: key
+    val label = if (tagMode) tag ?: key else BOOK_MODULES.firstOrNull { it.route == key }?.title ?: key
 
     var poems by remember(key) { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
     var hasMore by remember(key) { mutableStateOf(true) }
