@@ -1,15 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 占位印章图形：白描「回」字方印，正式印章图标随设计系统确定 -->
+<!-- 汲古图标 F2「界格大格」（zi-design 定稿，2026-10-26）：宣纸底（ic_launcher_background）+
+     一圈细界格线（任何壁纸下读得出"一页稿纸"）+ 洛书九宫大格 + 中宫朱格圆角。
+     数字按设计稿 1000 viewBox ×0.108 映射到 108 画布；界格 8.64d 距缘已被 Flyme 全槽遮罩验证可见。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- 中宫朱格：rect 422,422 156x156 rx20 -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M30,30h48v48h-48z M38,38v32h32v-32z" />
+        android:fillColor="#9E2F26"
+        android:pathData="M47.736,45.576 h13.056 a2.16,2.16 0 0 1 2.16,2.16 v12.768 a2.16,2.16 0 0 1 -2.16,2.16 h-13.056 a2.16,2.16 0 0 1 -2.16,-2.16 v-12.768 a2.16,2.16 0 0 1 2.16,-2.16 Z" />
+    <!-- 内格线：395/605 → 42.66/65.34，止于外框 19.98~88.02 -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M47,47h14v14h-14z" />
+        android:strokeColor="#23211C"
+        android:strokeWidth="2.808"
+        android:pathData="M42.66,19.98 V88.02 M65.34,19.98 V88.02 M19.98,42.66 H88.02 M19.98,65.34 H88.02" />
+    <!-- 九宫外框：rect 185,185 630x630 rx32 -->
+    <path
+        android:strokeColor="#23211C"
+        android:strokeWidth="2.808"
+        android:pathData="M23.436,19.98 h61.164 a3.456,3.456 0 0 1 3.456,3.456 v61.164 a3.456,3.456 0 0 1 -3.456,3.456 h-61.164 a3.456,3.456 0 0 1 -3.456,-3.456 v-61.164 a3.456,3.456 0 0 1 3.456,-3.456 Z" />
+    <!-- 界格线：rect 80,80 840x840 rx70，细线 0.864 -->
+    <path
+        android:strokeColor="#23211C"
+        android:strokeWidth="0.864"
+        android:pathData="M16.2,8.64 h75.6 a7.56,7.56 0 0 1 7.56,7.56 v75.6 a7.56,7.56 0 0 1 -7.56,7.56 h-75.6 a7.56,7.56 0 0 1 -7.56,-7.56 v-75.6 a7.56,7.56 0 0 1 7.56,-7.56 Z" />
 </vector>

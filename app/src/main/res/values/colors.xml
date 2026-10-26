@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 图标底色：暂用朱砂，正式配色随设计系统（D-004）确定 -->
-    <color name="ic_launcher_background">#9E2F26</color>
+    <!-- 图标底色：宣纸，与 App 主题 XuanPaper 同源（D-004 配色系统） -->
+    <color name="ic_launcher_background">#F7F3EA</color>
 </resources>
