@@ -19,7 +19,7 @@ object ArtworkRepo {
 
     @Volatile
     private var loaded = false
-    private var byTerm: Map<String, Artwork> = emptyMap()
+    private var byTerm: Map<String, List<Artwork>> = emptyMap()
 
     fun load(context: Context) {
         if (loaded) return
@@ -29,7 +29,7 @@ object ArtworkRepo {
                 val arr = org.json.JSONArray(
                     context.assets.open("art/manifest.json").bufferedReader().readText(),
                 )
-                val out = mutableMapOf<String, Artwork>()
+                val out = mutableMapOf<String, MutableList<Artwork>>()
                 for (i in 0 until arr.length()) {
                     val o = arr.getJSONObject(i)
                     val a = Artwork(
@@ -40,7 +40,7 @@ object ArtworkRepo {
                         date = o.optString("date"),
                         credit = o.optString("credit"),
                     )
-                    out[a.term] = a
+                    out.getOrPut(a.term) { mutableListOf() }.add(a)
                 }
                 byTerm = out
             }
@@ -48,9 +48,13 @@ object ArtworkRepo {
         }
     }
 
-    fun forTerm(context: Context, term: String?): Artwork? {
+    /** 节气画池按 seed 确定性轮换：同一首诗永远同一幅，不同诗、不同日不同幅 */
+    fun forTerm(context: Context, term: String?, seed: Int = 0): Artwork? {
         load(context)
-        return term?.let { byTerm[it] }
+        val pool = term?.let { byTerm[it] } ?: return null
+        if (pool.isEmpty()) return null
+        val i = ((seed % pool.size) + pool.size) % pool.size
+        return pool[i]
     }
 
     fun decode(context: Context, artwork: Artwork): Bitmap? = runCatching {

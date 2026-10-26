@@ -94,7 +94,7 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
     val artEnabled = JiguSettings.artEnabled(context)
     val shortPoem = poem.paragraphs.sumOf { it.length } <= 64
     val artwork = if (artEnabled && !isSystemInDarkTheme() && shortPoem) {
-        ArtworkRepo.forTerm(context, badge)
+        ArtworkRepo.forTerm(context, badge, poem.id)
     } else null
     var artBitmap by remember(artwork?.file) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(artwork?.file) {

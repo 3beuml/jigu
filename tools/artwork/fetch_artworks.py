@@ -49,6 +49,7 @@ TERMS = [
 ]
 
 FALLBACK_KEYWORDS = ["landscape", "mountain"]
+PER_TERM = 4  # 每节气目标幅数：节气内按 poem_id 轮换，破"同幅感"
 
 
 def get_json(url: str):
@@ -91,6 +92,9 @@ def main():
     manifest_path = out_dir / "manifest.json"
 
     manifest = []
+    if args.force:
+        for f in out_dir.glob("term_*.webp"):
+            f.unlink()  # 强制模式清空旧画池，命名统一为带序号的新格式
     if manifest_path.exists() and not args.force:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     used_ids = {m["object_id"] for m in manifest}
@@ -99,17 +103,21 @@ def main():
     for idx, (pinyin, cn, keywords) in enumerate(TERMS, 1):
         if cn in done_terms and not args.force:
             continue
-        picked = None
-        for kw in keywords + FALLBACK_KEYWORDS:
+        got = 0
+        for kw in keywords + FALLBACK_KEYWORDS:  # 每个检索词贡献一整池候选，逐个取
+            if got >= PER_TERM:
+                break
             try:
                 d = get_json(
                     f"{API}?q={urllib.request.quote(kw)}&department=Chinese%20Art"
-                    "&has_image=1&cc0=1&limit=25"
+                    "&has_image=1&cc0=1&limit=60"
                 )
             except Exception as e:
                 print(f"[{cn}] 检索失败（{kw}）: {e}")
                 continue
             for a in d.get("data", []):
+                if got >= PER_TERM:
+                    break
                 if a["id"] in used_ids:
                     continue
                 if "painting" not in str(a.get("type", "")).lower():
@@ -117,32 +125,27 @@ def main():
                 url = (a.get("images") or {}).get("web", {}).get("url", "")
                 if not url:
                     continue
-                picked = (kw, a, url)
-                break
-            if picked:
-                break
-        if not picked:
+                fname = f"term_{idx:02d}_{pinyin}_{got + 1}.webp"
+                if not download(url, out_dir / fname):
+                    continue
+                creators = a.get("creators") or [{}]
+                manifest.append({
+                    "term": cn,
+                    "pinyin": pinyin,
+                    "file": fname,
+                    "title": a.get("title", ""),
+                    "artist": creators[0].get("description", "").strip() or "佚名",
+                    "date": a.get("creation_date", ""),
+                    "object_id": a["id"],
+                    "credit": "The Cleveland Museum of Art, CC0 1.0",
+                })
+                used_ids.add(a["id"])
+                got += 1
+                print(f"[{cn} {got}/{PER_TERM}] {a.get('title','')} · {a.get('creation_date','')} <- {kw}")
+        if got == 0:
             print(f"[{cn}] 所有检索词均无可用画，跳过")
-            continue
-        kw, art, url = picked
-        fname = f"term_{idx:02d}_{pinyin}.webp"
-        if not download(url, out_dir / fname):
-            continue
-        creators = art.get("creators") or [{}]
-        manifest.append({
-            "term": cn,
-            "pinyin": pinyin,
-            "file": fname,
-            "title": art.get("title", ""),
-            "artist": creators[0].get("description", "").strip() or "佚名",
-            "date": art.get("creation_date", ""),
-            "object_id": art["id"],
-            "credit": "The Cleveland Museum of Art, CC0 1.0",
-        })
-        used_ids.add(art["id"])
-        print(f"[{cn}] {art.get('title','')} · {art.get('creation_date','')} <- {kw}")
 
-    manifest.sort(key=lambda m: m["term"] and TERMS.index(next(t for t in TERMS if t[1] == m["term"])))
+    manifest.sort(key=lambda m: (TERMS.index(next(t for t in TERMS if t[1] == m["term"])), m["file"]))
     manifest_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8",
     )

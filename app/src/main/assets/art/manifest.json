@@ -2,7 +2,7 @@
  {
   "term": "立春",
   "pinyin": "lichun",
-  "file": "term_01_lichun.webp",
+  "file": "term_01_lichun_1.webp",
   "title": "Ink Plum",
   "artist": "Peng Xu (Chinese, active 1488–1521)",
   "date": "late 1400s–early 1500s",
@@ -10,219 +10,9 @@
   "credit": "The Cleveland Museum of Art, CC0 1.0"
  },
  {
-  "term": "雨水",
-  "pinyin": "yushui",
-  "file": "term_02_yushui.webp",
-  "title": "Willow and Magpie",
-  "artist": "Fachang Muqi (Chinese, 1220–1280)",
-  "date": "mid-1200s",
-  "object_id": 151005,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "惊蛰",
-  "pinyin": "jingzhe",
-  "file": "term_03_jingzhe.webp",
-  "title": "Spring Landscape",
-  "artist": "Kuncan (Chinese, 1612–c. 1673)",
-  "date": "1666",
-  "object_id": 142642,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "春分",
-  "pinyin": "chunfen",
-  "file": "term_04_chunfen.webp",
-  "title": "Bird on a Flowering Branch",
-  "artist": "佚名",
-  "date": "1100s",
-  "object_id": 152556,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "清明",
-  "pinyin": "qingming",
-  "file": "term_05_qingming.webp",
-  "title": "Spring Mist over Jiangnan",
-  "artist": "Shitao (Chinese, 1642–1707)",
-  "date": "1697",
-  "object_id": 131335,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "谷雨",
-  "pinyin": "guyu",
-  "file": "term_06_guyu.webp",
-  "title": "Zhao Mengfu Writing the Heart (Hridaya) Sutra in Exchange for Tea",
-  "artist": "Qiu Ying (Chinese, 1494–1552)",
-  "date": "1542–43",
-  "object_id": 138688,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "立夏",
-  "pinyin": "lixia",
-  "file": "term_07_lixia.webp",
-  "title": "Paintings after Ancient Masters: Lotus and Rocks",
-  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
-  "date": "1598–1652",
-  "object_id": 149612,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "小满",
-  "pinyin": "xiaoman",
-  "file": "term_08_xiaoman.webp",
-  "title": "Bamboo in the Wind",
-  "artist": "Puming (Xuechuang) (Chinese, active before 1274–after 1329)",
-  "date": "1300s",
-  "object_id": 130496,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "芒种",
-  "pinyin": "mangzhong",
-  "file": "term_09_mangzhong.webp",
-  "title": "Album of Miscellaneous Subjects, Leaf 7",
-  "artist": "Fan Qi (Chinese, 1616–after 1694)",
-  "date": "early 1650s",
-  "object_id": 148242,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "夏至",
-  "pinyin": "xiazhi",
-  "file": "term_10_xiazhi.webp",
-  "title": "Swallow and Lotus",
-  "artist": "Fachang Muqi (Chinese, 1220–1280)",
-  "date": "mid-1200s",
-  "object_id": 150469,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "小暑",
-  "pinyin": "xiaoshu",
-  "file": "term_11_xiaoshu.webp",
-  "title": "Purification at the Orchid Pavilion",
-  "artist": "Fan Yi (Chinese, c. 1615–before 1688)",
-  "date": "1671",
-  "object_id": 149116,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "大暑",
-  "pinyin": "dashu",
-  "file": "term_12_dashu.webp",
-  "title": "Album of Miscellaneous Subjects, Leaf 2",
-  "artist": "Fan Qi (Chinese, 1616–after 1694)",
-  "date": "early 1650s",
-  "object_id": 148237,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "立秋",
-  "pinyin": "liqiu",
-  "file": "term_13_liqiu.webp",
-  "title": "Conversation in Autumn",
-  "artist": "Hua Yan (Chinese, 1682–c. 1765)",
-  "date": "1732",
-  "object_id": 131673,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "处暑",
-  "pinyin": "chushu",
-  "file": "term_14_chushu.webp",
-  "title": "Reminiscences of Qinhuai River",
-  "artist": "Shitao (Chinese, 1642–1707)",
-  "date": "1642–1707",
-  "object_id": 142579,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "白露",
-  "pinyin": "bailu",
-  "file": "term_15_bailu.webp",
-  "title": "Landscape with Flying Geese",
-  "artist": "Ma Lin (Chinese, c. 1185–after 1260)",
-  "date": "mid-1200s",
-  "object_id": 129861,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "秋分",
-  "pinyin": "qiufen",
-  "file": "term_16_qiufen.webp",
-  "title": "Landscape Album in Various Styles: Shibiao Waiting for the Moon",
-  "artist": "Zha Shibiao (Chinese, 1615–1698)",
-  "date": "1684",
-  "object_id": 132923,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "寒露",
-  "pinyin": "hanlu",
-  "file": "term_17_hanlu.webp",
-  "title": "Paintings after Ancient Masters: Chrysanthemum and Rock",
-  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
-  "date": "1598–1652",
-  "object_id": 149615,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "霜降",
-  "pinyin": "shuangjiang",
-  "file": "term_18_shuangjiang.webp",
-  "title": "Album of Miscellaneous Subjects, Leaf 8",
-  "artist": "Fan Qi (Chinese, 1616–after 1694)",
-  "date": "early 1650s",
-  "object_id": 148243,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "立冬",
-  "pinyin": "lidong",
-  "file": "term_19_lidong.webp",
-  "title": "Album of Seasonal Landscapes, Leaf H (previous leaf 8)",
-  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
-  "date": "1668",
-  "object_id": 132841,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "小雪",
-  "pinyin": "xiaoxue",
-  "file": "term_20_xiaoxue.webp",
-  "title": "Bamboo in Snow",
-  "artist": "Hong Fan (Chinese, active late 1700s–early 1800s)",
-  "date": "1818",
-  "object_id": 543409,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "大雪",
-  "pinyin": "daxue",
-  "file": "term_21_daxue.webp",
-  "title": "The Mountain of Five Cataracts",
-  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
-  "date": "c. 1630",
-  "object_id": 142641,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "冬至",
-  "pinyin": "dongzhi",
-  "file": "term_22_dongzhi.webp",
-  "title": "Album of Seasonal Landscapes, Leaf G (previous leaf 7)",
-  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
-  "date": "1668",
-  "object_id": 132840,
-  "credit": "The Cleveland Museum of Art, CC0 1.0"
- },
- {
-  "term": "小寒",
-  "pinyin": "xiaohan",
-  "file": "term_23_xiaohan.webp",
+  "term": "立春",
+  "pinyin": "lichun",
+  "file": "term_01_lichun_2.webp",
   "title": "Plum Blossoms and Peonies",
   "artist": "Gao Fenghan (Chinese, 1683–1749)",
   "date": "1741",
@@ -230,13 +20,943 @@
   "credit": "The Cleveland Museum of Art, CC0 1.0"
  },
  {
-  "term": "大寒",
-  "pinyin": "dahan",
-  "file": "term_24_dahan.webp",
+  "term": "立春",
+  "pinyin": "lichun",
+  "file": "term_01_lichun_3.webp",
+  "title": "Plum Blossoms",
+  "artist": "Wang Shishen (Chinese, 1686–1759)",
+  "date": "probably 1739",
+  "object_id": 152550,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立春",
+  "pinyin": "lichun",
+  "file": "term_01_lichun_4.webp",
+  "title": "A Prunus in the Moonlight",
+  "artist": "Wang Mian (Chinese, 1287–1359)",
+  "date": "1300s",
+  "object_id": 147906,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "雨水",
+  "pinyin": "yushui",
+  "file": "term_02_yushui_1.webp",
+  "title": "Willow and Magpie",
+  "artist": "Fachang Muqi (Chinese, 1220–1280)",
+  "date": "mid-1200s",
+  "object_id": 151005,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "雨水",
+  "pinyin": "yushui",
+  "file": "term_02_yushui_2.webp",
+  "title": "Birds Gather under the Spring Willow",
+  "artist": "Yin Hong (Chinese, c. 1430-c. 1500)",
+  "date": "late 1400s–early 1500",
+  "object_id": 147930,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "雨水",
+  "pinyin": "yushui",
+  "file": "term_02_yushui_3.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 6",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148241,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "雨水",
+  "pinyin": "yushui",
+  "file": "term_02_yushui_4.webp",
+  "title": "Willows",
+  "artist": "佚名",
+  "date": "1100s",
+  "object_id": 152549,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "惊蛰",
+  "pinyin": "jingzhe",
+  "file": "term_03_jingzhe_1.webp",
+  "title": "Spring Landscape",
+  "artist": "Kuncan (Chinese, 1612–c. 1673)",
+  "date": "1666",
+  "object_id": 142642,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "惊蛰",
+  "pinyin": "jingzhe",
+  "file": "term_03_jingzhe_2.webp",
+  "title": "Greeting the Spring",
+  "artist": "Wu Bin (Chinese, active c. 1591–1626)",
+  "date": "1600",
+  "object_id": 135953,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "惊蛰",
+  "pinyin": "jingzhe",
+  "file": "term_03_jingzhe_3.webp",
+  "title": "The Haven of the Peach-Blossom Spring",
+  "artist": "Shi Rui (Chinese, c. 1400-c. 1470)",
+  "date": "mid-1400s",
+  "object_id": 129859,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "惊蛰",
+  "pinyin": "jingzhe",
+  "file": "term_03_jingzhe_4.webp",
+  "title": "Landscape Album in Various Styles: Spring Plowing",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132924,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "春分",
+  "pinyin": "chunfen",
+  "file": "term_04_chunfen_1.webp",
+  "title": "Bird on a Flowering Branch",
+  "artist": "佚名",
+  "date": "1100s",
+  "object_id": 152556,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "春分",
+  "pinyin": "chunfen",
+  "file": "term_04_chunfen_2.webp",
+  "title": "Lily and Butterflies",
+  "artist": "Liu Shanshou (Chinese, active 1300s)",
+  "date": "1300s",
+  "object_id": 145907,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "春分",
+  "pinyin": "chunfen",
+  "file": "term_04_chunfen_3.webp",
+  "title": "Quails and Sparrows in an Autumn Scene",
+  "artist": "Wang Yuan (Chinese, c. 1299–after 1366)",
+  "date": "1347",
+  "object_id": 160133,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "春分",
+  "pinyin": "chunfen",
+  "file": "term_04_chunfen_4.webp",
+  "title": "A Hundred Birds and the Three Friends",
+  "artist": "Bian Wenjin (Chinese, about 1354–1428)",
+  "date": "1400–1425",
+  "object_id": 149880,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "清明",
+  "pinyin": "qingming",
+  "file": "term_05_qingming_1.webp",
+  "title": "Spring Mist over Jiangnan",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1697",
+  "object_id": 131335,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "清明",
+  "pinyin": "qingming",
+  "file": "term_05_qingming_2.webp",
+  "title": "Flowers of Four Seasons, with Poems",
+  "artist": "Wang Guxiang (Chinese, 1501–1568)",
+  "date": "1531",
+  "object_id": 149109,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "清明",
+  "pinyin": "qingming",
+  "file": "term_05_qingming_3.webp",
+  "title": "Thin Forest and Distant Mountains",
+  "artist": "Li Liufang (Chinese, 1575–1629)",
+  "date": "1628",
+  "object_id": 130942,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "清明",
+  "pinyin": "qingming",
+  "file": "term_05_qingming_4.webp",
+  "title": "Landscape",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153351,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "谷雨",
+  "pinyin": "guyu",
+  "file": "term_06_guyu_1.webp",
+  "title": "Zhao Mengfu Writing the Heart (Hridaya) Sutra in Exchange for Tea",
+  "artist": "Qiu Ying (Chinese, 1494–1552)",
+  "date": "1542–43",
+  "object_id": 138688,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "谷雨",
+  "pinyin": "guyu",
+  "file": "term_06_guyu_2.webp",
+  "title": "Lu Tong and Servant",
+  "artist": "Min Zhen (Chinese, 1730–after 1788)",
+  "date": "1788",
+  "object_id": 152826,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "谷雨",
+  "pinyin": "guyu",
+  "file": "term_06_guyu_3.webp",
+  "title": "Cleansing Medicinal Herbs in the Stream on a Spring Day",
+  "artist": "Yu Zhiding (Chinese, 1647–c. 1716)",
+  "date": "1703",
+  "object_id": 161705,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "谷雨",
+  "pinyin": "guyu",
+  "file": "term_06_guyu_4.webp",
+  "title": "Album of Seasonal Landscapes",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132919,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立夏",
+  "pinyin": "lixia",
+  "file": "term_07_lixia_1.webp",
+  "title": "Paintings after Ancient Masters: Lotus and Rocks",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149612,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立夏",
+  "pinyin": "lixia",
+  "file": "term_07_lixia_2.webp",
+  "title": "One Hundred Children at Play",
+  "artist": "Su Hanchen (Chinese, active c. 1101–1125)",
+  "date": "1100s–1200s",
+  "object_id": 136759,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立夏",
+  "pinyin": "lixia",
+  "file": "term_07_lixia_3.webp",
+  "title": "Swallow and Lotus",
+  "artist": "Fachang Muqi (Chinese, 1220–1280)",
+  "date": "mid-1200s",
+  "object_id": 150469,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立夏",
+  "pinyin": "lixia",
+  "file": "term_07_lixia_4.webp",
+  "title": "Paintings after Ancient Masters",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149603,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小满",
+  "pinyin": "xiaoman",
+  "file": "term_08_xiaoman_1.webp",
+  "title": "Bamboo in the Wind",
+  "artist": "Puming (Xuechuang) (Chinese, active before 1274–after 1329)",
+  "date": "1300s",
+  "object_id": 130496,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小满",
+  "pinyin": "xiaoman",
+  "file": "term_08_xiaoman_2.webp",
+  "title": "Bamboo, Rocks, and Lonely Orchids",
+  "artist": "Zhao Mengfu (Chinese, 1254–1322)",
+  "date": "1271–1368",
+  "object_id": 139746,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小满",
+  "pinyin": "xiaoman",
+  "file": "term_08_xiaoman_3.webp",
+  "title": "Ink Bamboo",
+  "artist": "佚名",
+  "date": "1200s",
+  "object_id": 150710,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小满",
+  "pinyin": "xiaoman",
+  "file": "term_08_xiaoman_4.webp",
+  "title": "Bamboo in Snow",
+  "artist": "Hong Fan (Chinese, active late 1700s–early 1800s)",
+  "date": "1818",
+  "object_id": 543409,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "芒种",
+  "pinyin": "mangzhong",
+  "file": "term_09_mangzhong_1.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 7",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148242,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "芒种",
+  "pinyin": "mangzhong",
+  "file": "term_09_mangzhong_2.webp",
+  "title": "Children at Play",
+  "artist": "Xia Kui (Chinese, active c. 1405–1445)",
+  "date": "1508",
+  "object_id": 94605,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "芒种",
+  "pinyin": "mangzhong",
+  "file": "term_09_mangzhong_3.webp",
+  "title": "A Solitary Crane in the Bamboo Grove",
+  "artist": "Tao Hong (Chinese, active c. 1610–1640)",
+  "date": "early 1600s",
+  "object_id": 160957,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "芒种",
+  "pinyin": "mangzhong",
+  "file": "term_09_mangzhong_4.webp",
+  "title": "Returning Peasants in a Spring Evening",
+  "artist": "Tao Hong (Chinese, active c. 1610–1640)",
+  "date": "early 1600s",
+  "object_id": 160956,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "夏至",
+  "pinyin": "xiazhi",
+  "file": "term_10_xiazhi_1.webp",
+  "title": "Lotus Sutra with a Frontispiece",
+  "artist": "佚名",
+  "date": "late 1100s",
+  "object_id": 145409,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "夏至",
+  "pinyin": "xiazhi",
+  "file": "term_10_xiazhi_2.webp",
+  "title": "Samantabhadra",
+  "artist": "佚名",
+  "date": "1100s",
+  "object_id": 137217,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "夏至",
+  "pinyin": "xiazhi",
+  "file": "term_10_xiazhi_3.webp",
+  "title": "Barbarian Royalty Worshiping the Buddha",
+  "artist": "Zhao Guangfu (Chinese, c. 923–976)",
+  "date": "900s",
+  "object_id": 134789,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "夏至",
+  "pinyin": "xiazhi",
+  "file": "term_10_xiazhi_4.webp",
+  "title": "Shakyamuni Triad: Buddha Attended by Manjushri and Samantabhadra (Bodhisattva with Elephant)",
+  "artist": "佚名",
+  "date": "late 1300s",
+  "object_id": 167664,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小暑",
+  "pinyin": "xiaoshu",
+  "file": "term_11_xiaoshu_1.webp",
+  "title": "Purification at the Orchid Pavilion",
+  "artist": "Fan Yi (Chinese, c. 1615–before 1688)",
+  "date": "1671",
+  "object_id": 149116,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小暑",
+  "pinyin": "xiaoshu",
+  "file": "term_11_xiaoshu_2.webp",
+  "title": "Rain-coming Pavilion by the Stone Bridge at Mt. Tiantai",
+  "artist": "Dai Xi (Chinese, 1801–1860)",
+  "date": "1848",
+  "object_id": 149662,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小暑",
+  "pinyin": "xiaoshu",
+  "file": "term_11_xiaoshu_3.webp",
+  "title": "Poetic Feeling in a Thatched Pavilion",
+  "artist": "Wu Zhen (Chinese, 1280–1354)",
+  "date": "1347",
+  "object_id": 139448,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小暑",
+  "pinyin": "xiaoshu",
+  "file": "term_11_xiaoshu_4.webp",
+  "title": "Cloud-Climbing Pavilion, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140444,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大暑",
+  "pinyin": "dashu",
+  "file": "term_12_dashu_1.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 2",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148237,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大暑",
+  "pinyin": "dashu",
+  "file": "term_12_dashu_2.webp",
+  "title": "Listening to the Sound of Autumn in a Misty Grove",
+  "artist": "Zhang Feng (Chinese, active c. 1632–1662)",
+  "date": "1657",
+  "object_id": 149031,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大暑",
+  "pinyin": "dashu",
+  "file": "term_12_dashu_3.webp",
+  "title": "Conversation in a Thatched Hut",
+  "artist": "佚名",
+  "date": "late 1200s",
+  "object_id": 148222,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大暑",
+  "pinyin": "dashu",
+  "file": "term_12_dashu_4.webp",
+  "title": "The Seven Worthies of the Bamboo Grove",
+  "artist": "佚名",
+  "date": "1644–1911",
+  "object_id": 94601,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立秋",
+  "pinyin": "liqiu",
+  "file": "term_13_liqiu_1.webp",
+  "title": "Conversation in Autumn",
+  "artist": "Hua Yan (Chinese, 1682–c. 1765)",
+  "date": "1732",
+  "object_id": 131673,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立秋",
+  "pinyin": "liqiu",
+  "file": "term_13_liqiu_2.webp",
+  "title": "River and Mountains on a Clear Autumn Day",
+  "artist": "Dong Qichang (Chinese, 1555–1636)",
+  "date": "c. 1624–27",
+  "object_id": 135964,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立秋",
+  "pinyin": "liqiu",
+  "file": "term_13_liqiu_3.webp",
+  "title": "The Autumn Hunt",
+  "artist": "Chen Juzhong (Chinese, active c. 1201–1207)",
+  "date": "c. 1201–4",
+  "object_id": 111789,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立秋",
+  "pinyin": "liqiu",
+  "file": "term_13_liqiu_4.webp",
+  "title": "Cottages in a Misty Grove in Autumn",
+  "artist": "Li Anzhong (Chinese, active first half of the 1100s)",
+  "date": "1117",
+  "object_id": 139830,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "处暑",
+  "pinyin": "chushu",
+  "file": "term_14_chushu_1.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142579,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "处暑",
+  "pinyin": "chushu",
+  "file": "term_14_chushu_2.webp",
+  "title": "Boats at Anchor on West Lake at the City Gate",
+  "artist": "佚名",
+  "date": "1150–1200",
+  "object_id": 149415,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "处暑",
+  "pinyin": "chushu",
+  "file": "term_14_chushu_3.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 1",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148234,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "处暑",
+  "pinyin": "chushu",
+  "file": "term_14_chushu_4.webp",
+  "title": "Landscape Ink-Play",
+  "artist": "Fang Congyi (Chinese, active c. 1340–80)",
+  "date": "1300s",
+  "object_id": 150932,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "白露",
+  "pinyin": "bailu",
+  "file": "term_15_bailu_1.webp",
+  "title": "Landscape with Flying Geese",
+  "artist": "Ma Lin (Chinese, c. 1185–after 1260)",
+  "date": "mid-1200s",
+  "object_id": 129861,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "白露",
+  "pinyin": "bailu",
+  "file": "term_15_bailu_2.webp",
+  "title": "Album of Calligraphy and Paintings",
+  "artist": "Bian Shoumin (Chinese, 1684–1752)",
+  "date": "first half of the 1700s",
+  "object_id": 161024,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "白露",
+  "pinyin": "bailu",
+  "file": "term_15_bailu_3.webp",
+  "title": "Hunting on Horses",
+  "artist": "佚名",
+  "date": "c. 1600s–1700s",
+  "object_id": 95171,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "白露",
+  "pinyin": "bailu",
+  "file": "term_15_bailu_4.webp",
+  "title": "Album of Calligraphy and Paintings",
+  "artist": "Bian Shoumin (Chinese, 1684–1752)",
+  "date": "first half of the 1700s",
+  "object_id": 161022,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "秋分",
+  "pinyin": "qiufen",
+  "file": "term_16_qiufen_1.webp",
+  "title": "Landscape Album in Various Styles: Shibiao Waiting for the Moon",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132923,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "秋分",
+  "pinyin": "qiufen",
+  "file": "term_16_qiufen_2.webp",
+  "title": "Drinking in the Moonlight",
+  "artist": "Ma Yuan (Chinese, c. 1150–after 1255)",
+  "date": "late 1100s–early 1200s",
+  "object_id": 160128,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "秋分",
+  "pinyin": "qiufen",
+  "file": "term_16_qiufen_3.webp",
+  "title": "Waiting for the Moon in the Mid Autumn Festival",
+  "artist": "Shi Rui (Chinese, c. 1400-c. 1470)",
+  "date": "1400s",
+  "object_id": 147574,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "秋分",
+  "pinyin": "qiufen",
+  "file": "term_16_qiufen_4.webp",
+  "title": "Listening to the Qin",
+  "artist": "Tang Yin (Chinese, 1470–1523)",
+  "date": "late 1400s–early 1500s",
+  "object_id": 149073,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "寒露",
+  "pinyin": "hanlu",
+  "file": "term_17_hanlu_1.webp",
+  "title": "Paintings after Ancient Masters: Chrysanthemum and Rock",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149615,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "寒露",
+  "pinyin": "hanlu",
+  "file": "term_17_hanlu_2.webp",
+  "title": "Chrysanthemums and Cabbage",
+  "artist": "Tao Cheng (Chinese, active c. 1471–after 1502)",
+  "date": "c. 1486 or before",
+  "object_id": 136463,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "寒露",
+  "pinyin": "hanlu",
+  "file": "term_17_hanlu_3.webp",
+  "title": "Paintings after Ancient Masters: Chrysanthemum",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149622,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "寒露",
+  "pinyin": "hanlu",
+  "file": "term_17_hanlu_4.webp",
+  "title": "Yellow Chrysanthemums and Red Osmanthus in the Style of Wang Yuan",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "1468",
+  "object_id": 159724,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "霜降",
+  "pinyin": "shuangjiang",
+  "file": "term_18_shuangjiang_1.webp",
+  "title": "Album of Miscellaneous Subjects, Leaf 8",
+  "artist": "Fan Qi (Chinese, 1616–after 1694)",
+  "date": "early 1650s",
+  "object_id": 148243,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "霜降",
+  "pinyin": "shuangjiang",
+  "file": "term_18_shuangjiang_2.webp",
+  "title": "Solitary Colors of the Autumn Woods",
+  "artist": "Wang Jianzhang (Chinese, active 1621–1662)",
+  "date": "first half 1600s",
+  "object_id": 147045,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "霜降",
+  "pinyin": "shuangjiang",
+  "file": "term_18_shuangjiang_3.webp",
+  "title": "White Clouds and Red Trees",
+  "artist": "Li Jian (Chinese, active second half of the 1700s)",
+  "date": "1788",
+  "object_id": 147009,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "霜降",
+  "pinyin": "shuangjiang",
+  "file": "term_18_shuangjiang_4.webp",
+  "title": "Mt. Taibo in the Style of Wang Meng",
+  "artist": "Du Qiong (Chinese, 1396–1474)",
+  "date": "1442",
+  "object_id": 143755,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立冬",
+  "pinyin": "lidong",
+  "file": "term_19_lidong_1.webp",
+  "title": "Album of Seasonal Landscapes, Leaf H (previous leaf 8)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132841,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立冬",
+  "pinyin": "lidong",
+  "file": "term_19_lidong_2.webp",
+  "title": "Album of Seasonal Landscapes, Leaf G (previous leaf 7)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132840,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立冬",
+  "pinyin": "lidong",
+  "file": "term_19_lidong_3.webp",
+  "title": "Bamboo in Four Seasons: Winter",
+  "artist": "佚名",
+  "date": "1279–1368",
+  "object_id": 150729,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "立冬",
+  "pinyin": "lidong",
+  "file": "term_19_lidong_4.webp",
   "title": "Album of Miscellaneous Subjects, Leaf 9",
   "artist": "Fan Qi (Chinese, 1616–after 1694)",
   "date": "early 1650s",
   "object_id": 148244,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小雪",
+  "pinyin": "xiaoxue",
+  "file": "term_20_xiaoxue_1.webp",
+  "title": "Snow Coloring the World White",
+  "artist": "Fa Ruozhen (Chinese, 1613–1696)",
+  "date": "1690",
+  "object_id": 149762,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小雪",
+  "pinyin": "xiaoxue",
+  "file": "term_20_xiaoxue_2.webp",
+  "title": "Shakyamuni Emerging from the Mountains",
+  "artist": "佚名",
+  "date": "1244",
+  "object_id": 145010,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小雪",
+  "pinyin": "xiaoxue",
+  "file": "term_20_xiaoxue_3.webp",
+  "title": "Old Trees by a Wintry Brook",
+  "artist": "Wen Zhengming (Chinese, 1470–1559)",
+  "date": "1551",
+  "object_id": 159727,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小雪",
+  "pinyin": "xiaoxue",
+  "file": "term_20_xiaoxue_4.webp",
+  "title": "Nine Dragon Pool",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690s",
+  "object_id": 149658,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大雪",
+  "pinyin": "daxue",
+  "file": "term_21_daxue_1.webp",
+  "title": "The Mountain of Five Cataracts",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "c. 1630",
+  "object_id": 142641,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大雪",
+  "pinyin": "daxue",
+  "file": "term_21_daxue_2.webp",
+  "title": "Birds in a Grove in a Mountainous Winter Landscape",
+  "artist": "Gao Tao (Chinese, 1100s)",
+  "date": "1100s",
+  "object_id": 142278,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大雪",
+  "pinyin": "daxue",
+  "file": "term_21_daxue_3.webp",
+  "title": "Landscape Album in Various Styles: Snowy Landscape",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132922,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大雪",
+  "pinyin": "daxue",
+  "file": "term_21_daxue_4.webp",
+  "title": "Daoist Retreat in Mountain and Stream (Landscape after Ni Zan [1301–1374])",
+  "artist": "Lu Zhi (Chinese, 1496–1576)",
+  "date": "1567",
+  "object_id": 138542,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "冬至",
+  "pinyin": "dongzhi",
+  "file": "term_22_dongzhi_1.webp",
+  "title": "Bamboo in Four Seasons: Summer and Winter",
+  "artist": "佚名",
+  "date": "1279–1368",
+  "object_id": 150727,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "冬至",
+  "pinyin": "dongzhi",
+  "file": "term_22_dongzhi_2.webp",
+  "title": "Winter Scene",
+  "artist": "佚名",
+  "date": "960–1279",
+  "object_id": 173574,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "冬至",
+  "pinyin": "dongzhi",
+  "file": "term_22_dongzhi_3.webp",
+  "title": "Three Purities",
+  "artist": "Zhang Xiong (Chinese, 1803–1886)",
+  "date": "1878",
+  "object_id": 160913,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "冬至",
+  "pinyin": "dongzhi",
+  "file": "term_22_dongzhi_4.webp",
+  "title": "Album of Calligraphy and Paintings",
+  "artist": "Bian Shoumin (Chinese, 1684–1752)",
+  "date": "first half of the 1700s",
+  "object_id": 161014,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小寒",
+  "pinyin": "xiaohan",
+  "file": "term_23_xiaohan_1.webp",
+  "title": "The Poet Lin Bu Wandering in the Moonlight",
+  "artist": "Du Jin (Chinese, 1446–c. 1519)",
+  "date": "late 1400s",
+  "object_id": 132015,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小寒",
+  "pinyin": "xiaohan",
+  "file": "term_23_xiaohan_2.webp",
+  "title": "Album of Seasonal Landscapes, Leaf A (previous leaf 4)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132837,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小寒",
+  "pinyin": "xiaohan",
+  "file": "term_23_xiaohan_3.webp",
+  "title": "Plum Blossoms in Moonlight",
+  "artist": "Yan Hui (Chinese, active 1270–1310)",
+  "date": "first half of the 1300s",
+  "object_id": 149393,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "小寒",
+  "pinyin": "xiaohan",
+  "file": "term_23_xiaohan_4.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Bird with Plum Blossoms)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143248,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大寒",
+  "pinyin": "dahan",
+  "file": "term_24_dahan_1.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137208,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大寒",
+  "pinyin": "dahan",
+  "file": "term_24_dahan_2.webp",
+  "title": "Landscape after Guo Zhongshu",
+  "artist": "Bada Shanren (Chinese, 1626–1705)",
+  "date": "c. 1680–1705",
+  "object_id": 132908,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大寒",
+  "pinyin": "dahan",
+  "file": "term_24_dahan_3.webp",
+  "title": "Landscape with Woodcutters Returning Home",
+  "artist": "佚名",
+  "date": "1200s",
+  "object_id": 154086,
+  "credit": "The Cleveland Museum of Art, CC0 1.0"
+ },
+ {
+  "term": "大寒",
+  "pinyin": "dahan",
+  "file": "term_24_dahan_4.webp",
+  "title": "Herdboys and Buffalo in Landscape",
+  "artist": "Guo Min (Chinese, mid-late 1200s)",
+  "date": "1200s",
+  "object_id": 160947,
   "credit": "The Cleveland Museum of Art, CC0 1.0"
  }
 ]
