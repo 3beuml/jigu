@@ -1,29 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 汲古图标 F2「界格大格」（zi-design 定稿，2026-10-26）：宣纸底（ic_launcher_background）+
-     一圈细界格线（任何壁纸下读得出"一页稿纸"）+ 洛书九宫大格 + 中宫朱格圆角。
-     数字按设计稿 1000 viewBox ×0.108 映射到 108 画布；界格 8.64d 距缘已被 Flyme 全槽遮罩验证可见。 -->
+<!-- 汲古图标「三叠·井中月」（2026-11-01 定稿，替代 10-26 界格九宫 F2，旧稿见 git 历史）。
+     俯瞰古井：一圈井栏、一泓墨色井水、一轮纸色月。
+     三圆两比皆黄金分割：月 r11.3 : 水 r18.3 : 栏 r29.7 = 8:13:21（相邻比 φ≈1.618），
+     层层相印即"月印万川"（永嘉《证道歌》"一月普现一切水，一切水月一月摄"）。
+     释义：井栏=古（韩愈"汲古得修绠"之井），井水=千年之诗，
+     月偏出井心=今日那一首（一天一首，月满欲出）。
+     月为镂空（evenOdd 透出背景宣纸色），monochrome 直接复用本文件（镂空即透底）。
+     全部图形收在 adaptive 安全区 r33 内（栏外缘 32.45），Flyme 全槽遮罩已留量。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 中宫朱格：rect 422,422 156x156 rx20 -->
+    <!-- 井栏：circle (54,54) r29.7 -->
     <path
-        android:fillColor="#9E2F26"
-        android:pathData="M47.736,45.576 h13.056 a2.16,2.16 0 0 1 2.16,2.16 v12.768 a2.16,2.16 0 0 1 -2.16,2.16 h-13.056 a2.16,2.16 0 0 1 -2.16,-2.16 v-12.768 a2.16,2.16 0 0 1 2.16,-2.16 Z" />
-    <!-- 内格线：395/605 → 42.66/65.34，止于外框 19.98~88.02 -->
+        android:strokeColor="#30343A"
+        android:strokeWidth="5.5"
+        android:pathData="M24.3,54 a29.7,29.7 0 1,0 59.4,0 a29.7,29.7 0 1,0 -59.4,0" />
+    <!-- 井水 r18.3，月球 r11.3 偏心 (56.8,51.2) 为镂空 -->
     <path
-        android:strokeColor="#23211C"
-        android:strokeWidth="2.808"
-        android:pathData="M42.66,19.98 V88.02 M65.34,19.98 V88.02 M19.98,42.66 H88.02 M19.98,65.34 H88.02" />
-    <!-- 九宫外框：rect 185,185 630x630 rx32 -->
-    <path
-        android:strokeColor="#23211C"
-        android:strokeWidth="2.808"
-        android:pathData="M23.436,19.98 h61.164 a3.456,3.456 0 0 1 3.456,3.456 v61.164 a3.456,3.456 0 0 1 -3.456,3.456 h-61.164 a3.456,3.456 0 0 1 -3.456,-3.456 v-61.164 a3.456,3.456 0 0 1 3.456,-3.456 Z" />
-    <!-- 界格线：rect 80,80 840x840 rx70，细线 0.864 -->
-    <path
-        android:strokeColor="#23211C"
-        android:strokeWidth="0.864"
-        android:pathData="M16.2,8.64 h75.6 a7.56,7.56 0 0 1 7.56,7.56 v75.6 a7.56,7.56 0 0 1 -7.56,7.56 h-75.6 a7.56,7.56 0 0 1 -7.56,-7.56 v-75.6 a7.56,7.56 0 0 1 7.56,-7.56 Z" />
+        android:fillColor="#30343A"
+        android:fillType="evenOdd"
+        android:pathData="M35.7,54 a18.3,18.3 0 1,0 36.6,0 a18.3,18.3 0 1,0 -36.6,0Z M45.5,51.2 a11.3,11.3 0 1,0 22.6,0 a11.3,11.3 0 1,0 -22.6,0Z" />
 </vector>
