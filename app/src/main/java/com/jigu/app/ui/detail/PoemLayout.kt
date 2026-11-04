@@ -31,7 +31,7 @@ import com.jigu.app.ui.theme.Wenkai
  * 标题与署名由调用方居中。
  */
 
-private val PROSE_CATEGORIES = setOf("guwen", "laozi", "lunyu", "sishu", "mengxue", "youmengying")
+private val PROSE_CATEGORIES = setOf("guwen", "laozi", "zhuangzi", "shishuo", "shiji", "lunyu", "sishu", "mengxue", "youmengying")
 
 private val TERM = setOf('，', '。', '！', '？', '；', '：', '、', ',', '.', ';', ':')
 

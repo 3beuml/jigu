@@ -566,7 +566,8 @@ class PoemsDb private constructor(context: Context) {
     /** 陈列层（书架/选本与名句收录的类），同名同文时优先保留（D-015） */
     private val CURATED_CATS =
         setOf("shijing", "chuci", "qing_ci", "youmengying", "lunyu", "sishu", "han_wei",
-            "qianjiashi", "wudai_ci", "guwen", "laozi", "gushi19", "mengxue")
+            "qianjiashi", "wudai_ci", "guwen", "laozi", "gushi19",
+            "zhuangzi", "shishuo", "shiji", "mengxue")
 
     /** 保留优先序：家塾课本 > 陈列层 > 题短者 > id 小者 */
     private fun compareSearchRank(a: Poem, b: Poem): Int {

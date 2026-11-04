@@ -43,9 +43,10 @@ TARGET_UPM = 1000  # 霞鹜文楷 UPM；Jigmo 是 1024，字形步进按比例�
 def collect_chars(db_path: Path) -> set[str]:
     chars: set[str] = set(UI_TEXT)
     db = sqlite3.connect(db_path)
+    # 瘦身（SCHEMA 7）：body 列已删，全文以 paragraphs 为准
     for (text,) in db.execute(
-        "SELECT title || author_alias || paragraphs || tags || notes || brief FROM ("
-        " SELECT p.title, IFNULL(a.name,'') AS author_alias, p.paragraphs, p.tags, p.notes, p.body AS brief"
+        "SELECT title || author_alias || paragraphs || tags || notes FROM ("
+        " SELECT p.title, IFNULL(a.name,'') AS author_alias, p.paragraphs, p.tags, p.notes"
         " FROM poems p LEFT JOIN authors a ON a.id = p.author_id)"
     ):
         chars.update(ch for ch in text if ord(ch) >= 0x20)

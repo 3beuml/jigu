@@ -54,18 +54,21 @@ private val BOOK_MODULES = listOf(
     BookModule("论语", "lunyu", "语录即文章", 2),
     BookModule("老子", "laozi", "道德五千言 · 全 81 章", 3),
     BookModule("孟子", "sishu", "雄辩滔滔", 4),
-    BookModule("古诗十九首", "gushi19", "五言之祖 · 东汉无名氏", 5),
-    BookModule("曹操诗集", "han_wei", "建安风骨", 6),
-    BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 7),
-    BookModule("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵", 8),
-    BookModule("水墨唐诗", "tag:水墨唐诗", "诗画一题 · 唐人选迹", 9),
-    BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 10),
-    BookModule("宋词三百首", "tag:宋词三百首", "朱祖谋编选 · 两宋词家名篇", 11),
-    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 12),
-    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 13),
-    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 14),
-    BookModule("纳兰词", "qing_ci", "清词第一", 15),
-    BookModule("名句", "famous", "千古名句 · 今日页同源", 16),
+    BookModule("庄子", "zhuangzi", "内篇七全 · 外篇名篇", 5),
+    BookModule("古诗十九首", "gushi19", "五言之祖 · 东汉无名氏", 6),
+    BookModule("曹操诗集", "han_wei", "建安风骨", 7),
+    BookModule("史记", "shiji", "纪传之祖 · 名段选", 8),
+    BookModule("世说新语", "shishuo", "魏晋风度 · 名则选", 9),
+    BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 10),
+    BookModule("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵", 11),
+    BookModule("水墨唐诗", "tag:水墨唐诗", "诗画一题 · 唐人选迹", 12),
+    BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 13),
+    BookModule("宋词三百首", "tag:宋词三百首", "朱祖谋编选 · 两宋词家名篇", 14),
+    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 15),
+    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 16),
+    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 17),
+    BookModule("纳兰词", "qing_ci", "清词第一", 18),
+    BookModule("名句", "famous", "千古名句 · 今日页同源", 19),
 ).sortedBy { it.era }
 
 /** 书库：搜索 + 五维浏览（书架 / 朝代 / 诗人 / 体裁 / 主题） */
@@ -494,6 +497,7 @@ private val CATEGORY_LABELS = mapOf(
     "qing_ci" to "纳兰词", "wudai_ci" to "五代词", "qianjiashi" to "千家诗",
     "shijing" to "诗经", "chuci" to "楚辞", "lunyu" to "论语", "sishu" to "四书",
     "guwen" to "古文观止", "laozi" to "老子", "gushi19" to "古诗十九首",
+    "zhuangzi" to "庄子", "shishuo" to "世说新语", "shiji" to "史记",
     "youmengying" to "幽梦影", "mengxue" to "蒙学",
     "han_wei" to "曹操诗集", "yuan_qu" to "元曲",
 )
@@ -554,6 +558,7 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
             val sectionOf: ((PoemsDb.Poem) -> String?)? = when {
                 key == "qianjiashi" -> { p -> p.type }
                 key == "guwen" -> { p -> p.chapter }
+                key == "zhuangzi" || key == "shishuo" || key == "shiji" -> { p -> p.chapter.ifBlank { null } }
                 key == "yuan_qu" -> { p ->
                     // 「诈妮子调风月・混江龙」→ 节 = 剧名；无分隔的单牌曲无节；
                     // 过长/过短/纯数字前段（如散套序数「二」）不算剧目
