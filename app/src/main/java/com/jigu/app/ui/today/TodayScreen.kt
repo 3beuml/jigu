@@ -138,7 +138,9 @@ fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 28.dp),
+                // dock 只住三 tab（D-025 修订）：今日页静态无滚动，内容整体让出胶囊高度，
+                // 底部动作行（收藏/做卡片/换一首）不被压
+                .padding(start = 28.dp, end = 28.dp, bottom = com.jigu.app.DOCK_CLEARANCE),
         ) {
         // 顶部：日期 + 节气/节日角标相邻排布（收紧两者间的大留白，P2-4）
         Row(

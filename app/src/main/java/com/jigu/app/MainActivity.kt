@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -257,8 +258,9 @@ fun JiguApp() {
 
         // ② 悬浮胶囊 dock 覆盖层：宣纸底 + 细墨线描边 + 墨泡选中态（D-004 彩色秩序：dock 零彩色）。
         // 胶囊以外的带子只吞 tap（不进语义树、不放行 move）——列表滑动穿透、留白不误触。
-        // 全屏体验页（做卡片预览/赏画）不显示 dock——预览图与画心不被压。
-        if (route?.startsWith("card/") != true && route?.startsWith("artwork/") != true) {
+        // dock 只住三个顶层 tab（D-025 真机反馈修订）：子页面有各自返回骨架，
+        // 常驻胶囊反而占底部、碍返回视线；全屏体验页同理不显示。
+        if (route in setOf("today", "library", "mine")) {
         DockOverlay(
             modifier = Modifier.align(Alignment.BottomCenter),
             currentRoute = route,
@@ -287,19 +289,19 @@ private fun DockOverlay(
             },
     ) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f), // 宣纸微透
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface, // 宣纸实底（微透在浅页面上糊成一片，D-025 真机反馈）
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
             border = BorderStroke(
-                0.5.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f), // 细墨线（非玻璃高光）
+                0.75.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.9f), // 墨线加重一档
             ),
             modifier = Modifier
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 8.dp)
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(58.dp),
         ) {
             Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 listOf(
@@ -310,31 +312,27 @@ private fun DockOverlay(
                     val selected = currentRoute == when (label) {
                         "今日" -> "today"; "书库" -> "library"; else -> "mine"
                     }
-                    Box(
+                    Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                             .clickable(onClick = onClick),
-                        contentAlignment = Alignment.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (selected) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)
-                                    else Color.Transparent, // 墨泡：深色下 onBackground 反转为纸色，单配方双态
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                if (selected) icons.first else icons.second,
-                                contentDescription = label,
-                                tint = if (selected) MaterialTheme.colorScheme.onBackground
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(23.dp),
-                            )
-                        }
+                        Icon(
+                            if (selected) icons.first else icons.second,
+                            contentDescription = label,
+                            tint = if (selected) MaterialTheme.colorScheme.onBackground
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(21.dp),
+                        )
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (selected) MaterialTheme.colorScheme.onBackground
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
