@@ -58,7 +58,7 @@ def collect_chars(db_path: Path) -> set[str]:
     db.close()
     # 控制可见 ASCII + 常用标点与符号
     chars.update(chr(c) for c in range(0x20, 0x7F))
-    chars.update("，。！？；：、「」『』（）《》〈〉“”‘’—…·～【】〖〗％‰°℃")
+    chars.update("，。！？；：、「」『』（）《》〈〉“”‘’—…·～【】〖〗％‰°℃–｜")
     chars.update("０１２３４５６７８９")
     return chars
 

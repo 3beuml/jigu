@@ -36,16 +36,21 @@ import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
+import com.jigu.app.ui.art.ArtworkScreen
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
 import com.jigu.app.ui.library.ChapterScreen
 import com.jigu.app.ui.library.EraAuthorsScreen
+import com.jigu.app.ui.library.FamousLinesScreen
 import com.jigu.app.ui.favorites.FavoritesScreen
 import com.jigu.app.ui.library.LibraryScreen
 import com.jigu.app.ui.library.ModuleScreen
+import com.jigu.app.ui.library.RhythmicIndexScreen
+import com.jigu.app.ui.library.RhythmicListScreen
 import com.jigu.app.ui.library.ThemePoemsScreen
 import com.jigu.app.ui.library.TypeScreen
 import com.jigu.app.ui.mine.MineScreen
+import com.jigu.app.ui.share.CardPreviewScreen
 import com.jigu.app.ui.theme.JiguTheme
 import com.jigu.app.ui.today.TodayScreen
 import com.jigu.app.ui.detail.DetailScreen
@@ -124,14 +129,26 @@ fun JiguApp() {
         },
     ) { padding ->
         NavHost(nav, startDestination = "today", modifier = Modifier.padding(padding)) {
-            composable("today") { TodayScreen(onOpen = openDetail) }
+            composable("today") {
+                TodayScreen(
+                    onOpen = openDetail,
+                    onCard = { id -> nav.navigate("card/$id") },
+                    onArtwork = { id -> nav.navigate("artwork/$id") },
+                )
+            }
             composable("library") {
                 LibraryScreen(
-                    onOpenModule = { key -> nav.navigate("module/$key") },
+                    onOpenModule = { key ->
+                        if (key == "famous") nav.navigate("famous") else nav.navigate("module/$key")
+                    },
                     onOpenEra = { era -> nav.navigate("era/$era") },
                     onOpenAuthors = { nav.navigate("authors") },
                     onOpenAuthor = { id -> nav.navigate("author/$id") },
-                    onOpenType = { name -> nav.navigate("type/$name") },
+                    onOpenType = { name ->
+                        // 词/曲不再直开平列表（词 2.2 万/曲 1.1 万），先过词牌/曲牌索引（批3）
+                        if (name == "词" || name == "曲") nav.navigate("rhythmic_index/$name")
+                        else nav.navigate("type/$name")
+                    },
                     onOpenTheme = { name -> nav.navigate("theme/$name") },
                     onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
                     onOpen = openDetail,
@@ -164,6 +181,12 @@ fun JiguApp() {
                     onOpen = openDetail,
                 )
             }
+            composable("famous") {
+                FamousLinesScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
             composable("era/{era}") { back ->
                 EraAuthorsScreen(
                     era = back.arguments?.getString("era") ?: "",
@@ -191,12 +214,43 @@ fun JiguApp() {
                     onOpen = openDetail,
                 )
             }
+            composable("rhythmic_index/{type}") { back ->
+                RhythmicIndexScreen(
+                    type = back.arguments?.getString("type") ?: "",
+                    onBack = { nav.popBackStack() },
+                    onOpenRhythmic = { name ->
+                        val type = back.arguments?.getString("type") ?: ""
+                        nav.navigate("rhythmic_list/$type/$name")
+                    },
+                )
+            }
+            composable("rhythmic_list/{type}/{name}") { back ->
+                RhythmicListScreen(
+                    type = back.arguments?.getString("type") ?: "",
+                    rhythmic = back.arguments?.getString("name") ?: "",
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
             composable("mine") { MineScreen(onOpenFavorites = { nav.navigate("favorites") }) }
+            composable("card/{id}") { back ->
+                CardPreviewScreen(
+                    id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
+                    onBack = { nav.popBackStack() },
+                )
+            }
             composable("detail/{id}") { back ->
                 DetailScreen(
                     id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
+                    onOpenArtwork = { id -> nav.navigate("artwork/$id") },
+                )
+            }
+            composable("artwork/{id}") { back ->
+                ArtworkScreen(
+                    poemId = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
+                    onBack = { nav.popBackStack() },
                 )
             }
         }

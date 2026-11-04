@@ -1,6 +1,7 @@
 package com.jigu.app.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -142,7 +143,8 @@ fun EraAuthorsScreen(era: String, onBack: () -> Unit, onOpenAuthor: (Int) -> Uni
                         )
                     }
                     Text(
-                        text = "${a.workCount} 篇" + a.brief.take(24).let { if (it.isNotBlank()) " ｜ $it…" else "" },
+                        text = "${a.workCount} 篇" + a.brief.take(24).replace('\n', ' ').trim()
+                            .let { if (it.isNotBlank()) " ｜ ${if (it.length < 24) it else it + "…"}" else "" },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -320,6 +322,84 @@ fun ThemePoemsScreen(theme: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     }
 }
 
+/** 词牌/曲牌索引（批3）：体裁"词"/"曲"的二级页，调名按篇数降序，再点调进同调作品列表 */
+@Composable
+fun RhythmicIndexScreen(type: String, onBack: () -> Unit, onOpenRhythmic: (String) -> Unit) {
+    val context = LocalContext.current
+    var items by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
+    var hasMore by remember { mutableStateOf(true) }
+    var page by remember { mutableIntStateOf(0) }
+    val pageN = 120
+
+    LaunchedEffect(page) {
+        withContext(Dispatchers.IO) {
+            val batch = PoemsDb.get(context).rhythmicCounts(type, pageN, page * pageN)
+            items = if (page == 0) batch else items + batch
+            hasMore = batch.size == pageN
+        }
+    }
+
+    BrowseScaffold(
+        title = if (type == "曲") "曲牌" else "词牌",
+        subtitle = "调名 · 按篇数排序",
+        onBack = onBack,
+    ) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            items(items.size, key = { items[it].first }) { index ->
+                val (name, count) = items[index]
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenRhythmic(name) }
+                        .padding(vertical = 14.dp, horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(text = name, style = PoemTitleStyle, color = MaterialTheme.colorScheme.onBackground)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "$count 篇",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            }
+            if (hasMore && items.isNotEmpty()) {
+                item {
+                    TextButton(
+                        onClick = { page += 1 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    ) { Text("加载更多") }
+                }
+            }
+            if (items.isEmpty()) {
+                item {
+                    Text(
+                        "无内容",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 32.dp, start = 20.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 同调作品列表（批3）：词牌/曲牌末级页 */
+@Composable
+fun RhythmicListScreen(type: String, rhythmic: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+    val context = LocalContext.current
+    val pager = rememberPagedPoems(rhythmic) { page ->
+        PoemsDb.get(context).listByRhythmic(type, rhythmic, PAGE, page * PAGE)
+    }
+    BrowseScaffold(title = rhythmic, subtitle = if (type == "曲") "曲牌" else "词牌", onBack = onBack) {
+        PagedPoemList(pager, onOpen)
+    }
+}
+
 /** 浏览页公共骨架：返回 + 标题 + 副题（纪年等） */
 @Composable
 private fun BrowseScaffold(
@@ -358,5 +438,59 @@ private fun BrowseScaffold(
         }
         Spacer(Modifier.height(4.dp))
         content()
+    }
+}
+
+/** 名句/名段浏览（批1 书库"名句"卡；D-011 名句制的浏览兑现）：今日页同源数据，按名气序分页 */
+@Composable
+fun FamousLinesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
+    val context = LocalContext.current
+    var lines by remember { mutableStateOf<List<PoemsDb.FamousLine>>(emptyList()) }
+    var hasMore by remember { mutableStateOf(true) }
+    var page by remember { mutableIntStateOf(0) }
+    val pageN = 100
+
+    LaunchedEffect(page) {
+        withContext(Dispatchers.IO) {
+            val batch = PoemsDb.get(context).famousLines(pageN, page * pageN)
+            lines = if (page == 0) batch else lines + batch
+            hasMore = batch.size == pageN
+        }
+    }
+
+    BrowseScaffold(title = "名句", subtitle = "名段 · 今日页与名句表同源", onBack = onBack) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(lines.size, key = { lines[it].poemId * 1000 + it }) { index ->
+                val f = lines[index]
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpen(f.poemId) }
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                ) {
+                    Text(
+                        text = f.line,
+                        style = PoemTitleStyle,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = "${f.signature}《${f.title}》",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            }
+            if (hasMore && lines.isNotEmpty()) {
+                item {
+                    TextButton(
+                        onClick = { page += 1 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    ) { Text("加载更多") }
+                }
+            }
+        }
     }
 }

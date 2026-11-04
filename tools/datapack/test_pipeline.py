@@ -13,9 +13,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build import (  # noqa: E402
     ERA_MAP,
     THEME_RULES,
+    TITLE_FIXES,
     classify_genre,
     classify_type,
+    clean_brief,
     extract_two_clause,
+    two_clauses_around,
+    norm_title,
+    clean_placeholder_title,
+    split_author_dynasty,
     s,
     theme_hits_for,
 )
@@ -93,6 +99,44 @@ def test_theme_hits_positive_negative():
     print("ok  主题双例（标题权重/正文两处/负向词）")
 
 
+def test_theme_v3_prefix_and_new_classes():
+    """v3 词表（批2）：每条新细类一正一负；"^"前缀语义。"""
+    # —— 送别收窄（^前缀） positive/negative both ——
+    assert "送别" in theme_hits_for("别董大", "千里黄云白日曛，北风吹雁雪纷纷。莫愁前路无知己，天下谁人不识君。")
+    # 题中非前缀的"送/别"不再命中（旧版"遥送"会误伤）
+    assert "送别" not in theme_hits_for("遥送故人千万里", "别来音信各杳然，思君过尽千山雪。")
+    # —— 四季 ——
+    assert "春季" in theme_hits_for("钱塘湖春行", "孤山寺北贾亭西，水面初平云脚低。最爱湖东行不足，绿杨阴里白沙堤。")
+    assert "春季" not in theme_hits_for("枫桥夜泊", "月落乌啼霜满天，江枫渔父对愁眠。姑苏城外寒山寺，夜半钟声到客船。")
+    assert "夏季" in theme_hits_for("观刈麦", "田家少闲月，五月人倍忙。夜来南风起，小麦覆陇黄。足蒸暑土气，背灼炎天光。")
+    assert "夏季" not in theme_hits_for("登鹳雀楼", "白日依山尽，黄河入海流。欲穷千里目，更上一层楼。")
+    assert "秋季" in theme_hits_for("新秋言怀", "新秋入破宅，疎澹若平郊。落叶惊霜信，西风动旅袍。")
+    # 记月纪事题（十月菊）不误记月令；"秋千"负词挡秋千游戏诗
+    assert "秋季" not in theme_hits_for("题秋千词", "秋千院落溶溶月，杨柳堆烟帘幕重重。")
+    assert "冬季" in theme_hits_for("冬夜读书示子聿", "古人学问无遗力，少壮工夫老始成。纸上得来终觉浅，绝知此事要躬行。")
+    assert "冬季" not in theme_hits_for("题破山寺后禅院", "清晨入古寺，初日照高林。曲径通幽处，禅房花木深。")
+    # —— 雪/雨 ——
+    assert "写雪" in theme_hits_for("白雪歌送武判官归京", "北风卷地白草折，胡天八月即飞雪。忽如一夜春风来，千树万树梨花开。")
+    assert "写雪" not in theme_hits_for("春夜喜雨", "好雨知时节，当春乃发生。随风潜入夜，润物细无声。")
+    assert "写雨" in theme_hits_for("春夜喜雨", "好雨知时节，当春乃发生。随风潜入夜，润物细无声。")
+    assert "写雨" not in theme_hits_for("雨霖铃", "寒蝉凄切，对长亭晚，骤雨初歇。都门帐饮无绪，留恋处，兰舟催发。")
+    # —— 月（月份负词；"静夜思"两处"明月"成立）——
+    assert "写月" in theme_hits_for("静夜思", "床前看月光，疑是地上霜。举头望明月，低头思故乡。")
+    assert "写月" not in theme_hits_for("九月九日忆山东兄弟", "独在异乡为异客，每逢佳节倍思亲。遥知兄弟登高处，遍插茱萸少一人。")
+    assert "写月" not in theme_hits_for("杂言", "日月双流转，岁月不知年。")
+    # —— 花 ——
+    assert "写花" in theme_hits_for("大林寺桃花", "人间四月芳菲尽，山寺桃花始盛开。长恨春归无觅处，不知转入此中来。")
+    assert "写花" not in theme_hits_for("登鹳雀楼", "白日依山尽，黄河入海流。欲穷千里目，更上一层楼。")
+    assert "写花" not in theme_hits_for("花间集序", "镂玉雕琼，拟化工而回巧。裁花剪叶，夺春艳以争鲜。")
+    # —— 爱国 ——
+    assert "爱国" in theme_hits_for("示儿", "死去元知万事空，但悲不见九州同。王师北定中原日，家祭无忘告乃翁。")
+    assert "爱国" not in theme_hits_for("忆江南", "江南好，风景旧曾谙。日出江花红胜火，春来江水绿如蓝。能不忆江南？")
+    # —— 儿童 ——
+    assert "儿童" in theme_hits_for("村居", "草长莺飞二月天，拂堤杨柳醉春烟。儿童散学归来早，忙趁东风放纸鸢。")
+    assert "儿童" not in theme_hits_for("静夜思", "床前看月光，疑是地上霜。举头望明月，低头思故乡。")
+    print("ok  v3 词表（前缀语义 + 季节/雪雨月花/爱国/儿童 一正一负）")
+
+
 def test_extract_two_clause():
     assert extract_two_clause("国破山河在，城春草木深。感时花溅泪，恨别鸟惊心。") == "国破山河在，城春草木深。"
     assert extract_two_clause("床前明月光，疑是地上霜。") == "床前明月光，疑是地上霜。"
@@ -100,6 +144,68 @@ def test_extract_two_clause():
     # 不等长/无逗号 -> None
     assert extract_two_clause("_hello") is None
     print("ok  名句两句型抽取")
+
+
+def test_norm_title():
+    # 组诗分篇归一（单空格数字尾 / 双空格"其N"尾 →「·其N」）
+    assert norm_title("出塞 一") == "出塞·其一"
+    assert norm_title("帝京篇十首 五") == "帝京篇十首·其五"
+    assert norm_title("咏蝉  其一") == "咏蝉·其一"
+    # 非数字尾不吞；题内空格并作「·」
+    assert norm_title("一字至七字诗 书") == "一字至七字诗·书"
+    assert norm_title("杂曲歌辞 踏歌行 三") == "杂曲歌辞·踏歌行·其三"
+    # 无空格数字尾、正常题不动
+    assert norm_title("静夜思") == "静夜思"
+    assert norm_title("其一") == "其一"  # 无基名，不动
+    print("ok  组诗分篇标题归一")
+
+
+def test_clean_placeholder_title():
+    # 纯占位整题 → 佚题；组诗序号/词调名后缀保留
+    assert clean_placeholder_title("□□") == "佚题"
+    assert clean_placeholder_title("□□□□·其二") == "佚题·其二"
+    assert clean_placeholder_title("□□□・七娘子") == "佚题·七娘子"  # 半角中点分隔
+    assert clean_placeholder_title("□□·其二") == "佚题·其二"  # 管线中 norm_title 先把空格归「·」
+    # 部分缺字保留校勘原貌，不虚构
+    assert clean_placeholder_title("□后圃成三绝句·其一") == "□后圃成三绝句·其一"
+    assert clean_placeholder_title("□□□□□□□卷后") == "□□□□□□□卷后"
+    assert clean_placeholder_title("宿（下泐。按是诗题下似是「千」字，当") == "宿（下泐。按是诗题下似是「千」字，当"
+    # 正常题不动
+    assert clean_placeholder_title("静夜思") == "静夜思"
+    assert clean_placeholder_title("无题") == "无题"
+    print("ok  缺字占位标题归一")
+
+
+def test_split_author_dynasty():
+    assert split_author_dynasty("（唐）孟浩然") == ("唐", "孟浩然")
+    assert split_author_dynasty("（宋）蘇軾") == ("宋", "蘇軾")
+    assert split_author_dynasty("（清）张潮 ") == ("清", "张潮")
+    assert split_author_dynasty("佚名") == ("", "佚名")
+    print("ok  千家诗作者朝代拆分")
+
+
+def test_two_clauses_around():
+    ai = "水陆草木之花，可爱者甚蕃。晋陶渊明独爱菊。予独爱莲之出淤泥而不染，濯清涟而不妖，中通外直。"
+    assert two_clauses_around(ai, "出淤泥而不染") == "予独爱莲之出淤泥而不染，濯清涟而不妖，"
+    assert two_clauses_around("天命之谓性，率性之谓道，修道之谓教。", "天命之谓性") == "天命之谓性，率性之谓道，"
+    assert two_clauses_around("前一句。含锚在末句。", "含锚在末句") == "前一句。含锚在末句。"
+    assert two_clauses_around("风烟俱净。", "不在其中") is None
+    print("ok  散文名句锚句居中截取")
+
+
+def test_title_fixes():
+    fix = dict(TITLE_FIXES)
+    assert fix.get("在岳咏蝉") == "在狱咏蝉"
+    print("ok  标题错字修正清单")
+
+
+def test_clean_brief():
+    # 空格连排的同文（句读异）只留一份；真异文以「；」连接
+    assert clean_brief("王建，字仲初，颍川人。大历十年进士。" + "      " + "王建，字仲初，颍川人，大历十年进士，") == \
+        "王建，字仲初，颍川人。大历十年进士。"
+    assert clean_brief("生于甲年。卒于乙年。") == "生于甲年。卒于乙年。"  # 单段不动
+    assert "；" in clean_brief("维基文库版本甲。" + "   " + "另一种版本乙。")
+    print("ok  小传空格连排去重")
 
 
 def test_classify_genre():
@@ -126,6 +232,13 @@ if __name__ == "__main__":
     test_classify_qianjiashi_type_passthrough()
     test_theme_rules_grounded()
     test_theme_hits_positive_negative()
+    test_theme_v3_prefix_and_new_classes()
     test_extract_two_clause()
+    test_norm_title()
+    test_clean_placeholder_title()
+    test_split_author_dynasty()
+    test_two_clauses_around()
+    test_title_fixes()
+    test_clean_brief()
     test_classify_genre()
     print("全部通过")

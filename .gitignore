@@ -30,3 +30,6 @@ app/src/main/assets/data/
 
 # Python 缓存
 __pycache__/
+
+# Kotlin 原生编译缓存（构建副产物）
+.kotlin/

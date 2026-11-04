@@ -34,8 +34,10 @@ from opencc import OpenCC
 
 T2S = OpenCC("t2s")
 
+REPO = Path(__file__).resolve().parents[2]
+
 SCHEMA_VERSION = 6
-DATA_VERSION = 11  # +1: 通行本异文手工覆盖（静夜思/江南春）+ 组诗热度合并（抗搜索收录噪音）
+DATA_VERSION = 16  # +1: 主题词表 v3（批2：12→22 细类，四季/雪雨月花/爱国/儿童入表，送别改前缀制）+ 词牌列补全（批3：全宋词已带，曲由题面解析回填、纳兰"牌名·题"拆出）
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -146,7 +148,9 @@ CREATE TABLE favorites(
 
 
 def theme_hits_for(title: str, body: str) -> list[str]:
-    """主题打标 v2（权重制纯函数）：标题词命中即成；正文词需 >=2 处；负向词命中即弃。
+    """主题打标 v2→v3（权重制纯函数）：标题词命中即成；正文词需 >=2 处；负向词命中即弃。
+    词法："^X" = 标题前缀匹配（v3 引入，救"送"单字全文匹配过宽——25449 篇全库 7.6% 全是送别）；
+    其余子串命中。改词表必跑 tools/datapack/test_pipeline.py（含一正一负用例）。
     "咏物"特判：标题以"咏"开头且非咏史怀古（防止"咏史诗"被记咏物）。"""
     hits = []
     for name, grp, t_kws, b_kws, negs in THEME_RULES:
@@ -154,7 +158,10 @@ def theme_hits_for(title: str, body: str) -> list[str]:
             continue
         if any(k in title or k in body for k in negs):
             continue
-        t_hit = any(k in title for k in t_kws)
+        t_hit = any(
+            (title.startswith(k[1:]) if k.startswith("^") else k in title)
+            for k in t_kws
+        )
         b_count = sum(body.count(k) for k in b_kws)
         if t_hit or b_count >= 2:
             hits.append(name)
@@ -166,10 +173,17 @@ def theme_hits_for(title: str, body: str) -> list[str]:
 def s(text: str) -> str:
     """繁->简 + 清理不可见空白 + 字形门闩（文楷缺字替换为 Unihan 可映射的通行字）+ 清洗 PUA 乱码。"""
     out = T2S.convert(text).strip()
+    # OpenCC 不处理的生僻变体，点名映射（茍=苟之异体，四书五经源文本出现）
+    for a, b in MANUAL_VARIANTS.items():
+        out = out.replace(a, b)
     out = "".join(ch for ch in out if not (0xE000 <= ord(ch) <= 0xF8FF))
     if GLYPH_GATE["cmap"]:
         out = "".join(_gate_char(ch) for ch in out)
     return out
+
+
+# 手工变体映射（谨慎点名，每条有据；不做批量异体归并）
+MANUAL_VARIANTS = {"茍": "苟"}
 
 
 # 字形门闩状态（main 里加载）
@@ -247,7 +261,7 @@ def classify_type(category: str, title: str, rhythmic: str, paragraphs: list[str
         return "诗经体"
     if category == "chuci":
         return "骚体"
-    if category in ("lunyu", "sishu", "guwen", "youmengying", "mengxue"):
+    if category in ("lunyu", "sishu", "guwen", "laozi", "youmengying", "mengxue"):
         return "文"
     if category == "yuan_qu":
         return "曲"
@@ -340,7 +354,7 @@ class Db:
         self.dups: dict[str, int] = {}
 
     def author(self, name: str, dynasty: str, brief: str = "") -> int:
-        name, brief = s(name), s(brief)
+        name, brief = s(name), clean_brief(s(brief))
         dynasty = s(dynasty)
         dynasty = ERA_MAP.get(dynasty, dynasty)
         key = (name, dynasty)
@@ -365,7 +379,8 @@ class Db:
         if not paras:
             return False
         body = "\n".join(paras)
-        title = s(rec.get("title") or "无题")
+        title = clean_placeholder_title(norm_title(s(rec.get("title") or "无题")))
+        title = next((new for old, new in TITLE_FIXES if title == old), title)
         h = hashlib.md5(f"{title}|{s(rec.get('author',''))}|{body}".encode()).hexdigest()
         cat = rec["category"]
         era = ERA_MAP.get(s(rec.get("dynasty", "")), s(rec.get("dynasty", "")))
@@ -517,11 +532,37 @@ def it_youmengying(dataset: Path):
         }
 
 
+def it_laozi(dataset: Path):
+    """老子精选章目：corpus/laozi.json（手工校订，D-019/批1）。corpus 在仓库内，不在外部数据集。
+    批1 前曾挂在 guwen+chapter 补遗下（书架"古文观止"卡混入 19 章，卡题错位）；现独立分类，
+    书架单独成卡；chapter 置空，不进文门书卷两级页。"""
+    d = load_json(REPO / "tools/datapack/corpus/laozi.json")
+    for sec in d["sections"]:
+        yield {
+            "category": "laozi", "title": f"老子·{sec['n']}", "author": d["author"],
+            "dynasty": d["dynasty"], "paragraphs": sec["paragraphs"],
+        }
+
+
+def it_guwen_extra(dataset: Path):
+    """古文观止缺收的课标名篇补遗：corpus/guwen_extra.json（手工校订，D-019）。"""
+    d = load_json(REPO / "tools/datapack/corpus/guwen_extra.json")
+    for a in d["pieces"]:
+        yield {
+            "category": "guwen", "title": a["chapter"], "author": a["author"],
+            "dynasty": a["dynasty"], "paragraphs": a["paragraphs"],
+            "section": a.get("source", ""), "chapter": "补遗",
+        }
+
+
 def it_nalan(dataset: Path):
     for r in load_json(dataset / "纳兰性德" / "纳兰性德诗集.json"):
+        title = r["title"]
+        # 题形"牌名·题"——词牌拆入 rhythmic 列（批3 词牌二级页用；全宋词源自带该字段）
+        rhythmic = title.partition("·")[0].strip() if "·" in title else ""
         yield {
-            "category": "qing_ci", "title": r["title"], "author": r.get("author", "纳兰性德"),
-            "dynasty": "清", "paragraphs": r["para"], "source_id": "",
+            "category": "qing_ci", "title": title, "author": r.get("author", "纳兰性德"),
+            "dynasty": "清", "paragraphs": r["para"], "rhythmic": rhythmic, "source_id": "",
         }
 
 
@@ -533,11 +574,36 @@ def it_caocao(dataset: Path):
         }
 
 
+def _yuanqu_rhythmic(title: str) -> str:
+    """元曲曲牌抽取（批3 曲牌二级页）：题形「剧名・宫调/牌名」取末段牌名；
+    「剧名・牌名」取尾部；无分隔段 ≤6 字视为牌名（同前/同上由调用方继承前调）。"""
+    if "・" in title:
+        tail = title.partition("・")[2]
+        if "/" in tail:
+            tail = tail.rpartition("/")[2]
+        if 0 < len(tail) <= 6:
+            return tail
+    return ""
+
+
 def it_yuanqu(dataset: Path):
+    prev = ""
+    # 重复段记法 = 与上一首同调（南戏"同前/前腔"、北套"幺篇"、收尾"尾声"），继承而不立牌
+    INHERIT = ("同前", "同上", "同前调", "又一体", "前腔", "幺篇", "尾声", "前腔换头")
     for r in load_json(dataset / "元曲" / "yuanqu.json"):
+        title = r["title"]
+        rhythmic = _yuanqu_rhythmic(title)
+        if rhythmic in INHERIT or rhythmic.startswith(INHERIT):
+            rhythmic = prev  # 无论从哪条题面路径抽出，都归并到前调
+        if not rhythmic and "・" not in title:
+            if title in INHERIT or title.startswith(INHERIT):
+                rhythmic = prev
+            elif len(title) <= 6:
+                rhythmic = title
+        prev = rhythmic
         yield {
-            "category": "yuan_qu", "title": r["title"], "author": r["author"],
-            "dynasty": "元", "paragraphs": r["paragraphs"],
+            "category": "yuan_qu", "title": title, "author": r["author"],
+            "dynasty": "元", "paragraphs": r["paragraphs"], "rhythmic": rhythmic,
         }
 
 
@@ -586,14 +652,23 @@ def it_shuimotangshi(dataset: Path):
         }
 
 
+def split_author_dynasty(raw: str) -> tuple[str, str]:
+    """「（唐）孟浩然」-> (唐, 孟浩然)；无括号 -> ('', 原文)。（P1-9：原实现把朝代当杂质丢弃）"""
+    m = re.match(r"^（([^）]*)）\s*(.*)$", raw)
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    return "", raw
+
+
 def it_qianjiashi(dataset: Path):
-    """千家诗：分四卷，卷名即体裁（五言绝句/五言律诗/七言绝句/七言律诗）；组诗（其一/其二）展开为多条"""
+    """千家诗：分四卷，卷名即体裁（五言绝句/五言律诗/七言绝句/七言律诗）；组诗（其一/其二）展开为多条。
+    author 形如「（唐）孟浩然」——括号内是朝代，提取进 dynasty（原实现整段丢弃致 era 全空，P1-9）。"""
     d = load_json(dataset / "蒙学" / "qianjiashi.json")
     for vol in d["content"]:
         t = s(vol.get("type", ""))
         for r in vol["content"]:
             chapter = s(r.get("chapter", ""))
-            author = re.sub(r"^（[^）]*）", "", s(r.get("author", "")))
+            dynasty, author = split_author_dynasty(s(r.get("author", "")))
             paras = r.get("paragraphs", [])
             if paras and isinstance(paras[0], dict):
                 for sub in paras:
@@ -601,13 +676,13 @@ def it_qianjiashi(dataset: Path):
                     yield {
                         "category": "qianjiashi",
                         "title": f"{chapter}·{sub_t}" if sub_t else chapter,
-                        "author": author, "dynasty": "",
+                        "author": author, "dynasty": dynasty,
                         "paragraphs": sub.get("paragraphs", []), "type": t,
                     }
             else:
                 yield {
                     "category": "qianjiashi", "title": chapter,
-                    "author": author, "dynasty": "",
+                    "author": author, "dynasty": dynasty,
                     "paragraphs": paras, "type": t,
                 }
 
@@ -679,23 +754,52 @@ COMPOUND_IMAGERY = {
 }
 
 # 主题（题材）规则：诗词专用（文/蒙学不参与），关键词子串命中即打标
-# 主题词表 v2（权重制四元组）：(细类名, 四门 grp, 标题词, 正文词, 负向词)
+# 主题词表 v3（批2，四元组）：(细类名, 四门 grp, 标题词, 正文词, 负向词)
 #   - 标题词命中即成；正文词需 >=2 处命中（根治单字"酒"扫全库的误伤）；负向词命中即放弃。
-#   - 改词表必跑 tools/datapack/test_pipeline.py（含一正一负用例）。低频细类延批（先 12 类）。
+#   - v3 变化：新增 春/夏/秋/冬四时 + 写雪/写雨/写月/写花 + 爱国/儿童 共 10 条（12→22 细类，
+#     对齐 RESEARCH-2026-10-26 收编蓝本的"高频 22 条"；写人/哲理/咏物细类（梅荷菊柳）延批）；
+#     「送别」标题词改前缀制（"^送/^别"），原单字"送/别"全题匹配把全库 7.6% 扫成送别（25449 篇），
+#     收窄后 18483 篇（5.5%），样本抽检全部为真离别；"写月"加月份负词（防"十月菊"式记月纪事题）。
+#   - 探针台账：tools/datapack/theme_report.py（改前后各跑一次，看计数/样本/覆盖率）。
 THEME_RULES = [
-    ("山水",     "写景", ("山水", "溪山", "山行", "游山"), ("溪", "峰", "瀑布", "烟霞", "林泉", "山色", "云壑"), ()),
+    ("山水",     "写景", ("山水", "溪山", "山行", "游山"), ("溪", "峰", "瀑布", "烟霞", "林泉", "山色", "云壑", "青山", "岫", "泉石"), ()),
     ("田园",     "写景", ("田园", "村居", "归园", "归田"), ("耕", "桑", "篱", "炊烟", "牧童", "田家", "禾"), ("塞", "戍", "军")),
-    ("送别",     "抒怀", ("送", "赠别", "别"), ("长亭", "折柳", "劳劳", "南浦", "别离", "歧路"), ()),
+    ("春季",     "写景", ("春",),
+     ("春风", "春雨", "春色", "春花", "春草", "春柳", "春水", "春寒", "春莺", "春燕",
+      "春山", "春夜", "春意", "春归", "残春", "初春", "暮春", "新春", "芳草", "东风"), ()),
+    ("夏季",     "写景", ("夏",),
+     ("夏日", "夏夜", "夏景", "夏木", "夏云", "夏雨", "榴花", "荷风", "纳凉", "乘凉",
+      "避暑", "熏风", "薰风", "绿荫", "竹床", "蒲扇", "浮瓜", "暑", "炎天"), ()),
+    ("秋季",     "写景", ("秋",),
+     ("秋风", "秋雨", "秋声", "秋色", "秋雁", "秋鸿", "秋花", "秋草", "秋夜", "落叶",
+      "西风", "霜", "雁", "菊"), ("秋千",)),
+    ("冬季",     "写景", ("冬",),
+     ("冬", "隆冬", "寒冬", "岁暮", "岁寒", "朔风", "北风", "冰雪", "腊", "严寒"), ()),
+    ("写雪",     "写景", ("雪",), ("雪",), ()),
+    ("写雨",     "写景", ("雨",), ("雨",), ("雨霖铃",)),
+    ("写月",     "写景", ("月",),
+     ("明月", "月光", "月色", "月华", "月明", "嫦娥", "婵娟", "玉兔", "桂魄", "孤月"),
+     # 负词：抽象"岁月/日月"；X月纪事题（九月九日/十月菊），八月保留（八月十五赏月题多）
+     ("岁月", "日月", "正月", "二月", "三月", "四月", "五月", "六月", "七月", "九月", "十月", "腊月")),
+    ("写花",     "写景", ("花",), ("花", "蕊", "瓣", "芳菲", "落英", "群芳", "百花"),
+     ("花间集",)),
+    ("送别",     "抒怀", ("^送", "^别", "送别", "相送", "别离", "赠别", "留别",
+                          "赋别", "惜别", "话别"), ("长亭", "折柳", "劳劳", "南浦", "别离", "歧路"), ()),
     ("思乡",     "抒怀", ("思乡", "乡思", "旅思"), ("乡书", "故乡", "故园", "还乡", "客路", "客心", "归梦", "望乡", "砧"), ()),
     ("相思",     "抒怀", ("相思", "怀人", "忆内"), ("相思", "红豆", "锦书", "两地", "鸿雁", "雁字"), ()),
     ("悼亡",     "抒怀", ("悼亡", "挽歌", "哭"), ("悼亡", "挽", "孤坟", "哀词"), ()),
     ("咏史怀古", "抒怀", ("咏史", "怀古", "览古", "六朝", "金陵"), ("兴亡", "前朝", "六朝", "吴宫", "故垒", "秦淮"), ()),
-    ("边塞",     "世情", ("塞下", "塞上", "从军", "出塞", "入塞"), ("关山", "胡马", "烽火", "征人", "大漠", "阴山", "玉门", "楼兰", "燕然", "羌笛"), ()),
+    ("爱国",     "抒怀", ("爱国", "忧国", "家国"),
+     ("报国", "社稷", "汗青", "丹心", "忧国", "家国", "国破", "国恨", "九州",
+      "王师", "遗民", "胡尘", "中原", "故国", "神州", "山河"), ()),
     ("闺怨",     "抒怀", ("闺怨", "闺情", "春怨"), ("罗帏", "绣帘", "空闺", "画眉", "深院", "玉阶"), ()),
     ("饮酒",     "咏物", ("饮", "对酒", "醉后", "酒后"), ("酒", "醉", "樽", "酌", "觞", "醅", "盏"), ()),
+    ("咏物",     "咏物", (), (), ()),  # 特判：标题以"咏"开头（且非咏史/咏物怀古）单独打
+    ("边塞",     "世情", ("塞下", "塞上", "从军", "出塞", "入塞"), ("关山", "胡马", "烽火", "征人", "大漠", "阴山", "玉门", "楼兰", "燕然", "羌笛"), ()),
     ("节令",     "世情", ("人日", "元日", "上元", "清明", "寒食", "重九", "七夕", "中秋", "腊八", "除夕", "冬至"),
      ("春节", "元日", "元宵", "清明", "端午", "七夕", "中秋", "重阳", "除夕", "冬至", "岁暮", "新正", "守岁", "寒食", "立春", "立秋"), ()),
-    ("咏物",     "咏物", (), (), ()),  # 特判：标题以"咏"开头（且非咏史/咏物怀古）单独打
+    ("儿童",     "世情", ("^童", "^稚", "^儿", "牧童", "^小娃"),
+     ("儿童", "童稚", "稚子", "童子", "孩提", "小娃", "儿曹", "牧童", "纸鸢", "风筝"), ()),
 ]
 
 POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
@@ -722,11 +826,6 @@ CALENDAR_KEYWORDS = {
         "腊八": ["腊八", "粥"],
     },
 }
-
-# calendar_map 配诗只从韵文类取
-POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
-                     "shijing", "chuci", "han_wei")
-
 
 # 名句种子：(题目关键词, 名句关键词)。命中即把该句登记为该诗的"名句"；
 # 未命中的打印跳过。首版覆盖三百首/诗经/楚辞/纳兰（精选库可解析），宋词条目仅全量库生效。
@@ -761,18 +860,18 @@ FAMOUS_LINES = [
     ("陋室铭", "山不在高"), ("爱莲说", "出淤泥而不染"), ("小石潭记", "青树翠蔓"),
     ("赤壁赋", "清风徐来"), ("后赤壁赋", "霜露既降"), ("出师表", "先帝创业未半"),
     ("报任安书", "人固有一死"), ("过秦论", "秦孝公据崤函"), ("阿房宫赋", "六王毕，四海一"),
-    ("郑伯克段于鄢", "多行不义必自毙"), ("曹刿论战", "一鼓作气"), ("邹忌讽齐王纳谏", "吾妻之美我者"),
+    ("郑伯克段于鄢", "多行不义"), ("曹刿论战", "一鼓作气"), ("邹忌讽齐王纳谏", "吾妻之美我者"),
     ("冯谖客孟尝君", "长铗归来乎"), ("触龙说赵太后", "父母之爱子"), ("谏太宗十思疏", "居安思危"),
     ("答司马谏议书", "而议事每不合"), ("读孟尝君传", "世皆称孟尝君能得士"),
     ("游褒禅山记", "世之奇伟"), ("记承天寺夜游", "积水空明"), ("喜雨亭记", "亭以雨名"),
-    ("超然台记", "凡物皆有可观"), ("六国论", "六国破灭"), ("伶官传序", "忧劳可以兴国"),
+    ("超然台记", "凡物皆有可观"), ("六国论", "不知天下之势"), ("伶官传序", "忧劳可以兴国"),
     ("秋声赋", "欧阳子方夜读书"), ("五柳先生传", "先生不知何许人"), ("与朱元思书", "风烟俱净"),
     ("三峡", "自三峡七百里中"), ("答谢中书书", "山川之美"), ("卜居", "千里之驹"),
     ("渔父", "沧浪之水"), ("祭十二郎文", "吾年未四十"), ("柳子厚墓志铭", "士穷乃见节义"),
     ("原道", "博爱之谓仁"), ("原毁", "其责己也重以周"), ("进学解", "业精于勤"),
     ("送孟东野序", "不得其平则鸣"), ("送李愿归盘谷序", "大丈夫之遇知于天子"),
     ("相州昼锦堂记", "仕宦而至将相"), ("卖柑者言", "金玉其外"), ("五人墓碑记", "亦以明死生之大"),
-    ("深虑论", "虑天下者"), ("瘗旅文", "连峰际天"), ("梅圣俞诗集序", "穷而后工"),
+    ("深虑论", "虑天下者"), ("瘗旅文", "连峰际天"), ("梅圣俞诗集序", "穷者而后工"),
     ("吊古战场文", "浩浩乎"), ("讨武曌檄", "一抔之土"), ("与韩荆州书", "生不用封万户侯"),
     ("谏逐客书", "臣闻吏议逐客"), ("画堂春", "一生一代一双人"),
     ("货殖列传序", "仓廪实而知礼节"), ("滑稽列传", "一鸣惊人"), ("伯夷列传", "天道无亲"),
@@ -782,6 +881,52 @@ FAMOUS_LINES = [
     ("声声慢", "寻寻觅觅"), ("满江红", "怒发冲冠"), ("钗头凤", "红酥手"),
     ("鹊桥仙", "金风玉露一相逢"), ("破阵子", "醉里挑灯看剑"), ("永遇乐", "千古江山"),
     ("青玉案", "蓦然回首"), ("卜算子", "零落成泥碾作尘"), ("游山西村", "山重水复疑无路"),
+
+    # ---------- P1-9 扩容（D-019）：经典短句 + 清降配名句精选 + 古文补遗 ----------
+    # 四书五经短句（篇目整类在库；题锚用篇名——title 不含书名，P1-9 修正）
+    ("学而篇", "学而时习之"), ("为政篇", "温故而知新"), ("里仁篇", "德不孤"),
+    ("雍也篇", "知者乐水"), ("述而篇", "必有我师"), ("泰伯篇", "士不可以不弘毅"),
+    ("子罕篇", "逝者如斯"), ("卫灵公篇", "己所不欲"),
+    ("梁惠王上", "老吾老"), ("公孙丑上", "恻隐之心"), ("滕文公下", "富贵不能淫"),
+    ("告子上", "我所欲也"), ("告子下", "生于忧患"), ("尽心上", "穷则独善其身"),
+    ("大学", "大学之道"), ("大学", "日日新"), ("大学", "止于至善"),
+    ("中庸", "天命之谓性"), ("中庸", "博学之"), ("中庸", "慎其独"),
+    # 老子精选（corpus/laozi.json 新篇目）
+    ("老子·第一章", "道可道"), ("老子·第八章", "上善若水"), ("老子·第九章", "金玉满堂"),
+    ("老子·第十六章", "致虚极"), ("老子·第二十二章", "曲则全"), ("老子·第二十四章", "企者不立"),
+    ("老子·第三十三章", "知人者智"), ("老子·第三十六章", "柔弱胜刚强"), ("老子·第四十章", "反者道之动"),
+    ("老子·第四十一章", "大音希声"), ("老子·第四十四章", "知足不辱"), ("老子·第四十六章", "祸莫大于不知足"),
+    ("老子·第五十八章", "祸兮福之所倚"), ("老子·第六十三章", "报怨以德"), ("老子·第六十四章", "千里之行"),
+    ("老子·第七十三章", "天网恢恢"), ("老子·第七十六章", "柔弱者生之徒"), ("老子·第七十八章", "受国之垢"),
+    ("老子·第八十一章", "信言不美"),
+    # 纳兰性德精选（清词降配：qing_ci 258 整类 -> 名句种子制进池，D-019）
+    ("浣溪沙", "谁念西风独自凉"), ("浣溪沙", "身向云山那畔行"),
+    ("蝶恋花", "辛苦最怜天上月"), ("蝶恋花", "又到绿杨曾折处"),
+    ("采桑子", "谁翻乐府凄凉曲"), ("采桑子", "明月多情应笑我"),
+    ("临江仙", "飞絮飞花何处是"), ("如梦令", "万帐穹庐人醉"), ("如梦令", "正是辘轳金井"),
+    ("菩萨蛮", "朔风吹散三更雪"), ("菩萨蛮", "问君何事轻离别"),
+    ("南乡子", "泪咽却无声"),
+    ("减字木兰花", "相逢不语"), ("清平乐", "风鬟雨鬓"),
+    ("虞美人", "曲阑深处重相见"),
+    # 幽梦影精选（219 则 -> 名段种子制进池）
+    ("幽梦影", "读经宜冬"), ("幽梦影", "经传宜独坐读"), ("幽梦影", "隙中窥月"),
+    ("幽梦影", "艺花可以邀蝶"), ("幽梦影", "楼上看山"), ("幽梦影", "天下有一人知己"),
+    ("幽梦影", "梅边之石宜古"), ("幽梦影", "藏书不难"), ("幽梦影", "文章是案头之山水"),
+    ("幽梦影", "才子而富贵"), ("幽梦影", "傲骨不可无"), ("幽梦影", "能闲世人之所忙者"),
+    ("幽梦影", "春听鸟声"), ("幽梦影", "上元须酌豪友"), ("幽梦影", "雨之为物"),
+    ("幽梦影", "因雪想高士"), ("幽梦影", "花不可见其落"),
+    ("幽梦影", "貌有丑而可观者"),
+    # 五代词精选（wudai_ci 543 -> 名句种子制进池；冯延巳不在数据集，见 D-019 遗留）
+    ("虞美人", "春花秋月何时了"), ("浪淘沙", "帘外雨潺潺"), ("浪淘沙", "往事只堪哀"),
+    ("相见欢", "无言独上西楼"), ("相见欢", "林花谢了春红"), ("乌夜啼", "昨夜风兼雨"),
+    ("破阵子", "四十年来家国"), ("清平乐", "别来春半"), ("望江南", "多少恨"),
+    ("菩萨蛮", "花明月暗笼轻雾"), ("捣练子", "深院静"),
+    ("摊破浣溪沙", "菡萏香销翠叶残"),
+    ("谒金门", "风乍起"), ("菩萨蛮", "人人尽说江南好"),
+    ("菩萨蛮", "洛阳城里春光好"), ("女冠子", "四月十七"), ("思帝乡", "春日游"),
+    ("菩萨蛮", "小山重叠金明灭"), ("梦江南", "梳洗罢"), ("临江仙", "金锁重门荒苑静"),
+    # 古文补遗（guwenguanzhi.json 缺收的课标名篇）
+    ("伤仲永", "泯然众人"), ("湖心亭看雪", "雾凇沆砀"), ("三峡", "两岸连山"),
 ]
 
 
@@ -794,6 +939,17 @@ def fill_birth_death(conn):
         )
         n += cur.rowcount
     print(f"  生卒年回填: {n} 位作者")
+
+
+def backfill_era(conn):
+    """era 空 && 作者朝代可映射 -> 按作者朝代回填（千家诗等源缺朝代的篇目，P1-9）。"""
+    rows = conn.execute(
+        "SELECT p.id, a.dynasty FROM poems p JOIN authors a ON a.id = p.author_id "
+        "WHERE IFNULL(p.era,'')='' AND IFNULL(a.dynasty,'')<>''"
+    ).fetchall()
+    for pid, dyn in rows:
+        conn.execute("UPDATE poems SET era=? WHERE id=?", (ERA_MAP.get(dyn, dyn), pid))
+    print(f"  era 回填: {len(rows)} 篇（按作者朝代）")
 
 
 def extract_two_clause(paragraph: str) -> str | None:
@@ -859,12 +1015,60 @@ def fill_genre(conn):
     print(f"  古文文体 13 类标注: {n} 篇 | 分布 {dist}")
 
 
-# 通行本异文手工覆盖（谨慎清单，逐条一正一负验证；不动整体校勘）——用户读感"失败与课本不一致"
+# 通行本异文手工覆盖（谨慎清单，逐条一正一负验证；不动整体校勘）——用户读感"与课本不一致"
 TEXT_OVERRIDES = [
     ("静夜思", "床前看月光", "床前明月光"),
     ("静夜思", "举头望山月", "举头望明月"),
     ("江南春绝句", "千里莺啼绿映江", "千里莺啼绿映红"),
+    ("枫桥夜泊", "江枫渔父", "江枫渔火"),  # 通行本作"渔火"（唐诗三百首源为"渔父"）；全唐诗另一行已同作"渔火"
 ]
+
+# 标题入库修正（谨慎清单）：源数据错字逐条点名，不做模糊匹配 —— P1-2
+TITLE_FIXES = [
+    ("在岳咏蝉", "在狱咏蝉"),  # 唐诗三百首源数据错字（骆宾王五言律诗）
+]
+
+_ORD = "一二三四五六七八九十百"
+
+
+def norm_title(title: str) -> str:
+    """组诗分篇标题归一（P1-4，D-014）：「出塞 一」「咏蝉  其一」→「出塞·其一」；
+    题内剩余空格并作「·」（乐府题"杂曲歌辞 踏歌行"→"杂曲歌辞·踏歌行"）。
+    组诗热度合并的正则与名句补种的排除规则都依赖"·其N"形态，改这里须同步 smooth_grouped_popularity。"""
+    t = title
+    m = re.search(r"\s+其?([" + _ORD + r"]+)$", t)
+    if m and m.start() > 0:
+        t = t[:m.start()] + "·其" + m.group(1)
+    return t.replace(" ", "·").replace("　", "·")
+
+
+def clean_placeholder_title(title: str) -> str:
+    """缺字占位标题归一：数据集以「□」(U+25A1) 标记碑损/阙佚之字，整题皆□在界面
+    形同渲染豆腐块（用户报障"部分显示方框"）。只处理纯占位：题根全为□ → 「佚题」，
+    保留「·其后缀」（组诗序号或词调名，如 □□□・七娘子 → 佚题·七娘子）；
+    部分缺字（如「□后圃成三绝句」「元□□」）保留校勘原貌，不虚构内容。
+    注意：改名后不再命中名句池的 '%□%' 排除，须同步排除「佚题%」。"""
+    if set(title) <= {"□", "　", " "}:
+        return "佚题"
+    head = re.split(r"[·・]", title, maxsplit=1)[0]
+    if head and set(head) <= {"□"}:
+        return "佚题·" + title[len(head) + 1:]
+    return title
+
+
+def clean_brief(brief: str) -> str:
+    """诗人小传去重（P0-3）：维基文库 desc 是两种句读版本以连续空格连排，去标点后同文只留一份；
+    真正不同的段落以「；」连接，不再裸露空格串。"""
+    parts = [p.strip() for p in re.split(r"\s{2,}|\u3000+", brief or "") if p.strip()]
+    out: list[str] = []
+    seen: set[str] = set()
+    for p in parts:
+        key = re.sub(r"[^\u4e00-\u9fff]", "", p)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+    return "；".join(out) if out else brief
 
 
 def apply_text_overrides(conn):
@@ -892,7 +1096,7 @@ def smooth_grouped_popularity(conn):
     groups: dict[tuple, list[int]] = {}
     pops: dict[int, int] = {}
     for pid, cat, author, title, pop in rows:
-        base = _re.sub(r"\s*其[一二三四五六七八九十百]+$", "", title.strip())
+        base = _re.sub(r"[·\s]*其[一二三四五六七八九十百]+$", "", title.strip())  # 兼容归一后的「·其N」与旧式空格（D-014）
         if base == title.strip():
             continue  # 非组诗分篇（正文含"其"而非分篇标题），不动
         groups.setdefault((cat, author, base), []).append(pid)
@@ -908,6 +1112,22 @@ def smooth_grouped_popularity(conn):
             conn.execute("UPDATE poems SET popularity=? WHERE id=?", (top, pid))
         updated += len(members)
     print(f"  组诗热度合并: {len(groups)} 组，改 {updated} 行")
+
+
+def two_clauses_around(paragraph: str, hint: str) -> str | None:
+    """长散文段抽不出标准两句型时，以含锚句的分句为中心截两句（P1-9）：
+    爱莲说锚"出淤泥而不染" -> 「予独爱莲之出淤泥而不染，濯清涟而不妖，」。"""
+    if not paragraph or hint not in paragraph:
+        return None
+    parts = [p for p in re.split(r"(?<=[，。！？；：])", paragraph) if p.strip()]
+    idx = next((i for i, p in enumerate(parts) if hint in p), None)
+    if idx is None:
+        return None
+    if len(parts) == 1:
+        return paragraph
+    pair = [parts[idx], parts[idx + 1]] if idx + 1 < len(parts) else [parts[idx - 1], parts[idx]]
+    out = "".join(pair).strip()
+    return out if len(out) >= 6 else None
 
 
 def fill_famous_lines(conn):
@@ -926,6 +1146,9 @@ def fill_famous_lines(conn):
         # 优选含种子句的段落；两句型不足时回退整段（名句宁长勿缺）
         anchor = next((p for p in paras if line_hint in p), None)
         pair = extract_two_clause(anchor or "")
+        if not pair or line_hint not in pair:
+            # 抽取失败或抽出的两句不含锚（长散文段）——以锚句为中心截两句
+            pair = two_clauses_around(anchor or "", line_hint) or pair
         if not pair:
             pair = next((extract_two_clause(p) for p in paras if extract_two_clause(p)), None)
             pair = pair or anchor
@@ -941,7 +1164,7 @@ def fill_famous_lines(conn):
     TARGET = 300
     CURATED_CATS = "('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei','qianjiashi','wudai_ci','guwen','mengxue')"
     rank = conn.execute(
-        "SELECT id FROM poems WHERE title NOT LIKE '%其%' AND title NOT LIKE '%□%' "  # 组诗分篇/缺字符不入名句池
+        "SELECT id FROM poems WHERE title NOT LIKE '%其%' AND title NOT LIKE '%□%' AND title NOT LIKE '佚题%' "  # 组诗分篇/缺字题/佚题不入名句池
         "ORDER BY "
         f"CASE WHEN category IN {CURATED_CATS} OR tags LIKE '%\"唐诗三百首\"%' THEN 0 ELSE 1 END, "
         "popularity DESC NULLS LAST, id LIMIT 3000"
@@ -1036,6 +1259,8 @@ CORE_SOURCES = [
     ("四书五经", lambda ds: it_chapters(ds, "四书五经/daxue.json", "sishu", "先秦")),
     ("四书五经", lambda ds: it_chapters(ds, "四书五经/zhongyong.json", "sishu", "先秦")),
     ("古文观止", lambda ds: it_guwen(ds)),
+    ("古文补遗", lambda ds: it_guwen_extra(ds)),
+    ("老子", lambda ds: it_laozi(ds)),
     ("幽梦影", lambda ds: it_youmengying(ds)),
     ("纳兰词", lambda ds: it_nalan(ds)),
     ("曹操诗集", lambda ds: it_caocao(ds)),
@@ -1095,6 +1320,7 @@ def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True
             print(f"  [{label}] {name}: {n} 条")
     t0 = time.time()
     fill_birth_death(db.conn)
+    backfill_era(db.conn)
     fill_genre(db.conn)
     apply_text_overrides(db.conn)
     if full:

@@ -68,9 +68,9 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
-            val counts = db.meta("counts") ?: "{}"
             val ver = db.meta("data_version") ?: "?"
-            dataInfo = "数据版本 $ver · $counts"
+            // 只显版本号与总篇数，不再裸显 counts JSON（P2-3）
+            dataInfo = "数据版本 $ver · 收录 ${db.count()} 篇"
             version = runCatching {
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
             }.getOrDefault("?")

@@ -52,15 +52,19 @@ private val BOOK_MODULES = listOf(
     BookModule("诗经", "shijing", "风雅颂 · 先秦歌谣", 0),
     BookModule("楚辞", "chuci", "骚体 · 浪漫之源", 1),
     BookModule("论语", "lunyu", "语录即文章", 2),
-    BookModule("孟子", "sishu", "雄辩滔滔", 3),
-    BookModule("曹操诗集", "han_wei", "建安风骨", 4),
-    BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 5),
-    BookModule("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵", 6),
-    BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 7),
-    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 8),
-    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 9),
-    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 10),
-    BookModule("纳兰词", "qing_ci", "清词第一", 11),
+    BookModule("老子", "laozi", "道德五千言 · 精选章句", 3),
+    BookModule("孟子", "sishu", "雄辩滔滔", 4),
+    BookModule("曹操诗集", "han_wei", "建安风骨", 5),
+    BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 6),
+    BookModule("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵", 7),
+    BookModule("水墨唐诗", "tag:水墨唐诗", "诗画一题 · 唐人选迹", 8),
+    BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 9),
+    BookModule("宋词三百首", "tag:宋词三百首", "朱祖谋编选 · 两宋词家名篇", 10),
+    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 11),
+    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 12),
+    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 13),
+    BookModule("纳兰词", "qing_ci", "清词第一", 14),
+    BookModule("名句", "famous", "千古名句 · 今日页同源", 15),
 ).sortedBy { it.era }
 
 /** 书库：搜索 + 五维浏览（书架 / 朝代 / 诗人 / 体裁 / 主题） */
@@ -134,7 +138,11 @@ fun LibraryScreen(
         if (query.isNotBlank()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(results.size, key = { results[it].id }) { index ->
-                    PoemRow(results[index], onClick = { onOpen(results[index].id) })
+                    PoemRow(
+                        results[index],
+                        sourceLabel = sourceLabelOf(results[index]),
+                        onClick = { onOpen(results[index].id) },
+                    )
                 }
                 if (results.isEmpty()) {
                     item {
@@ -178,17 +186,26 @@ private fun DimensionChip(label: String, selected: Boolean, onClick: () -> Unit)
     }
 }
 
-/** 书架：9 本选本 */
+/** 书架（卡顺序与 hard cap 见 BOOK_MODULES）：计数 = 分类统计 + tag 选本 + 名句表 */
 @Composable
 private fun ShelfGrid(onOpenModule: (String) -> Unit) {
     val context = LocalContext.current
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-    var tagCount by remember { mutableIntStateOf(0) }
+    var tagCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var famousCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
             counts = db.categoryCounts()
-            tagCount = db.tagCount("唐诗三百首")
+            tagCounts = listOf("唐诗三百首", "宋词三百首", "水墨唐诗").associateWith { db.tagCount(it) }
+            famousCount = db.famousCount()
+        }
+    }
+    val countOf: (BookModule) -> Int = { book ->
+        when {
+            book.route == "famous" -> famousCount
+            book.route.startsWith("tag:") -> tagCounts[book.route.removePrefix("tag:")] ?: 0
+            else -> counts[book.route] ?: 0
         }
     }
     LazyVerticalGrid(
@@ -199,8 +216,7 @@ private fun ShelfGrid(onOpenModule: (String) -> Unit) {
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
     ) {
         items(BOOK_MODULES, key = { it.route }) { book ->
-            val count = if (book.route.startsWith("tag:")) tagCount else counts[book.route] ?: 0
-            ModuleCard(title = book.title, brief = book.brief, count = count) { onOpenModule(book.route) }
+            ModuleCard(title = book.title, brief = book.brief, count = countOf(book)) { onOpenModule(book.route) }
         }
     }
 }
@@ -316,8 +332,8 @@ private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) ->
                 val n = poemTypes.sumOf(counts)
                 ModuleCard("诗", "绝句·律诗·排律·古体·乐府", n) { door = "诗" }
             }
-            item(key = "词") { ModuleCard("词", "小令·中调·长调", counts("词")) { onOpenType("词") } }
-            item(key = "曲") { ModuleCard("曲", "散曲小令·套数", counts("曲")) { onOpenType("曲") } }
+            item(key = "词") { ModuleCard("词", "按词牌浏览 · 千调分组", counts("词")) { onOpenType("词") } }
+            item(key = "曲") { ModuleCard("曲", "按曲牌浏览 · 散曲杂剧", counts("曲")) { onOpenType("曲") } }
             item(key = "文") {
                 ModuleCard("文", "书卷：古文观止·论语·四书", chapters.values.sumOf { it.values.sum() }) { door = "文" }
             }
@@ -465,6 +481,26 @@ private fun ModuleCard(title: String, brief: String, count: Int, onClick: () -> 
     }
 }
 
+/** 文本截断：置定长 + 省略号（统一与详情页相关诗词一致的截断形态，P2-1） */
+internal fun ellipsize(text: String, max: Int): String {
+    val s = text.replace('\n', ' ').trim()
+    return if (s.length <= max) s else s.take(max) + "…"
+}
+
+/** 书库来源标签（D-015）：命中处尽量给出处书名，搜索结果不再"无出处" */
+private val CATEGORY_LABELS = mapOf(
+    "tang_poem" to "全唐诗", "song_poem" to "全宋诗", "ci" to "全宋词",
+    "qing_ci" to "纳兰词", "wudai_ci" to "五代词", "qianjiashi" to "千家诗",
+    "shijing" to "诗经", "chuci" to "楚辞", "lunyu" to "论语", "sishu" to "四书",
+    "guwen" to "古文观止", "laozi" to "老子", "youmengying" to "幽梦影", "mengxue" to "蒙学",
+    "han_wei" to "曹操诗集", "yuan_qu" to "元曲",
+)
+internal fun sourceLabelOf(p: PoemsDb.Poem): String = when {
+    p.tags.contains("唐诗三百首") -> "唐诗三百首"
+    p.category == "tang_poem" && p.tags.contains("水墨唐诗") -> "水墨唐诗"
+    else -> CATEGORY_LABELS[p.category] ?: ""
+}
+
 /** 书架模块浏览页：key 为分类名或 "tag:标签名"，分页加载 */
 @Composable
 fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
@@ -511,8 +547,39 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
             )
         }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(poems.size, key = { poems[it].id }) { index ->
-                PoemRow(poems[index], onClick = { onOpen(poems[index].id) })
+            // 小节标题（P1-4）：千家诗/唐诗三百首按体裁卷，古文观止按卷次，元曲按「・」前的剧名，
+            // 列表不再整卷平铺（元曲 1.1 万首平列表需翻 37 页——剧名分组后按目翻）
+            val sectionOf: ((PoemsDb.Poem) -> String?)? = when {
+                key == "qianjiashi" -> { p -> p.type }
+                key == "guwen" -> { p -> p.chapter }
+                key == "yuan_qu" -> { p ->
+                    // 「诈妮子调风月・混江龙」→ 节 = 剧名；无分隔的单牌曲无节；
+                    // 过长/过短/纯数字前段（如散套序数「二」）不算剧目
+                    p.title.split('・').firstOrNull()?.trim()
+                        ?.takeIf { it.length in 2..12 && !it.all { ch -> ch.isDigit() || ch == '，' } }
+                }
+                tagMode && tag == "唐诗三百首" -> { p -> p.type }
+                else -> null
+            }
+            var lastSection = ""
+            poems.forEach { poem ->
+                if (sectionOf != null) {
+                    val sec = sectionOf.invoke(poem)
+                    if (!sec.isNullOrBlank() && sec != lastSection) {
+                        item(key = "h_$sec") {
+                            Text(
+                                text = sec,
+                                style = PoemTitleStyle,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                            )
+                        }
+                        lastSection = sec
+                    }
+                }
+                item(key = poem.id) {
+                    PoemRow(poem, onClick = { onOpen(poem.id) })
+                }
             }
             if (hasMore && poems.isNotEmpty()) {
                 item {
@@ -529,7 +596,7 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
 }
 
 @Composable
-internal fun PoemRow(p: PoemsDb.Poem, onClick: () -> Unit) {
+internal fun PoemRow(p: PoemsDb.Poem, onClick: () -> Unit, sourceLabel: String? = null) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -542,7 +609,10 @@ internal fun PoemRow(p: PoemsDb.Poem, onClick: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
-            text = "${p.author} ｜ " + p.body.replace('\n', ' ').take(30),
+            text = listOfNotNull(
+                sourceLabel?.takeIf { it.isNotBlank() },
+                p.author.ifBlank { "佚名" },
+            ).joinToString(" ｜ ") + " ｜ " + ellipsize(p.body, 30),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

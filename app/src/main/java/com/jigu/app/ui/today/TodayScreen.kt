@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -45,7 +46,9 @@ import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemOfDay
 import com.jigu.app.data.PoemsDb
-import com.jigu.app.ui.share.PoemCard
+import com.jigu.app.ui.art.PaperInk
+import com.jigu.app.ui.art.paperFeather
+import com.jigu.app.ui.signatureWithTitle
 import com.jigu.app.ui.theme.PoemTextStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,9 +59,11 @@ import java.time.format.DateTimeFormatter
 /**
  * 今日页（D-008 纯沉浸 + 名句制）：亮出一句最有名的，其余藏进详情。
  * 显示优先级：名句表 -> 首句；点击任意处进详情。
+ * 朗读（TTS）用户定案不做（D-013），按钮已移除。
+ * 角隅画（D-019）：淡墨融合 + 羽化入纸 + 竖排小字注，点击进全屏鉴赏页。
  */
 @Composable
-fun TodayScreen(onOpen: (Int) -> Unit) {
+fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<PoemOfDay.Result?>(null) }
@@ -89,8 +94,8 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
         ?: poem.paragraphs.joinToString("").takeIf { it.isNotBlank() }
         ?: ""
 
-    // 角隅山水：当前节气的画，右下角淡出（A 手法）；深色模式隐藏；画意开关可全关；
-    // 护栏"文字区净空"：总字数 >64（长文/长调）不配画，避免压字
+    // 角隅画（D-019 photo-revival 法则）：淡墨融合 + 羽化入纸 + 竖排小字注；点击进鉴赏页；
+    // 深色模式隐藏；画意开关可全关；护栏"文字区净空"：总字数 >64（长文/长调）不配画
     val artEnabled = JiguSettings.artEnabled(context)
     val shortPoem = poem.paragraphs.sumOf { it.length } <= 64
     val artwork = if (artEnabled && !isSystemInDarkTheme() && shortPoem) {
@@ -108,13 +113,25 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
         if (bmp != null) {
             Image(
                 bitmap = bmp,
-                contentDescription = "节气配画",
+                contentDescription = "节气配画（点击鉴赏）",
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 8.dp, bottom = 72.dp)
-                    .size(width = 168.dp, height = 224.dp)
-                    .alpha(0.32f),
+                    .padding(end = 10.dp, bottom = 84.dp)
+                    .size(width = 144.dp, height = 192.dp)
+                    .paperFeather(0.20f)
+                    .clickable { onArtwork(poem.id) },
                 contentScale = ContentScale.Crop,
+                colorFilter = PaperInk.composeColorFilter(PaperInk.INK_SOFT),
+            )
+            // 竖排小字注（photo-revival 的 tiny caption）
+            Text(
+                text = "《${artwork?.displayTitle()}》${artwork?.displayArtist() ?: ""}".take(14),
+                fontSize = 10.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 158.dp, bottom = 96.dp),
             )
         }
         Column(
@@ -123,13 +140,13 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                 .statusBarsPadding()
                 .padding(horizontal = 28.dp),
         ) {
-        // 顶部：左日期，右节气/节日角标
+        // 顶部：日期 + 节气/节日角标相邻排布（收紧两者间的大留白，P2-4）
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = today,
@@ -172,10 +189,14 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
+                maxLines = 2,
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
+                    .fillMaxWidth(),
             )
         }
 
-        // 底部：三个安静的出口（朗读/卡片为占位）
+        // 底部：安静的出口（朗读已移除，见 D-013）
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -192,16 +213,7 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                 )
                 Text("收藏", fontSize = 14.sp)
             }
-            TextButton(onClick = {
-                // 渲染诗卡（带节气配画）并唤起系统分享
-                scope.launch {
-                    val art = ArtworkRepo.forTerm(context, badge)
-                    val card = withContext(Dispatchers.IO) {
-                        runCatching { PoemCard.render(context, poem, art) }.getOrNull()
-                    }
-                    card?.let { PoemCard.share(context, it) }
-                }
-            }) { Text("做卡片", fontSize = 14.sp) }
+            TextButton(onClick = { onCard(poem.id) }) { Text("做卡片", fontSize = 14.sp) }
             TextButton(onClick = {
                 // 换一首：当日精选池内顺位后移，重开 App 不变
                 scope.launch {
@@ -225,15 +237,9 @@ fun TodayScreen(onOpen: (Int) -> Unit) {
                     }
                 }
             }) { Text("换一首", fontSize = 14.sp) }
-            TextButton(onClick = { /* 下一增量：TTS 朗诵 */ }) { Text("朗读", fontSize = 14.sp) }
         }
         }
     }
 }
 
-fun attribution(poem: PoemsDb.Poem): String {
-    val era = poem.dynasty.takeIf { it.isNotBlank() }
-    val who = poem.author.ifBlank { "佚名" }
-    val head = listOfNotNull(era, who).joinToString(" · ")
-    return "$head《${poem.title}》"
-}
+fun attribution(poem: PoemsDb.Poem): String = signatureWithTitle(poem)
