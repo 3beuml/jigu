@@ -36,8 +36,8 @@ T2S = OpenCC("t2s")
 
 REPO = Path(__file__).resolve().parents[2]
 
-SCHEMA_VERSION = 6
-DATA_VERSION = 17  # +1: 批4 外部扩容（D-010 层三：《古诗十九首》19 首入库+书架卡；老子 19→81 章补全）+ 收尾批（P2-5 空题根「·」头；节气/节日配诗池时代混合解唐偏）
+SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
+DATA_VERSION = 18  # +1: 瘦身重建（删 body 列：数据包目标 107MB→40-60MB；Kotlin Poem.body 由 paragraphs 还原，UI 零改动）
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -64,13 +64,15 @@ CREATE TABLE poems(
   chapter    TEXT NOT NULL DEFAULT '',
   section    TEXT NOT NULL DEFAULT '',
   paragraphs TEXT NOT NULL,
-  body       TEXT NOT NULL,
   tags       TEXT NOT NULL DEFAULT '[]',
   notes      TEXT NOT NULL DEFAULT '[]',
   hash       TEXT NOT NULL,
   source_id  TEXT NOT NULL DEFAULT '',
   popularity INTEGER NOT NULL DEFAULT 0,
   UNIQUE(category, hash)
+  -- 瘦身（SCHEMA 7，遗留清单"APK 瘦身"）：body 列已删——正文 = paragraphs 逐行
+  -- 按换行符拼接的完全冗余存储（Kotlin 侧 Poem.body 由 paragraphs 还原，UI 零改动）；
+  -- 全文检索改以 paragraphs 列为源（FTS 外部内容表）
 );
 CREATE INDEX idx_poems_category ON poems(category);
 CREATE INDEX idx_poems_type     ON poems(type);
@@ -88,7 +90,7 @@ CREATE TABLE famous_lines(
 );
 
 CREATE VIRTUAL TABLE poems_fts USING fts5(
-  body, title, content='poems', content_rowid='id', tokenize='trigram'
+  paragraphs, title, content='poems', content_rowid='id', tokenize='trigram'
 );
 
 -- 日推引擎的节气/节日映射（阶段 2 填充）
@@ -390,12 +392,12 @@ class Db:
         try:
             cur = self.conn.execute(
                 "INSERT INTO poems(category,type,era,title,author_id,rhythmic,chapter,section,"
-                "paragraphs,body,tags,notes,hash,source_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "paragraphs,tags,notes,hash,source_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     cat, typ, era, title,
                     self.author(rec.get("author", ""), rec.get("dynasty", ""), rec.get("brief", "")),
                     s(rec.get("rhythmic", "")), s(rec.get("chapter", "")), s(rec.get("section", "")),
-                    j(paras), body, j(rec.get("tags", [])), j(rec.get("notes", [])),
+                    j(paras), j(rec.get("tags", [])), j(rec.get("notes", [])),
                     h, rec.get("source_id", ""),
                 ),
             )
@@ -409,7 +411,7 @@ class Db:
     def finish(self, label: str, fts: bool = True):
         if fts:
             self.conn.execute(
-                "INSERT INTO poems_fts(rowid, body, title) SELECT id, body, title FROM poems"
+                "INSERT INTO poems_fts(rowid, paragraphs, title) SELECT id, paragraphs, title FROM poems"
             )
         for k, v in {
             "schema_version": SCHEMA_VERSION,
@@ -1107,12 +1109,13 @@ def clean_brief(brief: str) -> str:
 def apply_text_overrides(conn):
     n = 0
     for title, old, new in TEXT_OVERRIDES:
-        rows = conn.execute("SELECT id, body, paragraphs FROM poems WHERE title = ?", (title,)).fetchall()
-        for pid, body, paras in rows:
-            if old not in body:
+        rows = conn.execute("SELECT id, paragraphs FROM poems WHERE title = ?", (title,)).fetchall()
+        for pid, paras_json in rows:
+            if old not in paras_json:
                 continue
-            conn.execute("UPDATE poems SET body=? WHERE id=?", (body.replace(old, new), pid))
-            conn.execute("UPDATE poems SET paragraphs=? WHERE id=?", (paras.replace(old, new), pid))
+            paras = json.loads(paras_json)
+            paras = [p.replace(old, new) for p in paras]
+            conn.execute("UPDATE poems SET paragraphs=? WHERE id=?", (j(paras), pid))
             n += 1
     print(f"  异文覆盖: {n} 处（{[(t, o, nw) for t, o, nw in TEXT_OVERRIDES]}）")
 
@@ -1168,7 +1171,7 @@ def fill_famous_lines(conn):
     # 第一轮：手写种子（优先；line=sentence anchor）
     for title_hint, line_hint in FAMOUS_LINES:
         row = conn.execute(
-            "SELECT id, paragraphs FROM poems WHERE title LIKE ? AND body LIKE ? ORDER BY id LIMIT 1",
+            "SELECT id, paragraphs FROM poems WHERE title LIKE ? AND paragraphs LIKE ? ORDER BY id LIMIT 1",
             (f"%{title_hint}%", f"%{line_hint}%"),
         ).fetchone()
         if not row:
@@ -1207,8 +1210,8 @@ def fill_famous_lines(conn):
             break
         if conn.execute("SELECT 1 FROM famous_lines WHERE poem_id = ?", (pid,)).fetchone():
             continue
-        row = conn.execute("SELECT paragraphs, body FROM poems WHERE id = ?", (pid,)).fetchone()
-        paras, body = json.loads(row[0]), row[1]
+        row = conn.execute("SELECT paragraphs FROM poems WHERE id = ?", (pid,)).fetchone()
+        paras = json.loads(row[0])
         pair = next((extract_two_clause(p) for p in paras if extract_two_clause(p)), None)
         if not pair or len(pair) < 10 or len(pair) > 40:
             continue
@@ -1245,7 +1248,9 @@ def annotate(conn):
 
     pi_rows = []
     pt_rows = []
-    for pid, title, body, cat in conn.execute("SELECT id, title, body, category FROM poems"):
+    for pid, title, paras_json, cat in conn.execute("SELECT id, title, paragraphs, category FROM poems"):
+        # 瘦身（SCHEMA 7）：body 列已删，正文由 paragraphs 还原（与 Kotlin Poem.body 同构）
+        body = "\n".join(json.loads(paras_json))
         chars = set(body)
         hits = [SINGLE_IMAGERY[i] for i, ch in enumerate(SINGLE_IMAGERY) if ch in chars]
         hits += [name for name, kws in COMPOUND_IMAGERY.items() if any(k in body for k in kws)]

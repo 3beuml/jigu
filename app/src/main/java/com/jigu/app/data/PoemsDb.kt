@@ -33,7 +33,7 @@ class PoemsDb private constructor(context: Context) {
 
         private const val CORE_COLUMNS =
             "p.id, p.category, p.title, IFNULL(a.name,'佚名') AS author, IFNULL(a.brief,'') AS brief, " +
-                "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, p.body, " +
+                "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, " +
                 "IFNULL(a.dynasty,'') AS dynasty, p.type AS type, p.era AS era, p.genre AS genre"
 
         private const val IMAGERY_SUB =
@@ -188,8 +188,10 @@ class PoemsDb private constructor(context: Context) {
 
     private fun android.database.Cursor.toPoem(): Poem {
         val i = this
-        // 列序与 POEM_SELECT 严格对应：CORE_COLUMNS 0..15，imagery/famous_line 为 16/17。
+        // 列序与 POEM_SELECT 严格对应：CORE_COLUMNS 0..14，imagery/famous_line 为 15/16。
         // 此处曾整体错位一格（imagery 误读 type 列、era 误读 imagery 串等），务必对齐。
+        // 瘦身（SCHEMA 7）：body 列已删，正文 = paragraphs 逐行 \n 拼接（与建库端同构）。
+        val paragraphs = i.getString(8).toJsonList()
         return Poem(
             id = i.getInt(0),
             category = i.getString(1),
@@ -199,17 +201,17 @@ class PoemsDb private constructor(context: Context) {
             rhythmic = i.getString(5) ?: "",
             chapter = i.getString(6) ?: "",
             section = i.getString(7) ?: "",
-            paragraphs = i.getString(8).toJsonList(),
+            paragraphs = paragraphs,
             tags = i.getString(9).toJsonList(),
             notes = i.getString(10).toJsonList(),
-            body = i.getString(11),
-            dynasty = i.getString(12) ?: "",
-            type = i.getString(13) ?: "",
-            era = i.getString(14) ?: "",
-            genre = i.getString(15) ?: "",
-            imagery = (if (i.isNull(16)) "" else i.getString(16))
+            body = paragraphs.joinToString("\n"),
+            dynasty = i.getString(11) ?: "",
+            type = i.getString(12) ?: "",
+            era = i.getString(13) ?: "",
+            genre = i.getString(14) ?: "",
+            imagery = (if (i.isNull(15)) "" else i.getString(15))
                 .split('、').filter { it.isNotBlank() },
-            famousLine = if (i.isNull(17)) "" else i.getString(17) ?: "",
+            famousLine = if (i.isNull(16)) "" else i.getString(16) ?: "",
         )
     }
 
@@ -596,7 +598,7 @@ class PoemsDb private constructor(context: Context) {
     }
 
     private fun searchByLike(q: String, limit: Int): List<Poem> = queryPoems(
-        "$POEM_SELECT WHERE p.body LIKE ? OR p.title LIKE ? LIMIT ?",
+        "$POEM_SELECT WHERE p.paragraphs LIKE ? OR p.title LIKE ? LIMIT ?",
         arrayOf("%$q%", "%$q%", limit.toString()),
     )
 
