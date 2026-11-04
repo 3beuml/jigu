@@ -37,7 +37,7 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 6
-DATA_VERSION = 16  # +1: 主题词表 v3（批2：12→22 细类，四季/雪雨月花/爱国/儿童入表，送别改前缀制）+ 词牌列补全（批3：全宋词已带，曲由题面解析回填、纳兰"牌名·题"拆出）
+DATA_VERSION = 17  # +1: 批4 外部扩容（D-010 层三：《古诗十九首》19 首入库+书架卡；老子 19→81 章补全）+ 收尾批（P2-5 空题根「·」头；节气/节日配诗池时代混合解唐偏）
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -261,6 +261,8 @@ def classify_type(category: str, title: str, rhythmic: str, paragraphs: list[str
         return "诗经体"
     if category == "chuci":
         return "骚体"
+    if category == "gushi19":  # 古诗十九首（D-010 外部扩容，批4）：五言古体之祖
+        return "五言古诗"
     if category in ("lunyu", "sishu", "guwen", "laozi", "youmengying", "mengxue"):
         return "文"
     if category == "yuan_qu":
@@ -555,6 +557,18 @@ def it_guwen_extra(dataset: Path):
         }
 
 
+def it_gushi19(dataset: Path):
+    """古诗十九首（批4 陈列层选本，D-010 外部扩容第二例）：corpus/gushi19.json
+    ——《古诗源》卷三（清·沈德潜，第 4 首底本脱"今"字已按序位白名单点修）；
+    东汉无名氏，五言古诗之祖。文本风险声明同 D-020：真机抽查按点名修正。"""
+    d = load_json(REPO / "tools/datapack/corpus/gushi19.json")
+    for a in d["pieces"]:
+        yield {
+            "category": "gushi19", "title": a["title"], "author": "佚名",
+            "dynasty": "汉", "paragraphs": a["paragraphs"],
+        }
+
+
 def it_nalan(dataset: Path):
     for r in load_json(dataset / "纳兰性德" / "纳兰性德诗集.json"):
         title = r["title"]
@@ -803,7 +817,7 @@ THEME_RULES = [
 ]
 
 POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
-                     "shijing", "chuci", "han_wei")
+                     "shijing", "chuci", "han_wei", "gushi19")
 
 CALENDAR_KEYWORDS = {
     "solar_term": {
@@ -927,6 +941,18 @@ FAMOUS_LINES = [
     ("菩萨蛮", "小山重叠金明灭"), ("梦江南", "梳洗罢"), ("临江仙", "金锁重门荒苑静"),
     # 古文补遗（guwenguanzhi.json 缺收的课标名篇）
     ("伤仲永", "泯然众人"), ("湖心亭看雪", "雾凇沆砀"), ("三峡", "两岸连山"),
+    # 古诗十九首（批4 陈列层）：先秦至汉经典，种子走 corpus/gushi19.json 文本锚点
+    ("行行重行行", "与君生别离"), ("青青河畔草", "盈盈楼上女"),
+    ("青青陵上柏", "忽如远行客"), ("今日良宴会", "人生寄一世"),
+    ("西北有高楼", "但伤知音稀"), ("涉江采芙蓉", "忧伤以终老"),
+    ("明月皎夜光", "弃我如遗迹"), ("庭中有奇树", "路远莫致之"),
+    ("迢迢牵牛星", "脉脉不得语"), ("东城高且长", "燕赵多佳人"),
+    ("驱车上东门", "人生忽如寄"), ("去者日以疏", "古墓犁为田"),
+    ("生年不满百", "为乐当及时"), ("凛凛岁云暮", "锦衾遗洛浦"),
+    ("孟冬寒气至", "愁多知夜长"), ("明月何皎皎", "照我罗床帏"),
+    # 老子补全章的常引句（批4：稳定锚点点到即止；主体靠搜索/书架到达）
+    ("老子·第六十四章", "千里之行"), ("老子·第七十七章", "天之道"),
+    ("老子·第八十章", "小国寡民"), ("老子·第七十章", "知我者希"),
 ]
 
 
@@ -1047,13 +1073,20 @@ def clean_placeholder_title(title: str) -> str:
     形同渲染豆腐块（用户报障"部分显示方框"）。只处理纯占位：题根全为□ → 「佚题」，
     保留「·其后缀」（组诗序号或词调名，如 □□□・七娘子 → 佚题·七娘子）；
     部分缺字（如「□后圃成三绝句」「元□□」）保留校勘原貌，不虚构内容。
-    注意：改名后不再命中名句池的 '%□%' 排除，须同步排除「佚题%」。"""
+    注意：改名后不再命中名句池的 '%□%' 排除，须同步排除「佚题%」。
+    P2-5：空题根——元曲散套以引句/序数作题时题根为空，入库后残留「·」头
+    （如「·夕阳一带山如画」），剥去行头分隔符保留引句原貌。"""
     if set(title) <= {"□", "　", " "}:
         return "佚题"
-    head = re.split(r"[·・]", title, maxsplit=1)[0]
+    stripped = title.lstrip("·・")  # P2-5：空题根去「·」头
+    if not stripped and set(title) - {"·", "・"}:
+        return "佚题"
+    if not stripped:
+        return "佚题"
+    head = re.split(r"[·・]", stripped, maxsplit=1)[0]
     if head and set(head) <= {"□"}:
-        return "佚题·" + title[len(head) + 1:]
-    return title
+        return "佚题·" + stripped[len(head) + 1:]
+    return stripped
 
 
 def clean_brief(brief: str) -> str:
@@ -1237,8 +1270,30 @@ def annotate(conn):
 
     conn.executemany("INSERT OR IGNORE INTO poem_imagery(poem_id, imagery_id) VALUES (?,?)", pi_rows)
     conn.executemany("INSERT OR IGNORE INTO poem_theme(poem_id, theme_id) VALUES (?,?)", pt_rows)
+
+    # 节气/节日配诗池（D-018 遗留：池自 id 序抽取偏唐）——时代混合再截 20：
+    # 全量候选按朝代分桶轮转抽 20 首，桶内保持 id 序；先秦「经典整类」 dni等比例自然进入。
+    era_of = dict(conn.execute("SELECT id, IFNULL(era,'') FROM poems"))
+    ERA_SEQ = ("先秦", "汉", "魏晋", "南北朝", "隋", "唐", "五代", "宋", "元", "明", "清")
     for (kind, key), ids in cal_hits.items():
-        for pid in ids:
+        buckets: dict[str, list[int]] = {}
+        for pid in ids:  # ids 天然 id 序（扫描序）
+            buckets.setdefault(era_of.get(pid, ""), []).append(pid)
+        order = [e for e in ERA_SEQ if e in buckets] + sorted(set(buckets) - set(ERA_SEQ))
+        picked: list[int] = []
+        idx = {e: 0 for e in order}
+        while len(picked) < 20 and buckets:
+            added = False
+            for e in order:
+                if idx[e] < len(buckets[e]):
+                    picked.append(buckets[e][idx[e]])
+                    idx[e] += 1
+                    added = True
+                    if len(picked) >= 20:
+                        break
+            if not added:
+                break
+        for pid in picked:
             conn.execute(
                 "INSERT INTO calendar_map(kind, key, name, poem_id) VALUES (?,?,?,?)",
                 (kind, key, key, pid),
@@ -1261,6 +1316,7 @@ CORE_SOURCES = [
     ("古文观止", lambda ds: it_guwen(ds)),
     ("古文补遗", lambda ds: it_guwen_extra(ds)),
     ("老子", lambda ds: it_laozi(ds)),
+    ("古诗十九首", lambda ds: it_gushi19(ds)),
     ("幽梦影", lambda ds: it_youmengying(ds)),
     ("纳兰词", lambda ds: it_nalan(ds)),
     ("曹操诗集", lambda ds: it_caocao(ds)),

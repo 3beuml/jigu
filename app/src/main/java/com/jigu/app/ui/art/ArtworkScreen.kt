@@ -201,7 +201,7 @@ fun ArtworkScreen(poemId: Int, onBack: () -> Unit) {
                 )
             }
             TextButton(onClick = { idx++ }) {
-                Text("换一幅 ↻", fontSize = 13.sp, color = Color(0xFF9E2F26))
+                Text("换一幅", fontSize = 13.sp, color = Color(0xFF9E2F26))
             }
         }
     }

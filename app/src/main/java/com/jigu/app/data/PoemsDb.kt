@@ -26,7 +26,7 @@ class PoemsDb private constructor(context: Context) {
          *  不再整类全收；guwen 不在分类白名单——古文只有收录了名段（famous_lines）才进日推，
          *  避免"整篇长文上今日页"（D-011）。 */
         private const val CURATED_WHERE =
-            "category IN ('shijing','chuci','lunyu','sishu','han_wei','qianjiashi') " +
+            "category IN ('shijing','chuci','lunyu','sishu','han_wei','qianjiashi','gushi19') " +
                 "OR tags LIKE '%\"唐诗三百首\"%' " +
                 "OR tags LIKE '%\"宋词三百首\"%' " +
                 "OR EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id)"
@@ -564,7 +564,7 @@ class PoemsDb private constructor(context: Context) {
     /** 陈列层（书架/选本与名句收录的类），同名同文时优先保留（D-015） */
     private val CURATED_CATS =
         setOf("shijing", "chuci", "qing_ci", "youmengying", "lunyu", "sishu", "han_wei",
-            "qianjiashi", "wudai_ci", "guwen", "laozi", "mengxue")
+            "qianjiashi", "wudai_ci", "guwen", "laozi", "gushi19", "mengxue")
 
     /** 保留优先序：家塾课本 > 陈列层 > 题短者 > id 小者 */
     private fun compareSearchRank(a: Poem, b: Poem): Int {

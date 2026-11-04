@@ -76,6 +76,16 @@ def test_classify_qianjiashi_type_passthrough():
     print("ok  千家诗体裁透传约定")
 
 
+def test_gushi19_and_placeholder_head():
+    # 批4：古诗十九首固定体裁（五言古诗之祖，来源直接映射）
+    assert classify_type("gushi19", "行行重行行", "", ["行行重行行，与君生别离。"]) == "五言古诗"
+    # P2-5：空题根（元曲引句作题）剥「·」头
+    assert clean_placeholder_title("·夕阳一带山如画") == "夕阳一带山如画"
+    assert clean_placeholder_title("・分得金字") == "分得金字"
+    assert clean_placeholder_title("静夜思") == "静夜思"
+    print("ok  古诗十九首五种定型 + 空题根「·」头（P2-5）")
+
+
 def test_theme_rules_grounded():
     # 词表自检：每类必非空四元组，四个门全覆盖
     grps = {grp for _, grp, *_ in THEME_RULES}
@@ -230,6 +240,7 @@ if __name__ == "__main__":
     test_simplify()
     test_classify_type()
     test_classify_qianjiashi_type_passthrough()
+    test_gushi19_and_placeholder_head()
     test_theme_rules_grounded()
     test_theme_hits_positive_negative()
     test_theme_v3_prefix_and_new_classes()
