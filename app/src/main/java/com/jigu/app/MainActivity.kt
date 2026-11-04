@@ -63,6 +63,7 @@ import com.jigu.app.ui.library.AuthorScreen
 import com.jigu.app.ui.library.ChapterScreen
 import com.jigu.app.ui.library.EraAuthorsScreen
 import com.jigu.app.ui.library.FamousLinesScreen
+import com.jigu.app.ui.library.GenreScreen
 import com.jigu.app.ui.favorites.FavoritesScreen
 import com.jigu.app.ui.library.LibraryScreen
 import com.jigu.app.ui.library.ModuleScreen
@@ -143,8 +144,8 @@ fun JiguApp() {
                         if (key == "famous") nav.navigate("famous") else nav.navigate("module/$key")
                     },
                     onOpenEra = { era -> nav.navigate("era/$era") },
-                    onOpenAuthors = { nav.navigate("authors") },
                     onOpenAuthor = { id -> nav.navigate("author/$id") },
+                    onOpenGenre = { name -> nav.navigate("genre/$name") },
                     onOpenType = { name ->
                         // 词/曲不再直开平列表（词 2.2 万/曲 1.1 万），先过词牌/曲牌索引（批3）
                         if (name == "词" || name == "曲") nav.navigate("rhythmic_index/$name")
@@ -158,6 +159,13 @@ fun JiguApp() {
             composable("chapter/{chapter}") { back ->
                 ChapterScreen(
                     chapter = back.arguments?.getString("chapter") ?: "",
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
+            composable("genre/{name}") { back ->
+                GenreScreen(
+                    genre = back.arguments?.getString("name") ?: "",
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )

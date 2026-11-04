@@ -8,7 +8,8 @@
   "date": "late 1400s–early 1500s",
   "object_id": 145430,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
-  "title_zh": "墨梅"
+  "title_zh": "墨梅",
+  "category": "birdflower"
  },
  {
   "term": "立春",
@@ -20,7 +21,8 @@
   "object_id": 149891,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "梅花牡丹",
-  "artist_zh": "清 · 高凤翰"
+  "artist_zh": "清 · 高凤翰",
+  "category": "birdflower"
  },
  {
   "term": "立春",
@@ -32,7 +34,8 @@
   "object_id": 152550,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "梅花",
-  "artist_zh": "清 · 汪士慎"
+  "artist_zh": "清 · 汪士慎",
+  "category": "birdflower"
  },
  {
   "term": "立春",
@@ -44,7 +47,8 @@
   "object_id": 147906,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "月下梅影",
-  "artist_zh": "元 · 王冕"
+  "artist_zh": "元 · 王冕",
+  "category": "landscape"
  },
  {
   "term": "雨水",
@@ -56,7 +60,8 @@
   "object_id": 151005,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "柳鹊图",
-  "artist_zh": "南宋 · 牧谿"
+  "artist_zh": "南宋 · 牧谿",
+  "category": "birdflower"
  },
  {
   "term": "雨水",
@@ -68,7 +73,8 @@
   "object_id": 147930,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "春柳集禽图",
-  "artist_zh": "明 · 殷宏"
+  "artist_zh": "明 · 殷宏",
+  "category": "birdflower"
  },
  {
   "term": "雨水",
@@ -80,7 +86,8 @@
   "object_id": 148241,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "杂画册·其六",
-  "artist_zh": "清 · 樊圻"
+  "artist_zh": "清 · 樊圻",
+  "category": "other"
  },
  {
   "term": "雨水",
@@ -92,7 +99,8 @@
   "object_id": 152549,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "杨柳图",
-  "artist_zh": "宋 · 佚名"
+  "artist_zh": "宋 · 佚名",
+  "category": "birdflower"
  },
  {
   "term": "惊蛰",
@@ -104,7 +112,8 @@
   "object_id": 142642,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "春山图",
-  "artist_zh": "清 · 髡残"
+  "artist_zh": "清 · 髡残",
+  "category": "landscape"
  },
  {
   "term": "惊蛰",
@@ -116,7 +125,8 @@
   "object_id": 135953,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "迎春图",
-  "artist_zh": "明 · 吴彬"
+  "artist_zh": "明 · 吴彬",
+  "category": "other"
  },
  {
   "term": "惊蛰",
@@ -128,7 +138,8 @@
   "object_id": 129859,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "桃源图",
-  "artist_zh": "明 · 史瑞"
+  "artist_zh": "明 · 史瑞",
+  "category": "birdflower"
  },
  {
   "term": "惊蛰",
@@ -140,7 +151,8 @@
   "object_id": 132924,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟各家山水册·春耕",
-  "artist_zh": "清 · 查士标"
+  "artist_zh": "清 · 查士标",
+  "category": "landscape"
  },
  {
   "term": "春分",
@@ -152,7 +164,8 @@
   "object_id": 152556,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "折枝花鸟",
-  "artist_zh": "宋 · 佚名"
+  "artist_zh": "宋 · 佚名",
+  "category": "birdflower"
  },
  {
   "term": "春分",
@@ -163,7 +176,8 @@
   "date": "1300s",
   "object_id": 145907,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
-  "title_zh": "百合蛱蝶"
+  "title_zh": "百合蛱蝶",
+  "category": "other"
  },
  {
   "term": "春分",
@@ -175,7 +189,8 @@
   "object_id": 160133,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "鹑雀秋色图",
-  "artist_zh": "元 · 王渊"
+  "artist_zh": "元 · 王渊",
+  "category": "birdflower"
  },
  {
   "term": "春分",
@@ -187,7 +202,8 @@
   "object_id": 149880,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "百鸟三友图",
-  "artist_zh": "明 · 边文进"
+  "artist_zh": "明 · 边文进",
+  "category": "birdflower"
  },
  {
   "term": "清明",
@@ -199,7 +215,8 @@
   "object_id": 131335,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "江南春霭图",
-  "artist_zh": "清 · 石涛"
+  "artist_zh": "清 · 石涛",
+  "category": "landscape"
  },
  {
   "term": "清明",
@@ -211,7 +228,8 @@
   "object_id": 149109,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "四季花卉图",
-  "artist_zh": "明 · 王穀祥"
+  "artist_zh": "明 · 王穀祥",
+  "category": "birdflower"
  },
  {
   "term": "清明",
@@ -223,7 +241,8 @@
   "object_id": 130942,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "疏林远岫图",
-  "artist_zh": "明 · 李流芳"
+  "artist_zh": "明 · 李流芳",
+  "category": "landscape"
  },
  {
   "term": "清明",
@@ -235,7 +254,8 @@
   "object_id": 153351,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "山水图",
-  "artist_zh": "清 · 翟大坤"
+  "artist_zh": "清 · 翟大坤",
+  "category": "landscape"
  },
  {
   "term": "谷雨",
@@ -247,7 +267,8 @@
   "object_id": 138688,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "赵孟頫写经换茶图",
-  "artist_zh": "明 · 仇英"
+  "artist_zh": "明 · 仇英",
+  "category": "other"
  },
  {
   "term": "谷雨",
@@ -259,7 +280,8 @@
   "object_id": 152826,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "卢仝烹茶图",
-  "artist_zh": "清 · 闵贞"
+  "artist_zh": "清 · 闵贞",
+  "category": "other"
  },
  {
   "term": "谷雨",
@@ -271,7 +293,8 @@
   "object_id": 161705,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "春日洗药图",
-  "artist_zh": "清 · 禹之鼎"
+  "artist_zh": "清 · 禹之鼎",
+  "category": "landscape"
  },
  {
   "term": "谷雨",
@@ -283,7 +306,8 @@
   "object_id": 132919,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "四季山水册",
-  "artist_zh": "清 · 查士标"
+  "artist_zh": "清 · 查士标",
+  "category": "landscape"
  },
  {
   "term": "立夏",
@@ -295,7 +319,8 @@
   "object_id": 149612,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟古册·莲石图",
-  "artist_zh": "明 · 陈洪绶"
+  "artist_zh": "明 · 陈洪绶",
+  "category": "birdflower"
  },
  {
   "term": "立夏",
@@ -307,7 +332,8 @@
   "object_id": 136759,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "百子嬉春图",
-  "artist_zh": "宋 · 苏汉臣"
+  "artist_zh": "宋 · 苏汉臣",
+  "category": "figure"
  },
  {
   "term": "立夏",
@@ -319,7 +345,8 @@
   "object_id": 150469,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "燕荷图",
-  "artist_zh": "南宋 · 牧谿"
+  "artist_zh": "南宋 · 牧谿",
+  "category": "birdflower"
  },
  {
   "term": "立夏",
@@ -331,7 +358,8 @@
   "object_id": 149603,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟古图册",
-  "artist_zh": "明 · 陈洪绶"
+  "artist_zh": "明 · 陈洪绶",
+  "category": "other"
  },
  {
   "term": "小满",
@@ -343,7 +371,8 @@
   "object_id": 130496,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "风竹图",
-  "artist_zh": "元 · 雪窗"
+  "artist_zh": "元 · 雪窗",
+  "category": "birdflower"
  },
  {
   "term": "小满",
@@ -355,7 +384,8 @@
   "object_id": 139746,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "竹石幽兰图",
-  "artist_zh": "元 · 赵孟頫"
+  "artist_zh": "元 · 赵孟頫",
+  "category": "birdflower"
  },
  {
   "term": "小满",
@@ -367,7 +397,8 @@
   "object_id": 150710,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "墨竹图",
-  "artist_zh": "元 · 佚名"
+  "artist_zh": "元 · 佚名",
+  "category": "birdflower"
  },
  {
   "term": "小满",
@@ -379,7 +410,8 @@
   "object_id": 543409,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "雪竹图",
-  "artist_zh": "清 · 弘旿"
+  "artist_zh": "清 · 弘旿",
+  "category": "birdflower"
  },
  {
   "term": "芒种",
@@ -391,7 +423,8 @@
   "object_id": 148242,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "杂画册·其七",
-  "artist_zh": "清 · 樊圻"
+  "artist_zh": "清 · 樊圻",
+  "category": "other"
  },
  {
   "term": "芒种",
@@ -403,7 +436,8 @@
   "object_id": 94605,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "婴戏图",
-  "artist_zh": "明 · 夏葵"
+  "artist_zh": "明 · 夏葵",
+  "category": "figure"
  },
  {
   "term": "芒种",
@@ -414,7 +448,8 @@
   "date": "early 1600s",
   "object_id": 160957,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
-  "title_zh": "竹林孤鹤图"
+  "title_zh": "竹林孤鹤图",
+  "category": "birdflower"
  },
  {
   "term": "芒种",
@@ -425,7 +460,8 @@
   "date": "early 1600s",
   "object_id": 160956,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
-  "title_zh": "春晚归农图"
+  "title_zh": "春晚归农图",
+  "category": "other"
  },
  {
   "term": "夏至",
@@ -437,7 +473,8 @@
   "object_id": 145409,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "妙法莲华经扉画",
-  "artist_zh": "宋 · 佚名"
+  "artist_zh": "宋 · 佚名",
+  "category": "birdflower"
  },
  {
   "term": "夏至",
@@ -449,7 +486,8 @@
   "object_id": 137217,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "普贤菩萨图",
-  "artist_zh": "宋 · 佚名"
+  "artist_zh": "宋 · 佚名",
+  "category": "figure"
  },
  {
   "term": "夏至",
@@ -461,7 +499,8 @@
   "object_id": 134789,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "蛮王礼佛图",
-  "artist_zh": "宋 · 赵光辅"
+  "artist_zh": "宋 · 赵光辅",
+  "category": "figure"
  },
  {
   "term": "夏至",
@@ -473,7 +512,8 @@
   "object_id": 167664,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "释迦三尊图",
-  "artist_zh": "元 · 佚名"
+  "artist_zh": "元 · 佚名",
+  "category": "figure"
  },
  {
   "term": "小暑",
@@ -485,7 +525,8 @@
   "object_id": 149116,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "兰亭修禊图",
-  "artist_zh": "清 · 樊沂"
+  "artist_zh": "清 · 樊沂",
+  "category": "birdflower"
  },
  {
   "term": "小暑",
@@ -497,7 +538,8 @@
   "object_id": 149662,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "天台石桥图",
-  "artist_zh": "清 · 戴熙"
+  "artist_zh": "清 · 戴熙",
+  "category": "landscape"
  },
  {
   "term": "小暑",
@@ -509,7 +551,8 @@
   "object_id": 139448,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "草亭诗意图",
-  "artist_zh": "元 · 吴镇"
+  "artist_zh": "元 · 吴镇",
+  "category": "landscape"
  },
  {
   "term": "小暑",
@@ -521,7 +564,8 @@
   "object_id": 140444,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "虎丘十二景图",
-  "artist_zh": "明 · 沈周"
+  "artist_zh": "明 · 沈周",
+  "category": "animal"
  },
  {
   "term": "大暑",
@@ -533,7 +577,8 @@
   "object_id": 148237,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "杂画册·其二",
-  "artist_zh": "清 · 樊圻"
+  "artist_zh": "清 · 樊圻",
+  "category": "other"
  },
  {
   "term": "大暑",
@@ -545,7 +590,8 @@
   "object_id": 149031,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "烟林听秋图",
-  "artist_zh": "清 · 张风"
+  "artist_zh": "清 · 张风",
+  "category": "landscape"
  },
  {
   "term": "大暑",
@@ -557,7 +603,8 @@
   "object_id": 148222,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "茅屋清谈图",
-  "artist_zh": "元 · 佚名"
+  "artist_zh": "元 · 佚名",
+  "category": "other"
  },
  {
   "term": "大暑",
@@ -569,7 +616,8 @@
   "object_id": 94601,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "竹林七贤图",
-  "artist_zh": "清 · 佚名"
+  "artist_zh": "清 · 佚名",
+  "category": "birdflower"
  },
  {
   "term": "立秋",
@@ -581,7 +629,8 @@
   "object_id": 131673,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "秋窗对话图",
-  "artist_zh": "清 · 华喦"
+  "artist_zh": "清 · 华喦",
+  "category": "landscape"
  },
  {
   "term": "立秋",
@@ -593,7 +642,8 @@
   "object_id": 135964,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "秋日江山图",
-  "artist_zh": "明 · 董其昌"
+  "artist_zh": "明 · 董其昌",
+  "category": "landscape"
  },
  {
   "term": "立秋",
@@ -605,7 +655,8 @@
   "object_id": 111789,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "秋猎图",
-  "artist_zh": "南宋 · 陈居中"
+  "artist_zh": "南宋 · 陈居中",
+  "category": "landscape"
  },
  {
   "term": "立秋",
@@ -617,7 +668,8 @@
   "object_id": 139830,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "秋林烟舍图",
-  "artist_zh": "南宋 · 李安忠"
+  "artist_zh": "南宋 · 李安忠",
+  "category": "landscape"
  },
  {
   "term": "处暑",
@@ -629,7 +681,8 @@
   "object_id": 142579,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "秦淮忆旧图",
-  "artist_zh": "清 · 石涛"
+  "artist_zh": "清 · 石涛",
+  "category": "landscape"
  },
  {
   "term": "处暑",
@@ -641,7 +694,8 @@
   "object_id": 149415,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "西湖泊舟图",
-  "artist_zh": "南宋 · 佚名"
+  "artist_zh": "南宋 · 佚名",
+  "category": "landscape"
  },
  {
   "term": "处暑",
@@ -653,7 +707,8 @@
   "object_id": 148234,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "杂画册·其一",
-  "artist_zh": "清 · 樊圻"
+  "artist_zh": "清 · 樊圻",
+  "category": "other"
  },
  {
   "term": "处暑",
@@ -665,7 +720,8 @@
   "object_id": 150932,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "墨戏山水图",
-  "artist_zh": "元 · 方从义"
+  "artist_zh": "元 · 方从义",
+  "category": "landscape"
  },
  {
   "term": "白露",
@@ -677,7 +733,8 @@
   "object_id": 129861,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "溪山飞雁图",
-  "artist_zh": "南宋 · 马麟"
+  "artist_zh": "南宋 · 马麟",
+  "category": "landscape"
  },
  {
   "term": "白露",
@@ -689,7 +746,8 @@
   "object_id": 161024,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "书画合璧册·其一",
-  "artist_zh": "清 · 边寿民"
+  "artist_zh": "清 · 边寿民",
+  "category": "other"
  },
  {
   "term": "白露",
@@ -701,7 +759,8 @@
   "object_id": 95171,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "狩猎图",
-  "artist_zh": "明清 · 佚名"
+  "artist_zh": "明清 · 佚名",
+  "category": "animal"
  },
  {
   "term": "白露",
@@ -713,7 +772,8 @@
   "object_id": 161022,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "书画合璧册·其二",
-  "artist_zh": "清 · 边寿民"
+  "artist_zh": "清 · 边寿民",
+  "category": "other"
  },
  {
   "term": "秋分",
@@ -725,7 +785,8 @@
   "object_id": 132923,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟各家山水册·待月",
-  "artist_zh": "清 · 查士标"
+  "artist_zh": "清 · 查士标",
+  "category": "landscape"
  },
  {
   "term": "秋分",
@@ -737,7 +798,8 @@
   "object_id": 160128,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "对月图",
-  "artist_zh": "南宋 · 马远"
+  "artist_zh": "南宋 · 马远",
+  "category": "landscape"
  },
  {
   "term": "秋分",
@@ -749,7 +811,8 @@
   "object_id": 147574,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "中秋待月图",
-  "artist_zh": "明 · 史瑞"
+  "artist_zh": "明 · 史瑞",
+  "category": "landscape"
  },
  {
   "term": "秋分",
@@ -761,7 +824,8 @@
   "object_id": 149073,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "听琴图",
-  "artist_zh": "明 · 唐寅"
+  "artist_zh": "明 · 唐寅",
+  "category": "other"
  },
  {
   "term": "寒露",
@@ -773,7 +837,8 @@
   "object_id": 149615,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟古册·菊石图",
-  "artist_zh": "明 · 陈洪绶"
+  "artist_zh": "明 · 陈洪绶",
+  "category": "birdflower"
  },
  {
   "term": "寒露",
@@ -785,7 +850,8 @@
   "object_id": 136463,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "菘菊图",
-  "artist_zh": "明 · 陶成"
+  "artist_zh": "明 · 陶成",
+  "category": "birdflower"
  },
  {
   "term": "寒露",
@@ -797,7 +863,8 @@
   "object_id": 149622,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟古册·菊花图",
-  "artist_zh": "明 · 陈洪绶"
+  "artist_zh": "明 · 陈洪绶",
+  "category": "birdflower"
  },
  {
   "term": "寒露",
@@ -809,7 +876,8 @@
   "object_id": 159724,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟王渊菊桂图",
-  "artist_zh": "明 · 沈周"
+  "artist_zh": "明 · 沈周",
+  "category": "birdflower"
  },
  {
   "term": "霜降",
@@ -821,7 +889,8 @@
   "object_id": 148243,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "杂画册·其八",
-  "artist_zh": "清 · 樊圻"
+  "artist_zh": "清 · 樊圻",
+  "category": "other"
  },
  {
   "term": "霜降",
@@ -833,7 +902,8 @@
   "object_id": 147045,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "秋林孤色",
-  "artist_zh": "明 · 王建章"
+  "artist_zh": "明 · 王建章",
+  "category": "landscape"
  },
  {
   "term": "霜降",
@@ -845,7 +915,8 @@
   "object_id": 147009,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "白云红树图",
-  "artist_zh": "清 · 黎简"
+  "artist_zh": "清 · 黎简",
+  "category": "other"
  },
  {
   "term": "霜降",
@@ -857,7 +928,8 @@
   "object_id": 143755,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟王蒙太白山图",
-  "artist_zh": "明 · 杜琼"
+  "artist_zh": "明 · 杜琼",
+  "category": "other"
  },
  {
   "term": "立冬",
@@ -869,7 +941,8 @@
   "object_id": 132841,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "四季山水册·其八",
-  "artist_zh": "清 · 萧云从"
+  "artist_zh": "清 · 萧云从",
+  "category": "landscape"
  },
  {
   "term": "立冬",
@@ -881,7 +954,8 @@
   "object_id": 132840,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "四季山水册·其七",
-  "artist_zh": "清 · 萧云从"
+  "artist_zh": "清 · 萧云从",
+  "category": "landscape"
  },
  {
   "term": "立冬",
@@ -893,7 +967,8 @@
   "object_id": 150729,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "四季竹图·冬",
-  "artist_zh": "元 · 佚名"
+  "artist_zh": "元 · 佚名",
+  "category": "birdflower"
  },
  {
   "term": "立冬",
@@ -905,7 +980,8 @@
   "object_id": 148244,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "杂画册·其九",
-  "artist_zh": "清 · 樊圻"
+  "artist_zh": "清 · 樊圻",
+  "category": "other"
  },
  {
   "term": "小雪",
@@ -917,7 +993,8 @@
   "object_id": 149762,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "雪染千山图",
-  "artist_zh": "清 · 法若真"
+  "artist_zh": "清 · 法若真",
+  "category": "landscape"
  },
  {
   "term": "小雪",
@@ -929,7 +1006,8 @@
   "object_id": 145010,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "出山释迦图",
-  "artist_zh": "宋 · 佚名"
+  "artist_zh": "宋 · 佚名",
+  "category": "landscape"
  },
  {
   "term": "小雪",
@@ -941,7 +1019,8 @@
   "object_id": 159727,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "寒溪古木图",
-  "artist_zh": "明 · 文徵明"
+  "artist_zh": "明 · 文徵明",
+  "category": "other"
  },
  {
   "term": "小雪",
@@ -953,7 +1032,8 @@
   "object_id": 149658,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "九龙潭图",
-  "artist_zh": "清 · 梅清"
+  "artist_zh": "清 · 梅清",
+  "category": "animal"
  },
  {
   "term": "大雪",
@@ -965,7 +1045,8 @@
   "object_id": 142641,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "五叠泉图",
-  "artist_zh": "明 · 陈洪绶"
+  "artist_zh": "明 · 陈洪绶",
+  "category": "animal"
  },
  {
   "term": "大雪",
@@ -976,7 +1057,8 @@
   "date": "1100s",
   "object_id": 142278,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
-  "title_zh": "寒林群鸟图"
+  "title_zh": "寒林群鸟图",
+  "category": "birdflower"
  },
  {
   "term": "大雪",
@@ -988,7 +1070,8 @@
   "object_id": 132922,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟各家山水册·雪景",
-  "artist_zh": "清 · 查士标"
+  "artist_zh": "清 · 查士标",
+  "category": "landscape"
  },
  {
   "term": "大雪",
@@ -1000,7 +1083,8 @@
   "object_id": 138542,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "溪山幽居图",
-  "artist_zh": "明 · 陆治"
+  "artist_zh": "明 · 陆治",
+  "category": "landscape"
  },
  {
   "term": "冬至",
@@ -1012,7 +1096,8 @@
   "object_id": 150727,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "四季竹图·夏冬",
-  "artist_zh": "元 · 佚名"
+  "artist_zh": "元 · 佚名",
+  "category": "birdflower"
  },
  {
   "term": "冬至",
@@ -1024,7 +1109,8 @@
   "object_id": 173574,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "冬景图",
-  "artist_zh": "宋 · 佚名"
+  "artist_zh": "宋 · 佚名",
+  "category": "landscape"
  },
  {
   "term": "冬至",
@@ -1036,7 +1122,8 @@
   "object_id": 160913,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "三清图",
-  "artist_zh": "清 · 张熊"
+  "artist_zh": "清 · 张熊",
+  "category": "other"
  },
  {
   "term": "冬至",
@@ -1048,7 +1135,8 @@
   "object_id": 161014,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "书画合璧册·其三",
-  "artist_zh": "清 · 边寿民"
+  "artist_zh": "清 · 边寿民",
+  "category": "other"
  },
  {
   "term": "小寒",
@@ -1060,7 +1148,8 @@
   "object_id": 132015,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "林逋月下吟图",
-  "artist_zh": "明 · 杜堇"
+  "artist_zh": "明 · 杜堇",
+  "category": "landscape"
  },
  {
   "term": "小寒",
@@ -1072,7 +1161,8 @@
   "object_id": 132837,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "四季山水册·其一",
-  "artist_zh": "清 · 萧云从"
+  "artist_zh": "清 · 萧云从",
+  "category": "landscape"
  },
  {
   "term": "小寒",
@@ -1084,7 +1174,8 @@
   "object_id": 149393,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "月梅图",
-  "artist_zh": "元 · 颜辉"
+  "artist_zh": "元 · 颜辉",
+  "category": "birdflower"
  },
  {
   "term": "小寒",
@@ -1096,7 +1187,8 @@
   "object_id": 143248,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "花鸟册·梅禽图",
-  "artist_zh": "清 · 张若霭"
+  "artist_zh": "清 · 张若霭",
+  "category": "birdflower"
  },
  {
   "term": "大寒",
@@ -1108,7 +1200,8 @@
   "object_id": 137208,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟古山水册",
-  "artist_zh": "清 · 梅清"
+  "artist_zh": "清 · 梅清",
+  "category": "landscape"
  },
  {
   "term": "大寒",
@@ -1120,7 +1213,8 @@
   "object_id": 132908,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "拟郭忠恕山水图",
-  "artist_zh": "清 · 八大山人"
+  "artist_zh": "清 · 八大山人",
+  "category": "landscape"
  },
  {
   "term": "大寒",
@@ -1132,7 +1226,8 @@
   "object_id": 154086,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
   "title_zh": "秋山归樵图",
-  "artist_zh": "宋 · 佚名"
+  "artist_zh": "宋 · 佚名",
+  "category": "landscape"
  },
  {
   "term": "大寒",
@@ -1143,6 +1238,2695 @@
   "date": "1200s",
   "object_id": 160947,
   "credit": "The Cleveland Museum of Art, CC0 1.0",
-  "title_zh": "牧牛图"
+  "title_zh": "牧牛图",
+  "category": "animal"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_1.webp",
+  "title": "Landscape",
+  "artist": "Wang Hui (Chinese, 1632–1717)",
+  "date": "1632–1717",
+  "object_id": 94599,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_2.webp",
+  "title": "Landscape",
+  "artist": "佚名",
+  "date": "1644–1911",
+  "object_id": 94609,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_3.webp",
+  "title": "Ramblers over a Winding Stream",
+  "artist": "Luo Zhichuan (Chinese, active 1280s–1320s)",
+  "date": "before 1330",
+  "object_id": 94983,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "溪橋策杖圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_4.webp",
+  "title": "Landscapes",
+  "artist": "Ren Yu (Chinese, 1853–1901)",
+  "date": "1892",
+  "object_id": 95205,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_5.webp",
+  "title": "Landscape",
+  "artist": "Ren Yu (Chinese, 1853–1901)",
+  "date": "1892",
+  "object_id": 95206,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_6.webp",
+  "title": "Landscape",
+  "artist": "Ren Yu (Chinese, 1853–1901)",
+  "date": "1892",
+  "object_id": 95207,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_7.webp",
+  "title": "Landscape",
+  "artist": "Ren Yu (Chinese, 1853–1901)",
+  "date": "1892",
+  "object_id": 95208,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_8.webp",
+  "title": "Landscape",
+  "artist": "Ren Yu (Chinese, 1853–1901)",
+  "date": "1892",
+  "object_id": 95209,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_9.webp",
+  "title": "Landscape",
+  "artist": "佚名",
+  "date": "1368–1644",
+  "object_id": 98261,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_10.webp",
+  "title": "Cloudy Mountains",
+  "artist": "Mi Youren (Chinese, 1072–1151)",
+  "date": "1130",
+  "object_id": 113945,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "雲山圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_11.webp",
+  "title": "Landscape after Jing Hao and Guan Tong",
+  "artist": "Li Shizhuo (Chinese, c. 1690–1770)",
+  "date": "1700s",
+  "object_id": 130219,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "仿荊關山水"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_12.webp",
+  "title": "Streams and Mountains without End",
+  "artist": "佚名",
+  "date": "1100–1150",
+  "object_id": 130361,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "溪山無盡"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_13.webp",
+  "title": "Landscape after Ni Zan",
+  "artist": "Wang Yuanqi (Chinese, 1642–1715)",
+  "date": "1707",
+  "object_id": 132016,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "仿倪瓚設色山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_14.webp",
+  "title": "Album of Seasonal Landscapes",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132833,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_15.webp",
+  "title": "Album of Seasonal Landscapes, Leaf B (previous leaf 1)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132834,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_16.webp",
+  "title": "Album of Seasonal Landscapes, Leaf D (previous leaf 2)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132835,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_17.webp",
+  "title": "Album of Seasonal Landscapes, Leaf E (previous leaf 3)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132836,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_18.webp",
+  "title": "Album of Seasonal Landscapes, Leaf F (previous leaf 5)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132838,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_19.webp",
+  "title": "Album of Seasonal Landscapes, Leaf C (previous leaf 6)",
+  "artist": "Xiao Yuncong (Chinese, 1596–1673)",
+  "date": "1668",
+  "object_id": 132839,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_20.webp",
+  "title": "Landscape Album in Various Styles: Landscape after Ni Zan",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132920,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "四季山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_21.webp",
+  "title": "Landscape Album in Various Styles: Landscape after Mi Fei",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132930,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "四季山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_22.webp",
+  "title": "Buddhist Retreat by Stream and Mountains",
+  "artist": "Juran (Chinese, active 960–985)",
+  "date": "960–85",
+  "object_id": 135836,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "溪山蘭若圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_23.webp",
+  "title": "Dream Journey among Rivers and Mountains, no. 90",
+  "artist": "Cheng Zhengkui (Chinese, 1604–1676)",
+  "date": "1658",
+  "object_id": 136296,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "江山臥游圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_24.webp",
+  "title": "Lonely Retreat Overlooking a Misty Valley",
+  "artist": "Sheng Maoye (Chinese, active early 1600s)",
+  "date": "1630",
+  "object_id": 137120,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "古木幽居圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_25.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137202,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_26.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137203,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_27.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137204,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_28.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137205,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_29.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137206,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_30.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137207,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_31.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137209,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_32.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137210,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_33.webp",
+  "title": "Landscapes in Various Styles after Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137211,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_34.webp",
+  "title": "Landscapes after Various Styles of Old Masters",
+  "artist": "Mei Qing (Chinese, 1623–1697)",
+  "date": "1690",
+  "object_id": 137212,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "倣古山水圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_35.webp",
+  "title": "Meditative Visit to a Mountain Retreat: In Picture and in Words",
+  "artist": "Xiang Shengmo (Chinese, 1597–1658)",
+  "date": "1648",
+  "object_id": 138531,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "巖栖思訪圖詠"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_36.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142571,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_37.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142572,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_38.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142573,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_39.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142574,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_40.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142575,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_41.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142576,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_42.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142577,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_43.webp",
+  "title": "Reminiscences of Qinhuai River",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1642–1707",
+  "object_id": 142578,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "秦淮憶舊圖冊"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_44.webp",
+  "title": "Landscape in the Style of Dong Yuan and Juran",
+  "artist": "Gong Xian (Chinese, 1599–1689)",
+  "date": "c. 1650",
+  "object_id": 144286,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "仿董巨山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_45.webp",
+  "title": "Playing the Qin in a Secluded Valley",
+  "artist": "Wen Zhengming (Chinese, 1470–1559)",
+  "date": "1548",
+  "object_id": 144829,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "幽壑鳴琴圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_46.webp",
+  "title": "Landscape in the Style of Huang Gongwang",
+  "artist": "Gu Tianzhi (Chinese, active mid-1600s)",
+  "date": "1649",
+  "object_id": 145123,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "仿黃公望山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_47.webp",
+  "title": "River Village in a Rainstorm",
+  "artist": "Lu Wenying (Chinese)",
+  "date": "c. 1480–1507",
+  "object_id": 145426,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "江村風雨圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_48.webp",
+  "title": "Clouds Visiting a Mountain Retreat",
+  "artist": "Tao Hong (Chinese, active c. 1610–1640)",
+  "date": "1633",
+  "object_id": 145987,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "雲山圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_49.webp",
+  "title": "The Hermit Xu You Resting by a Stream",
+  "artist": "Dai Jin (Chinese, 1388–1462)",
+  "date": "1400s",
+  "object_id": 147947,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "箕山高隱圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_50.webp",
+  "title": "Looking for a Monastery in the Misty Mountains",
+  "artist": "Chen Chun (Chinese, 1483–1544)",
+  "date": "1500–1544",
+  "object_id": 149628,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "霧山尋隱"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_51.webp",
+  "title": "New Year's Day in a Village at Stone Lake",
+  "artist": "Li Shida (Chinese, c. 1549–c. 1621)",
+  "date": "1609",
+  "object_id": 149944,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "石湖村舍"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_52.webp",
+  "title": "Landscapes",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153345,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水畫"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_53.webp",
+  "title": "Landscape",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153346,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水畫"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_54.webp",
+  "title": "Landscape",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153347,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水畫"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_55.webp",
+  "title": "Landscape",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153350,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水畫"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_56.webp",
+  "title": "Landscape",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153355,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水畫"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_57.webp",
+  "title": "Landscape",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153356,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水畫"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_58.webp",
+  "title": "Landscape",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153357,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水畫"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_59.webp",
+  "title": "Mountain Village Embraced by the Summer",
+  "artist": "Wang Shimin (Chinese, 1592–1680)",
+  "date": "1659",
+  "object_id": 159729,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "夏季山居圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_60.webp",
+  "title": "Shade of Pines in a Cloudy Valley",
+  "artist": "Wang Jian (Chinese, 1598–1677)",
+  "date": "1660",
+  "object_id": 159730,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "雲壑松陰"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_61.webp",
+  "title": "Full Sail on the Misty River",
+  "artist": "Xia Sheng (Chinese, active 1200s)",
+  "date": "1200s",
+  "object_id": 160132,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "煙江颿景圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_62.webp",
+  "title": "Streams and Mountains",
+  "artist": "Xu Ben (Chinese, 1335–1380)",
+  "date": "1372",
+  "object_id": 160138,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "溪山"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_63.webp",
+  "title": "The Nine Elders of the Mountain of Fragrance",
+  "artist": "Xie Huan (Chinese, c. 1370-c.1450)",
+  "date": "1426–52",
+  "object_id": 160141,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "香山九老圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_64.webp",
+  "title": "Baoyang Lake",
+  "artist": "Song Xu (Chinese, 1525-c. 1606)",
+  "date": "c. 1588",
+  "object_id": 160729,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "包陽湖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_65.webp",
+  "title": "Bilang Lake",
+  "artist": "Song Xu (Chinese, 1525-c. 1606)",
+  "date": "c. 1588",
+  "object_id": 160732,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "碧浪湖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_66.webp",
+  "title": "Mt. Biyan (Green Cliff)",
+  "artist": "Song Xu (Chinese, 1525-c. 1606)",
+  "date": "c. 1588",
+  "object_id": 160736,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "壁巖山"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_67.webp",
+  "title": "Mt. Dong (Grotto Mountain)",
+  "artist": "Song Xu (Chinese, 1525-c. 1606)",
+  "date": "c. 1588",
+  "object_id": 160737,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "洞山"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_68.webp",
+  "title": "Landscape",
+  "artist": "Shao Gao (Chinese, c. 1595-c. 1643)",
+  "date": "1626",
+  "object_id": 160762,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "山水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_69.webp",
+  "title": "Album of Daoist and Buddhist Themes: Search the Mountain: Leaf 45",
+  "artist": "佚名",
+  "date": "1200s",
+  "object_id": 163145,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "道佛圖冊: 搜山圖冊頁"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_70.webp",
+  "title": "Landscape with Poet Tao Yuanming (365–472 CE)",
+  "artist": "佚名",
+  "date": "1200s–1400s",
+  "object_id": 173659,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": "遠望南山"
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_71.webp",
+  "title": "Landscape, The Palace of the Clouds",
+  "artist": "佚名",
+  "date": "1644–1911",
+  "object_id": 95079,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_72.webp",
+  "title": "Landscape in the Style of Juran",
+  "artist": "Liu Du (Chinese, active c. 1628-after 1653)",
+  "date": "1368–1644",
+  "object_id": 95087,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_73.webp",
+  "title": "Visiting an Old Friend in the Spring Mountains",
+  "artist": "Sheng Mou (Tzu-chao) (Chinese, active c. 1330–1369)",
+  "date": "1300s",
+  "object_id": 99451,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_74.webp",
+  "title": "Landscape Album in Various Styles: Landscape after Wu Zhen",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132921,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_75.webp",
+  "title": "Landscape Album in Various Styles: Boating in Spring Water",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132925,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_76.webp",
+  "title": "Landscape Album in Various Styles: The Stream of Wuling",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132926,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_77.webp",
+  "title": "Landscape Album in Various Styles: Scenery of Mt. Changbai after Huang Gongwang",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132927,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_78.webp",
+  "title": "Landscape Album in Various Styles: Traveling in Autumn Mountains",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132928,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_79.webp",
+  "title": "Landscape Album in Various Styles: Landscape with Artist on a Bridge",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132929,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "landscape",
+  "file": "cat_landscape_80.webp",
+  "title": "Landscape Album in Various Styles: Pleasure in a Mountain Brook",
+  "artist": "Zha Shibiao (Chinese, 1615–1698)",
+  "date": "1684",
+  "object_id": 132931,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "landscape",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_1.webp",
+  "title": "Flowers and Rocks",
+  "artist": "佚名",
+  "date": "1368–1644",
+  "object_id": 94611,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "花石圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_2.webp",
+  "title": "Insects and Flowers",
+  "artist": "佚名",
+  "date": "c. 1900",
+  "object_id": 95080,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "草蟲圖卷"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_3.webp",
+  "title": "Rocks, Orchid, and Bamboo",
+  "artist": "Shitao (Chinese, 1642–1707)",
+  "date": "1662",
+  "object_id": 130220,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "蘭石竹圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_4.webp",
+  "title": "Tall Bamboo and Distant Mountains, after Wang Meng",
+  "artist": "Wang Hui (Chinese, 1632–1717)",
+  "date": "1694",
+  "object_id": 130940,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "仿王蒙修竹遠山圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_5.webp",
+  "title": "Bamboo and Insects",
+  "artist": "Wu Bing (Chinese, active 1190–1194)",
+  "date": "late 1100s",
+  "object_id": 140153,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "竹蟲圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_6.webp",
+  "title": "Birds on a Tree above a Cataract",
+  "artist": "Li Di (Chinese, c. 1100-c. 1192)",
+  "date": "1127–1279",
+  "object_id": 140154,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "宿禽激湍圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_7.webp",
+  "title": "Bamboo and Ducks by a Rushing Stream",
+  "artist": "Ma Yuan (Chinese, c. 1150–after 1255)",
+  "date": "1127–1279",
+  "object_id": 143166,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "竹溪試浴"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_8.webp",
+  "title": "Herbaceous Peony",
+  "artist": "Yun Shouping (Chinese, 1633–1690)",
+  "date": "1685",
+  "object_id": 143237,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "五色芍藥圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_9.webp",
+  "title": "Ink Flowers",
+  "artist": "Zhao Zhong (Chinese, second half of the 1300s)",
+  "date": "1361",
+  "object_id": 143462,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "墨花圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_10.webp",
+  "title": "The Peach Blossom Spring",
+  "artist": "Liu Du (Chinese, active c. 1628-after 1653)",
+  "date": "1650",
+  "object_id": 146030,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "桃花源圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_11.webp",
+  "title": "Narcissus and Rocks",
+  "artist": "Lu Tianru (Chinese, first half of 1400s)",
+  "date": "1368–1644",
+  "object_id": 147926,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "蘭石圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_12.webp",
+  "title": "Listening to the Bamboo",
+  "artist": "Wen Zhengming (Chinese, 1470–1559)",
+  "date": "late 1400s-1500s",
+  "object_id": 149030,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "聽竹圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_13.webp",
+  "title": "Eagle on a Tree Trunk",
+  "artist": "Huang Shen (Chinese, 1687–after 1768)",
+  "date": "1755",
+  "object_id": 149098,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "古槎秋鷹圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_14.webp",
+  "title": "Bamboo, Rock, and Tall Tree",
+  "artist": "Ni Zan (Chinese, 1301–1374)",
+  "date": "c. 1300s",
+  "object_id": 149412,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "筠石喬柯"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_15.webp",
+  "title": "Insects and Bamboo",
+  "artist": "佚名",
+  "date": "1200s",
+  "object_id": 152548,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "竹蟲圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_16.webp",
+  "title": "Flowering Crab Apple",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "1500",
+  "object_id": 159726,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "海棠圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_17.webp",
+  "title": "Landscape with Bamboo",
+  "artist": "Song Ke (Chinese, 1327–1387)",
+  "date": "1300s",
+  "object_id": 160139,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "竹園圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_18.webp",
+  "title": "Eagles",
+  "artist": "佚名",
+  "date": "1368–1644",
+  "object_id": 173756,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": "雙鷹圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_19.webp",
+  "title": "Bamboo in the Wind",
+  "artist": "Ma Yu (Chinese, active 1706–1724)",
+  "date": "1724",
+  "object_id": 95204,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_20.webp",
+  "title": "Illustrated Book of Flowers and Butterflies",
+  "artist": "佚名",
+  "date": "1800s",
+  "object_id": 103824,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_21.webp",
+  "title": "Birds and Ducks on a Snowy Islet",
+  "artist": "佚名",
+  "date": "mid-1200s",
+  "object_id": 136758,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_22.webp",
+  "title": "Bamboo Pavilion, Tiger Hill, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140443,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_23.webp",
+  "title": "Desk Album: Flower and Bird Paintings",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143238,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_24.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Bats, rocks, flowers oval calligraphy)\r\n",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143239,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_25.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Bats, rocks, flowers circular calligraphy)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143240,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_26.webp",
+  "title": "Desk Album: Flower and Bird Paintings (mallow flowers)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143241,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_27.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Pinks)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143242,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_28.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Peony)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143243,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_29.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Rose)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143244,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_30.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Climbing Blue Flowers)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143245,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_31.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Preening Bird)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143246,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_32.webp",
+  "title": "Desk Album: Flower and Bird Paintings (Gossiping Sparrows)",
+  "artist": "Zhang Ruoai (Chinese, 1713–1746)",
+  "date": "1700s",
+  "object_id": 143247,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_33.webp",
+  "title": "Sleeping Bird on a Prunus Branch",
+  "artist": "Bian Wenjin (Chinese, about 1354–1428)",
+  "date": "1400s",
+  "object_id": 143318,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_34.webp",
+  "title": "Returning Birds and Old Cypress",
+  "artist": "佚名",
+  "date": "late 1100s–early 1200s",
+  "object_id": 144686,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_35.webp",
+  "title": "Flowers and Birds",
+  "artist": "Qian Xuan (Chinese, 1235–1307)",
+  "date": "first half of the 14th Century",
+  "object_id": 145419,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_36.webp",
+  "title": "Paintings after Ancient Masters: Narcissus and Bare Trees",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149609,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_37.webp",
+  "title": "Paintings after Ancient Masters: Daoist and Crane in Autumn Landscape",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149613,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_38.webp",
+  "title": "Paintings after Ancient Masters: Mr. Five Willows (Wuliu), Tao Yuanming",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149617,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_39.webp",
+  "title": "Paintings after Ancient Masters: A Bird and Peach-Blossom Branch",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149619,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_40.webp",
+  "title": "Paintings after Ancient Masters: Rock, Old Tree, and Bamboo",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149626,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_41.webp",
+  "title": "Bamboo Landscape",
+  "artist": "佚名",
+  "date": "1127–1279",
+  "object_id": 150494,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_42.webp",
+  "title": "Bamboo in Four Seasons: Summer",
+  "artist": "佚名",
+  "date": "1279–1368",
+  "object_id": 150728,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_43.webp",
+  "title": "Bamboo and Rock",
+  "artist": "Zheng Xie (Chinese, 1693–1765)",
+  "date": "1765",
+  "object_id": 151006,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_44.webp",
+  "title": "Album of Landscape Paintings Illustrating Old Poems:  Man with a Staff Admires Chrysanthemums at a Fence",
+  "artist": "Hua Yan (Chinese, 1682–c. 1765)",
+  "date": "1745",
+  "object_id": 151030,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_45.webp",
+  "title": "Album of Landscape Paintings Illustrating Old Poems: Man Resting under Bamboo",
+  "artist": "Hua Yan (Chinese, 1682–c. 1765)",
+  "date": "1745",
+  "object_id": 151032,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_46.webp",
+  "title": "Birds on a Peach Branch",
+  "artist": "佚名",
+  "date": "1100s",
+  "object_id": 152551,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_47.webp",
+  "title": "Birds on an Autumn Inlet",
+  "artist": "佚名",
+  "date": "c. 1200",
+  "object_id": 152553,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_48.webp",
+  "title": "Cat and Butterfly",
+  "artist": "Min Zhen (Chinese, 1730–after 1788)",
+  "date": "1788",
+  "object_id": 152829,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_49.webp",
+  "title": "Frosted Branches and Dwarf Bamboo, in the Style of Su Shi",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153349,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_50.webp",
+  "title": "Ten Thousand Bamboos in the Mist and Rain",
+  "artist": "Zhai Dakun (Chinese, d. 1804)",
+  "date": "1775",
+  "object_id": 153354,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_51.webp",
+  "title": "Magpies and Wild Rabbits",
+  "artist": "Li Yong (Chinese, active 1200s)",
+  "date": "1200s",
+  "object_id": 160126,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_52.webp",
+  "title": "Flowering Plants",
+  "artist": "Wu Rangzhi (Chinese, 1799–1870)",
+  "date": "1862",
+  "object_id": 161706,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_53.webp",
+  "title": "Bamboo in Four Seasons: Spring and Autumn",
+  "artist": "佚名",
+  "date": "1279–1368",
+  "object_id": 163076,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_54.webp",
+  "title": "Bamboo in Four Seasons: Spring",
+  "artist": "佚名",
+  "date": "1279–1368",
+  "object_id": 163077,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "birdflower",
+  "file": "cat_birdflower_55.webp",
+  "title": "Bamboo in Four Seasons: Autumn",
+  "artist": "佚名",
+  "date": "1279–1368",
+  "object_id": 163078,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "birdflower",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_1.webp",
+  "title": "Zhong Kui Supported by Ghosts",
+  "artist": "Luo Ping (Chinese, 1733–1799)",
+  "date": "1700s",
+  "object_id": 135655,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "鍾馗逐鬼"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_2.webp",
+  "title": "The Lantern Night Excursion of Zhong Kui",
+  "artist": "Yan Hui (Chinese, active 1270–1310)",
+  "date": "late 1200s–early 1300s",
+  "object_id": 136668,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "鍾馗元夜出遊圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_3.webp",
+  "title": "Scholar Reclining and Watching Rising Clouds; Poem by Wang Wei",
+  "artist": "Ma Lin (Chinese, c. 1185–after 1260)",
+  "date": "c. 1256",
+  "object_id": 136949,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "坐看雲起圖; 王維詩"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_4.webp",
+  "title": "Scholar Reclining and Watching Rising Clouds, Poem by Wang Wei",
+  "artist": "Ma Lin (Chinese, c. 1185–after 1260)",
+  "date": "c. 1256",
+  "object_id": 136950,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "坐看雲起圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_5.webp",
+  "title": "Lady Xuanwen Giving Instruction on the Rites of Zhou",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1638",
+  "object_id": 137121,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "宣文君授經圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_6.webp",
+  "title": "Bodhidharma Crossing the Yangzi on a Reed",
+  "artist": "佚名",
+  "date": "1300s",
+  "object_id": 141200,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "蘆葉達磨圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_7.webp",
+  "title": "The Second Coming of the Fifth Patriarch",
+  "artist": "Yintuoluo (Chinese, c. 1285-c. 1355)",
+  "date": "c. mid-1300s",
+  "object_id": 143274,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "五祖再來圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_8.webp",
+  "title": "Portraits of the Qianlong Emperor and His Twelve Consorts",
+  "artist": "Giuseppe Castiglione (Italian, 1688–1766)",
+  "date": "1736–70s",
+  "object_id": 144689,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "乾隆帝及后妃圖卷"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_9.webp",
+  "title": "The Five Hundred Arhats",
+  "artist": "Wu Bin (Chinese, active c. 1591–1626)",
+  "date": "1591–1626",
+  "object_id": 145953,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "五百羅漢圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_10.webp",
+  "title": "Portrait of An Qi",
+  "artist": "Wang Hui (Chinese, 1632–1717)",
+  "date": "1715",
+  "object_id": 145964,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "麓村高逸圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_11.webp",
+  "title": "White-Robed Guanyin",
+  "artist": "Zhang Yuehu (Chinese, active 1200s)",
+  "date": "late 1200s",
+  "object_id": 146713,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "白衣觀音"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_12.webp",
+  "title": "The Bodhisattvas of the Ten Stages in Attaining the Most Perfect Knowledge; The Eight Hosts of Deva, Naga, and Yakshi",
+  "artist": "佚名",
+  "date": "1454",
+  "object_id": 147571,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "等覺位十地菩薩; 天龍八部羅叉女衆"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_13.webp",
+  "title": "The Bodhisattvas of the Ten Stages in Attaining the Most Perfect Knowledge",
+  "artist": "佚名",
+  "date": "1454",
+  "object_id": 147572,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "等覺位十地菩薩"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_14.webp",
+  "title": "Portrait of Priest Dazhi (1048–1116), Master of Law",
+  "artist": "Liu Tao (Chinese, late 1000s–early  1100s)",
+  "date": "1100s",
+  "object_id": 147927,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "大智律師元照像"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_15.webp",
+  "title": "Shakyamuni Triad:  Buddha Attended by Manjushri and Samantabhadra",
+  "artist": "佚名",
+  "date": "c. 900",
+  "object_id": 148381,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "釋迦三尊：釋迦摩尼與文殊菩薩普賢菩薩"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_16.webp",
+  "title": "Scholar Watching the Waterfall",
+  "artist": "Luo Ping (Chinese, 1733–1799)",
+  "date": "1764",
+  "object_id": 148384,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "觀瀑圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_17.webp",
+  "title": "Scholar-Hermits in the Autumn Mountains",
+  "artist": "Tang Yin (Chinese, 1470–1523)",
+  "date": "1500–1510",
+  "object_id": 148856,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "秋山高士圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_18.webp",
+  "title": "White-Robed Guanyin",
+  "artist": "Jueji Yongzhong (Chinese, active around 1300)",
+  "date": "late 1200s–early 1300s",
+  "object_id": 149390,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "白衣觀音菩薩像"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_19.webp",
+  "title": "White-Robed Guanyin",
+  "artist": "Jueji Yongzhong (Chinese, active around 1300)",
+  "date": "late 1200s–early 1300s",
+  "object_id": 149391,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "白衣觀音"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_20.webp",
+  "title": "Paintings after Ancient Masters: Portrait of Tao Yuanming",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149611,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "老蓮橅古: 菊花"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_21.webp",
+  "title": "The Ninth Day Literary Gathering at Xing’an [Temporary Retreat]",
+  "artist": "Fang Shishu (Chinese, 1693–1751)",
+  "date": "1743",
+  "object_id": 149684,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "九日行庵文讌圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_22.webp",
+  "title": "Li Tieguai; Liu Haichan",
+  "artist": "佚名",
+  "date": "1300s",
+  "object_id": 150901,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "李鐵拐; 劉海蟾"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_23.webp",
+  "title": "Li Tieguai",
+  "artist": "佚名",
+  "date": "1300s",
+  "object_id": 150902,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "李鐵拐"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_24.webp",
+  "title": "Manjushri",
+  "artist": "佚名",
+  "date": "c. 1500–1550",
+  "object_id": 155051,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "文殊菩薩"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_25.webp",
+  "title": "Buddha's Conversion of Five Bhiksu",
+  "artist": "Li Sheng (Chinese, active c. 1324–after 1375)",
+  "date": "mid-1300s",
+  "object_id": 160134,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "佛渡五比丘圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_26.webp",
+  "title": "Mountains of the Immortals",
+  "artist": "Chen Ruyan (Chinese, c. 1331–1371)",
+  "date": "1300–1370",
+  "object_id": 160137,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "仙山圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_27.webp",
+  "title": "A Scholar's Retreat amid Autumn Trees",
+  "artist": "Wang Fu (Chinese, 1362–1416)",
+  "date": "c. 1403",
+  "object_id": 160140,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "秋林書舍圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_28.webp",
+  "title": "Xintang (Immortal's Peak)",
+  "artist": "Song Xu (Chinese, 1525-c. 1606)",
+  "date": "c. 1588",
+  "object_id": 160724,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "新塘"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_29.webp",
+  "title": "Xianding (Immortal's Peak)",
+  "artist": "Song Xu (Chinese, 1525-c. 1606)",
+  "date": "c. 1588",
+  "object_id": 160727,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "仙頂"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_30.webp",
+  "title": "Layered Peaks and Splashing Waterfall: Portrait of Hua Yan as a Young Man",
+  "artist": "Hua Yan (Chinese, 1682–c. 1765)",
+  "date": "1705",
+  "object_id": 161781,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "層崗飛瀑圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_31.webp",
+  "title": "Shakyamuni Triad: Buddha Attended by Manjushri and Samantabhadra",
+  "artist": "佚名",
+  "date": "late 1300s",
+  "object_id": 167661,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "釋迦三尊：釋迦摩尼與文殊菩薩普賢菩薩"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_32.webp",
+  "title": "Shakyamuni Triad: Buddha Attended by Manjushri and Samantabhadra (Bodhisattva with Lion)",
+  "artist": "佚名",
+  "date": "late 1300s",
+  "object_id": 167662,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "釋迦三尊：釋迦摩尼與文殊菩薩普賢菩薩"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_33.webp",
+  "title": "Shakyamuni Triad: Buddha Attended by Manjushri and Samantabhadra (Buddha)",
+  "artist": "佚名",
+  "date": "late 1300s",
+  "object_id": 167663,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": "釋迦三尊：釋迦摩尼與文殊菩薩普賢菩薩"
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_34.webp",
+  "title": "Landscape with Figures",
+  "artist": "佚名",
+  "date": "1644–1911",
+  "object_id": 94602,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_35.webp",
+  "title": "Monkey",
+  "artist": "佚名",
+  "date": "late 1200s–1300s",
+  "object_id": 95086,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_36.webp",
+  "title": "Buddha",
+  "artist": "佚名",
+  "date": "early 1900s",
+  "object_id": 98872,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_37.webp",
+  "title": "Buddha in the Preaching Attitude",
+  "artist": "佚名",
+  "date": "618–1279",
+  "object_id": 108532,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_38.webp",
+  "title": "The Thousand Buddha Hall and the Pagoda of the \"Cloudy Cliff\" Monastery, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140450,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_39.webp",
+  "title": "The Five Sages Terrace, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140451,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_40.webp",
+  "title": "Bodhidharma Meditating Facing a Cliff",
+  "artist": "佚名",
+  "date": "late 1200s",
+  "object_id": 147008,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_41.webp",
+  "title": "Buddha Amitābha with Two Attending Bodhisattvas",
+  "artist": "佚名",
+  "date": "1200s",
+  "object_id": 147934,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_42.webp",
+  "title": "Miniature Album with Figures and Landscape",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148076,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_43.webp",
+  "title": "Miniature Album with Figures and Landscape (Landscape with Two Boatmen)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148077,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_44.webp",
+  "title": "Miniature Album with Figures and Landscape (Man with Staff)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148078,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_45.webp",
+  "title": "Miniature Album with Figures and Landscape (Landscape with Two Buildings)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148079,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_46.webp",
+  "title": "Miniature Album with Figures and Landscape (Man and Woman)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148080,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_47.webp",
+  "title": "Miniature Album with Figures and Landscape (Waterfall Landscape)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148081,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_48.webp",
+  "title": "Miniature Album with Figures and Landscape (Three Men)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148082,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_49.webp",
+  "title": "Miniature Album with Figures and Landscape (Landscape with Hill)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148083,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_50.webp",
+  "title": "Miniature Album with Figures and Landscape (Two Men with Umbrella)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148084,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_51.webp",
+  "title": "Miniature Album with Figures and Landscape (Cliff Landscape with Bridge)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148085,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_52.webp",
+  "title": "Miniature Album with Figures and Landscape (Man Riding Carp)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148086,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_53.webp",
+  "title": "Miniature Album with Figures and Landscape (Landscape with Hill, House, Boat and Bridge)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148087,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_54.webp",
+  "title": "Miniature Album with Figures and Landscape (Old Man on Donkey)",
+  "artist": "Zeng Yandong (Chinese, c. 1751–1827)",
+  "date": "1822",
+  "object_id": 148088,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_55.webp",
+  "title": "Seated Arhat with Two Attendants",
+  "artist": "佚名",
+  "date": "late 1200s",
+  "object_id": 148852,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_56.webp",
+  "title": "Paintings after Ancient Masters: Scholars in a Garden",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149605,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_57.webp",
+  "title": "Paintings after Ancient Masters: Portrait of Zhongqing in a Landscape",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149614,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_58.webp",
+  "title": "Paintings after Ancient Masters: A Lady",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149621,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_59.webp",
+  "title": "Paintings after Ancient Masters: Scholar Reading in a Thatched Hut by a Waterfall",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149623,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "figure",
+  "file": "cat_figure_60.webp",
+  "title": "Paintings after Ancient Masters: Scholar with Staff and Brush",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149624,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "figure",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_1.webp",
+  "title": "Fish and Rocks",
+  "artist": "Bada Shanren (Chinese, 1626–1705)",
+  "date": "mid- to late 1600s",
+  "object_id": 130497,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "魚石圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_2.webp",
+  "title": "Dragon; Tiger",
+  "artist": "Fachang Muqi (Chinese, 1220–1280)",
+  "date": "c. 1250–79",
+  "object_id": 135430,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "龍虎圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_3.webp",
+  "title": "Dragon",
+  "artist": "Fachang Muqi (Chinese, 1220–1280)",
+  "date": "c. 1250–79",
+  "object_id": 135431,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "龍圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_4.webp",
+  "title": "Tiger",
+  "artist": "Fachang Muqi (Chinese, 1220–1280)",
+  "date": "c. 1250–79",
+  "object_id": 135432,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "虎圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_5.webp",
+  "title": "Three Horses and Four Grooms",
+  "artist": "Ren Renfa (Chinese, 1254–1328)",
+  "date": "c. 1320s",
+  "object_id": 136295,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "三駿圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_6.webp",
+  "title": "Man, Buffalo, and Calf",
+  "artist": "Li You (Chinese, active c. 1145)",
+  "date": "1145",
+  "object_id": 136464,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "牧牛圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_7.webp",
+  "title": "Twelve Views of Tiger Hill",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140440,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "虎丘十二景圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_8.webp",
+  "title": "Water Buffalo and Herdboys",
+  "artist": "佚名",
+  "date": "late 1200s–early 1300s",
+  "object_id": 149076,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "牧牛圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_9.webp",
+  "title": "Fish",
+  "artist": "佚名",
+  "date": "c. 1400",
+  "object_id": 149077,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "群魚戲水圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_10.webp",
+  "title": "Fisherman's Joy",
+  "artist": "Qian Gu (Chinese, 1508–c. 1578)",
+  "date": "1572",
+  "object_id": 149126,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "漁樂圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_11.webp",
+  "title": "River Village:  Fisherman's Joy",
+  "artist": "Zhao Mengfu (Chinese, 1254–1322)",
+  "date": "c. 1302–3",
+  "object_id": 149413,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "江村漁樂圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_12.webp",
+  "title": "Watching the Deer by a Pine Shaded Stream",
+  "artist": "Ma Yuan (Chinese, c. 1150–after 1255)",
+  "date": "1127–1279",
+  "object_id": 160127,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "松溪觀鹿圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_13.webp",
+  "title": "Fishermen-Hermits in Stream and Mountain",
+  "artist": "Zhao Yong (Chinese, c. 1289-c. 1362)",
+  "date": "1300s",
+  "object_id": 160135,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "溪山漁隱圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_14.webp",
+  "title": "Huanglong Cave (Yellow Dragon Cave)",
+  "artist": "Song Xu (Chinese, 1525-c. 1606)",
+  "date": "c. 1588",
+  "object_id": 160739,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "黃龍洞"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_15.webp",
+  "title": "Herdboys and Buffalo in Landscapes",
+  "artist": "Guo Min (Chinese, mid-late 1200s)",
+  "date": "1200s",
+  "object_id": 160946,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "牧牛圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_16.webp",
+  "title": "Herdboys and Buffalo in Landscape",
+  "artist": "Guo Min (Chinese, mid-late 1200s)",
+  "date": "1200s",
+  "object_id": 160948,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": "牧牛圖"
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_17.webp",
+  "title": "Distant View of Tiger Hill from the Canal Mooring, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140441,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_18.webp",
+  "title": "Tiger-Flight Spring at the Back Gate, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140442,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_19.webp",
+  "title": "The Fool's Spring, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140445,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_20.webp",
+  "title": "The Pine Retreat, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140446,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_21.webp",
+  "title": "The Enlightened Stone Retreat, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140447,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_22.webp",
+  "title": "The Nodding Stone Terrace, Tiger Hill, and the Thousand-Man Seat, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140448,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_23.webp",
+  "title": "The Sword Spring, Tiger Hill, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140449,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_24.webp",
+  "title": "The Thousand Acres of Clouds, from Twelve Views of Tiger Hill, Suzhou",
+  "artist": "Shen Zhou (Chinese, 1427–1509)",
+  "date": "after 1490",
+  "object_id": 140452,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_25.webp",
+  "title": "Paintings after Ancient Masters: Laozi Riding an Ox",
+  "artist": "Chen Hongshou (Chinese, 1598/99–1652)",
+  "date": "1598–1652",
+  "object_id": 149608,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_26.webp",
+  "title": "Dwelling in the Longmian (\"Sleeping Dragon\") Mountains",
+  "artist": "Li Gonglin (Chinese, c. 1049–1106)",
+  "date": "1100s-1200s",
+  "object_id": 150497,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_27.webp",
+  "title": "Dwelling in the Longmian (\"Sleeping Dragon\") Mountains",
+  "artist": "Li Gonglin (Chinese, c. 1049–1106)",
+  "date": "1100s-1200s",
+  "object_id": 150498,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_28.webp",
+  "title": "Dwelling in the Longmian (\"Sleeping Dragon\") Mountains",
+  "artist": "Li Gonglin (Chinese, c. 1049–1106)",
+  "date": "1100s-1200s",
+  "object_id": 150499,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
+ },
+ {
+  "term": "cat",
+  "pinyin": "animal",
+  "file": "cat_animal_29.webp",
+  "title": "Dwelling in the Longmian (\"Sleeping Dragon\") Mountains",
+  "artist": "Li Gonglin (Chinese, c. 1049–1106)",
+  "date": "1100s-1200s",
+  "object_id": 150500,
+  "credit": "The Cleveland Museum of Art (CC0)",
+  "category": "animal",
+  "title_zh": ""
  }
 ]

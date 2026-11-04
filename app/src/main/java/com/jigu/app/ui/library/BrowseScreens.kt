@@ -177,7 +177,7 @@ fun AuthorIndexScreen(onBack: () -> Unit, onOpenAuthor: (Int) -> Unit) {
 
     LaunchedEffect(page) {
         withContext(Dispatchers.IO) {
-            val batch = PoemsDb.get(context).authorIndex(PAGE, page * PAGE)
+            val batch = PoemsDb.get(context).authorIndex("all", PAGE, page * PAGE)
             authors = if (page == 0) batch else authors + batch
             hasMore = batch.size == PAGE
         }
@@ -494,5 +494,18 @@ fun FamousLinesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
                 }
             }
         }
+    }
+}
+
+
+/** 文体 -> 作品列表（批7 题材·文体维：古文 13 类，范围=guwen/老子/庄子/史记） */
+@Composable
+fun GenreScreen(genre: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+    val context = LocalContext.current
+    val pager = rememberPagedPoems(genre) { page ->
+        PoemsDb.get(context).listByGenre(genre, PAGE, page * PAGE)
+    }
+    BrowseScaffold(title = genre, subtitle = "古文文体", onBack = onBack) {
+        PagedPoemList(pager, onOpen)
     }
 }

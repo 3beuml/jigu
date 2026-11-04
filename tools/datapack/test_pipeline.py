@@ -147,6 +147,30 @@ def test_theme_v3_prefix_and_new_classes():
     print("ok  v3 词表（前缀语义 + 季节/雪雨月花/爱国/儿童 一正一负）")
 
 
+def test_theme_v4_batch7():
+    """批7 题材第三批：爱情/战争/读书/惜时 + 梅荷菊柳咏物细类，一正一负。"""
+    # 爱情（婚恋典语；正例长恨歌，负例春望）
+    assert "爱情" in theme_hits_for("长恨歌", "七月七日长生殿，夜半无人私语时。在天愿作比翼鸟，在地愿为连理枝。")
+    assert "爱情" not in theme_hits_for("春望", "国破山河在，城春草木深。感时花溅泪，恨别鸟惊心。")
+    # 战争（正例燕歌行；负例静夜思）
+    assert "战争" in theme_hits_for("燕歌行", "汉家烟尘在东北，汉将辞家破残贼。战士军前半死生，美人帐下犹歌舞。")
+    assert "战争" not in theme_hits_for("静夜思", "床前看月光，疑是地上霜。举头望明月，低头思故乡。")
+    # 读书（正例观书有感，负例枫桥夜泊）
+    assert "读书" in theme_hits_for("观书有感", "半亩方塘一鉴开，天光云影共徘徊。问渠那得清如许？为有源头活水来。")
+    assert "读书" not in theme_hits_for("枫桥夜泊", "月落乌啼霜满天，江枫渔父对愁眠。姑苏城外寒山寺，夜半钟声到客船。")
+    # 惜时（正例长歌行，负例登鹳雀楼）
+    assert "惜时" in theme_hits_for("长歌行", "百川东到海，何时复西归？少壮不努力，老大徒伤悲。")
+    assert "惜时" not in theme_hits_for("登鹳雀楼", "白日依山尽，黄河入海流。欲穷千里目，更上一层楼。")
+    # 咏物细类：标题主导即中（墨梅正文只一个"梅"字）
+    assert "梅花" in theme_hits_for("墨梅", "我家洗砚池头树，朵朵花开淡墨痕。不要人夸好颜色，只留清气满乾坤。")
+    assert "梅花" not in theme_hits_for("登鹳雀楼", "白日依山尽，黄河入海流。欲穷千里目，更上一层楼。")
+    # 咏物细类正文阈值同为 2：小池只一个"荷"字不中（题锚型限制，如实记录）
+    assert "荷花" in theme_hits_for("江南", "江南可采莲，莲叶何田田。鱼戏莲叶间，鱼戏莲叶东。")
+    assert "菊花" in theme_hits_for("叹菊", "篱畔菊花烂漫开，冷香浮动月黄昏。")
+    assert "柳树" in theme_hits_for("咏柳", "碧玉妆成一树高，万条垂下绿丝绦。不知细叶谁裁出，二月春风似剪刀。")
+    print("ok  v4 词表（爱情/战争/读书/惜时 + 梅荷菊柳，一正一负）")
+
+
 def test_extract_two_clause():
     assert extract_two_clause("国破山河在，城春草木深。感时花溅泪，恨别鸟惊心。") == "国破山河在，城春草木深。"
     assert extract_two_clause("床前明月光，疑是地上霜。") == "床前明月光，疑是地上霜。"
@@ -244,6 +268,7 @@ if __name__ == "__main__":
     test_theme_rules_grounded()
     test_theme_hits_positive_negative()
     test_theme_v3_prefix_and_new_classes()
+    test_theme_v4_batch7()
     test_extract_two_clause()
     test_norm_title()
     test_clean_placeholder_title()

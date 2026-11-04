@@ -26,6 +26,7 @@ object ArtworkRepo {
         val credit: String,
         val titleZh: String? = null, // 草译（管线 --translate 合入，展示优先用）
         val artistZh: String? = null, // 「清 · 黎简」形（含时代），缺失时回退英文
+        val category: String = "", // 批8：风景/花鸟/人物/动物/其他（题材配画池）
     ) {
         fun displayTitle(): String = titleZh?.takeIf { it.isNotBlank() } ?: title
         fun displayArtist(): String = artistZh?.takeIf { it.isNotBlank() } ?: artist
@@ -35,6 +36,7 @@ object ArtworkRepo {
     private var loaded = false
     private var byTerm: Map<String, List<Artwork>> = emptyMap()
     private var byFile: Map<String, Artwork> = emptyMap()
+    private var byCategory: Map<String, List<Artwork>> = emptyMap()
 
     fun load(context: Context) {
         if (loaded) return
@@ -57,12 +59,14 @@ object ArtworkRepo {
                         credit = o.optString("credit"),
                         titleZh = o.optString("title_zh").takeIf { it.isNotEmpty() },
                         artistZh = o.optString("artist_zh").takeIf { it.isNotEmpty() },
+                        category = o.optString("category"),
                     )
                     out.getOrPut(a.term) { mutableListOf() }.add(a)
                     files[a.file] = a
                 }
                 byTerm = out
                 byFile = files
+                byCategory = files.values.groupBy { it.category.ifBlank { "other" } }
             }
             loaded = true
         }
@@ -75,6 +79,32 @@ object ArtworkRepo {
         if (pool.isEmpty()) return null
         val i = ((seed % pool.size) + pool.size) % pool.size
         return pool[i]
+    }
+
+    /** 题材 -> 画类映射（批8/D-027：山水诗配山水，花鸟咏物配花鸟，边塞征战配走兽，人事配人物） */
+    private val THEME_ART = mapOf(
+        "landscape" to listOf("山水", "田园", "春季", "夏季", "秋季", "冬季", "写雪", "写雨", "写月",
+            "咏史怀古", "思乡", "送别", "节令", "惜时"),
+        "birdflower" to listOf("梅花", "荷花", "菊花", "柳树", "咏物", "写花", "相思"),
+        "figure" to listOf("儿童", "读书", "爱国", "爱情", "闺怨", "悼亡"),
+        "animal" to listOf("边塞", "战争"),
+    )
+
+    /** 按诗歌题材匹配画池（优先），节气池与全池兜底；seed 确定性轮换同 forTerm */
+    fun forPoem(context: Context, themes: List<String>, term: String?, seed: Int): Artwork? {
+        load(context)
+        val mapped = themes.firstNotNullOfOrNull { t ->
+            THEME_ART.entries.firstOrNull { it.value.contains(t) }?.key
+        }
+        if (mapped != null) {
+            val pool = byCategory[mapped].orEmpty()
+            if (pool.isNotEmpty()) {
+                val i = ((seed % pool.size) + pool.size) % pool.size
+                return pool[i]
+            }
+        }
+        return forTerm(context, term, seed)
+            ?: byCategory.values.flatten().getOrNull(((seed % 320) + 320) % 320)
     }
 
     fun decode(context: Context, artwork: Artwork): Bitmap? = runCatching {
@@ -345,6 +375,15 @@ object JiguSettings {
 
     private const val PREFS = "jigu_prefs"
     private const val KEY_ART = "art_enabled"
+
+    /** 正文背景画（批8/D-027，默认开）：详情页淡水墨底图 */
+    fun artBgEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("art_bg", true)
+
+    fun setArtBgEnabled(context: Context, value: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean("art_bg", value).apply()
+    }
 
     fun artEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

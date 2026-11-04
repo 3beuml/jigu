@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jigu.app.data.ArtworkRepo
+import com.jigu.app.ui.art.PaperInk
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
@@ -65,11 +66,13 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
     var vertical by rememberSaveable { mutableStateOf(false) }
     val bodyScroll = rememberScrollState()
 
+    var themes by remember { mutableStateOf<List<String>>(emptyList()) }
     LaunchedEffect(id) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
             db.poemById(id)?.let {
                 poem = it
+                themes = db.themesFor(it.id)
                 related = db.related(it)
             }
         }
@@ -80,6 +83,28 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
     }
 
     val p = poem
+    // 正文背景画（批8/D-027）：题材匹配的画做淡水墨底（低 alpha + 纸墨映射 + 羽化），
+    // 深色模式与画意/背景画开关关闭时不渲染；朴素淡雅，不与正文争墨
+    val dark = isSystemInDarkTheme()
+    val bgArt = p?.let {
+        if (JiguSettings.artEnabled(context) && JiguSettings.artBgEnabled(context) && !dark) {
+            ArtworkRepo.forPoem(context, themes, null, it.id)
+        } else null
+    }
+    val bgBmp = bgArt?.let { a -> remember(a.file) { ArtworkRepo.decodeScaled(context, a, 4) } }
+    Box(Modifier.fillMaxSize()) {
+        if (bgBmp != null) {
+            Image(
+                bitmap = bgBmp.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .paperFeather(0.35f),
+                alpha = 0.09f,
+                contentScale = ContentScale.Crop,
+                colorFilter = PaperInk.composeColorFilter(PaperInk.INK_SOFT),
+            )
+        }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -208,7 +233,7 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
             // 赏画常驻预览条（D-019）：蒸馏缩略 + 汉译题名，点击进全屏鉴赏页；深色模式隐藏
             val artEnabled = JiguSettings.artEnabled(context)
             val dArt = if (artEnabled && !isSystemInDarkTheme()) {
-                ArtworkRepo.forTerm(context, JiguCalendar.currentTerm(java.time.LocalDate.now()), p.id)
+                ArtworkRepo.forPoem(context, themes, JiguCalendar.currentTerm(java.time.LocalDate.now()), p.id)
             } else null
             if (dArt != null) {
                 var thumb by remember(dArt.file, p.id) { mutableStateOf<android.graphics.Bitmap?>(null) }
@@ -285,6 +310,7 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
             }
             Spacer(Modifier.height(com.jigu.app.DOCK_CLEARANCE))
         }
+    }
     }
 }
 

@@ -98,8 +98,9 @@ fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -
     // 深色模式隐藏；画意开关可全关；护栏"文字区净空"：总字数 >64（长文/长调）不配画
     val artEnabled = JiguSettings.artEnabled(context)
     val shortPoem = poem.paragraphs.sumOf { it.length } <= 64
+    val themes = remember(poem.id) { PoemsDb.get(context).themesFor(poem.id) }
     val artwork = if (artEnabled && !isSystemInDarkTheme() && shortPoem) {
-        ArtworkRepo.forTerm(context, badge, poem.id)
+        ArtworkRepo.forPoem(context, themes, badge, poem.id)
     } else null
     var artBitmap by remember(artwork?.file) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(artwork?.file) {

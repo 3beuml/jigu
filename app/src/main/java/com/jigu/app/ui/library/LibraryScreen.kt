@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -48,7 +51,10 @@ import kotlinx.coroutines.withContext
 /** 书架（选本层）：真正的"书"。
  *  顺序按书的「内容时代」（用户定案：内容优先，非成书年代）——曹操虽是汉魏选集但内容最古的依次往前。
  *  era 仅用于排序展示，不进库。 */
-private data class BookModule(val title: String, val route: String, val brief: String, val era: Int)
+private data class BookModule(
+    val title: String, val route: String, val brief: String, val era: Int,
+    val popular: Boolean = false, // 全藏卡：列表按热度名家优先（D-026）
+)
 
 private val BOOK_MODULES = listOf(
     BookModule("诗经", "shijing", "风雅颂 · 先秦歌谣", 0),
@@ -63,25 +69,28 @@ private val BOOK_MODULES = listOf(
     BookModule("世说新语", "shishuo", "魏晋风度 · 名则选", 9),
     BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 10),
     BookModule("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵", 11),
-    BookModule("水墨唐诗", "tag:水墨唐诗", "诗画一题 · 唐人选迹", 12),
-    BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 13),
-    BookModule("宋词三百首", "tag:宋词三百首", "朱祖谋编选 · 两宋词家名篇", 14),
-    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 15),
-    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 16),
-    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 17),
-    BookModule("纳兰词", "qing_ci", "清词第一", 18),
-    BookModule("名句", "famous", "千古名句 · 今日页同源", 19),
+    BookModule("全唐诗", "tang_poem", "五万七千首 · 名家优先", 12, popular = true),
+    BookModule("水墨唐诗", "tag:水墨唐诗", "诗画一题 · 唐人选迹", 13),
+    BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 14),
+    BookModule("宋词三百首", "tag:宋词三百首", "朱祖谋编选 · 两宋词家名篇", 15),
+    BookModule("全宋词", "ci", "两宋词章 · 二万一千首", 16, popular = true),
+    BookModule("全宋诗", "song_poem", "二十五万首 · 名家优先", 17, popular = true),
+    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 18),
+    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 19),
+    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 20),
+    BookModule("纳兰词", "qing_ci", "清词第一", 21),
+    BookModule("名句", "famous", "千古名句 · 今日页同源", 22),
 ).sortedBy { it.era }
 
-/** 书库：搜索 + 五维浏览（书架 / 朝代 / 诗人 / 体裁 / 主题） */
+/** 书库：搜索 + 五维浏览（书架 / 题材·文体 / 体裁 / 作者 / 朝代）——二级门全部拉平上首屏（D-026） */
 @Composable
 fun LibraryScreen(
     onOpenModule: (String) -> Unit,
     onOpenEra: (String) -> Unit,
-    onOpenAuthors: () -> Unit,
     onOpenAuthor: (Int) -> Unit,
     onOpenType: (String) -> Unit,
     onOpenTheme: (String) -> Unit,
+    onOpenGenre: (String) -> Unit,
     onOpenChapter: (String) -> Unit,
     onOpen: (Int) -> Unit,
 ) {
@@ -91,7 +100,6 @@ fun LibraryScreen(
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var eraCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-    var tagCount by remember { mutableIntStateOf(0) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
 
     LaunchedEffect(Unit) {
@@ -100,7 +108,6 @@ fun LibraryScreen(
             counts = db.categoryCounts()
             eraCounts = db.eraCounts()
             typeCounts = db.typeCounts()
-            tagCount = db.tagCount("唐诗三百首")
         }
     }
     LaunchedEffect(query) {
@@ -132,7 +139,7 @@ fun LibraryScreen(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            listOf("书架", "朝代", "诗人", "体裁", "主题").forEachIndexed { index, label ->
+            listOf("书架", "题材", "体裁", "作者", "朝代").forEachIndexed { index, label ->
                 DimensionChip(label = label, selected = dim == index && query.isBlank()) {
                     query = ""
                     dim = index
@@ -166,10 +173,10 @@ fun LibraryScreen(
 
         when (dim) {
             0 -> ShelfGrid(onOpenModule)
-            1 -> EraDimContent(eraCounts, onOpenEra)
-            2 -> AuthorDimContent(onOpenAuthors)
-            3 -> TypeDimContent(typeCounts, onOpenType, onOpenChapter)
-            4 -> ThemeDimContent(onOpenTheme)
+            1 -> ThemeGenreContent(onOpenTheme, onOpenGenre)
+            2 -> TypeFlatContent(typeCounts, onOpenType, onOpenChapter)
+            3 -> AuthorFlatContent(onOpenAuthor)
+            4 -> EraDimContent(eraCounts, onOpenEra)
         }
     }
 }
@@ -267,56 +274,108 @@ private fun EraDimContent(counts: Map<String, Int>, onOpenEra: (String) -> Unit)
     }
 }
 
-/** 诗人维度：入口说明 + 索引入口 */
+/** 分块 chip（D-026：细类直接上首屏，一跳进列表） */
 @Composable
-private fun AuthorDimContent(onOpenAuthors: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+private fun CountChip(label: String, count: Int, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        modifier = Modifier.clickable(onClick = onClick),
     ) {
-        Spacer(Modifier.height(8.dp))
-        val briefs = listOf(
-            "作品量最多的作者排在最前——名家用量一目了然",
-            "点进作者可见小传与全部作品",
-            "想按时代看人？请用「朝代」维度",
-        )
-        briefs.forEach {
-            Text(
-                text = "· $it",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpenAuthors),
+        Row(
+            modifier = Modifier.padding(start = 12.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.padding(16.dp)) {
-                Text(
-                    "进入诗人索引",
-                    style = PoemTitleStyle,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    "全部作者 · 按作品量排序",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                "$count",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
 
-/** 文体维度：诗/词/曲/文 四门（诗→子体裁；词/曲→题型列表；文→书卷卷次） */
+/** 块标题（题材四门/古文文体等区块头） */
 @Composable
-private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) -> Unit, onOpenChapter: (String) -> Unit) {
+private fun BlockTitle(text: String) {
+    Text(
+        text = text,
+        style = PoemTitleStyle,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 14.dp, bottom = 8.dp),
+    )
+}
+
+/** 题材·文体维（D-026 拉平）：诗词题材按四门分块 chips + 古文文体 13 类块，全部一跳 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ThemeGenreContent(onOpenTheme: (String) -> Unit, onOpenGenre: (String) -> Unit) {
     val context = LocalContext.current
-    var door by rememberSaveable { mutableStateOf<String?>(null) }
+    var groups by remember { mutableStateOf<Map<String, Map<String, Int>>>(emptyMap()) }
+    var genres by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            groups = db.themeGroups()
+            genres = db.genreCounts()
+        }
+    }
+    val doorOrder = listOf("写景", "抒怀", "咏物", "世情")
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
+    ) {
+        // —— 诗词题材：四门分块，细类 chips 直接平铺 ——
+        item(key = "h_theme") { BlockTitle("诗词题材 · 四门三十类") }
+        doorOrder.forEach { gate ->
+            val fine = groups[gate].orEmpty().entries.sortedByDescending { it.value }.toList()
+            if (fine.isEmpty()) return@forEach
+            item(key = "gate_$gate") { BlockTitle(gate) }
+            item(key = "chips_$gate") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    fine.forEach { (name, count) ->
+                        CountChip(label = name, count = count) { onOpenTheme(name) }
+                    }
+                }
+            }
+        }
+        // —— 古文文体：13 类（《古文辞类纂》框架）——
+        item(key = "h_genre") { BlockTitle("古文文体 · 十三类") }
+        item(key = "chips_genre") {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                GENRE_ORDER.forEach { g ->
+                    val c = genres[g] ?: 0
+                    if (c > 0) CountChip(label = g, count = c) { onOpenGenre(g) }
+                }
+            }
+        }
+        item(key = "tail") { Spacer(Modifier.height(16.dp)) }
+    }
+}
+
+/** 文体 13 类固定序（《古文辞类纂》） */
+internal val GENRE_ORDER = listOf(
+    "论辨", "序跋", "奏议", "书说", "赠序", "诏令", "传状", "碑志",
+    "杂记", "箴铭", "颂赞", "辞赋", "哀祭",
+)
+
+/** 体裁维（D-026 拉平）：诗 13 子类直接平铺 + 词/曲入口 + 文（书卷直出） */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TypeFlatContent(
+    typeCounts: Map<String, Int>,
+    onOpenType: (String) -> Unit,
+    onOpenChapter: (String) -> Unit,
+) {
+    val context = LocalContext.current
     var chapters by remember { mutableStateOf<Map<String, Map<String, Int>>>(emptyMap()) }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) { chapters = PoemsDb.get(context).chapterCounts() }
@@ -326,129 +385,134 @@ private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) ->
         "古体诗", "五言古诗", "七言古诗", "乐府", "四言诗", "诗经体", "骚体",
     )
     val counts = { t: String -> typeCounts[t] ?: 0 }
-    when (door) {
-        null -> LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
-        ) {
-            item(key = "诗") {
-                val n = poemTypes.sumOf(counts)
-                ModuleCard("诗", "绝句·律诗·排律·古体·乐府", n) { door = "诗" }
-            }
-            item(key = "词") { ModuleCard("词", "按词牌浏览 · 千调分组", counts("词")) { onOpenType("词") } }
-            item(key = "曲") { ModuleCard("曲", "按曲牌浏览 · 散曲杂剧", counts("曲")) { onOpenType("曲") } }
-            item(key = "文") {
-                ModuleCard("文", "书卷：古文观止·论语·四书", chapters.values.sumOf { it.values.sum() }) { door = "文" }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
+    ) {
+        // —— 诗：子体裁全平铺 ——
+        item(key = "h_shi") { BlockTitle("诗 · 子体裁") }
+        item(key = "chips_shi") {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                poemTypes.forEach { t ->
+                    val c = counts(t)
+                    if (c > 0) CountChip(label = t, count = c) { onOpenType(t) }
+                }
             }
         }
-        "诗" -> {
-            Column(Modifier.fillMaxSize()) {
-                TextButton(onClick = { door = null }) { Text("〈 返回四门") }
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
+        // —— 词 / 曲：词牌 / 曲牌索引入口 ——
+        item(key = "h_cq") { BlockTitle("词 · 曲") }
+        item(key = "chips_cq") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CountChip(label = "词牌", count = counts("词")) { onOpenType("词") }
+                CountChip(label = "曲牌", count = counts("曲")) { onOpenType("曲") }
+            }
+        }
+        // —— 文：书卷直出（原两级拉平） ——
+        item(key = "h_wen") { BlockTitle("文 · 书卷") }
+        chapters.forEach { (cat, vol) ->
+            val bookName = mapOf(
+                "guwen" to "古文观止", "lunyu" to "论语", "sishu" to "四书",
+            )[cat] ?: cat
+            item(key = "bk_$cat") {
+                Text(
+                    bookName,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
+                )
+            }
+            item(key = "chips_$cat") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    poemTypes.forEach { t ->
-                        if (counts(t) > 0) item(key = t) {
-                            ModuleCard(t, "", counts(t)) { onOpenType(t) }
-                        }
+                    vol.forEach { (chapter, count) ->
+                        CountChip(label = chapter, count = count) { onOpenChapter(chapter) }
                     }
                 }
             }
         }
-        "文" -> { // 书卷两级
-            Column(Modifier.fillMaxSize()) {
-                TextButton(onClick = { door = null }) { Text("〈 返回四门") }
-                LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
-                    chapters.forEach { (cat, vol) ->
-                        val bookName = mapOf("guwen" to "古文观止", "lunyu" to "论语", "sishu" to "四书")[cat] ?: cat
-                        item(key = cat) {
-                            Text(
-                                bookName,
-                                style = PoemTitleStyle,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(vertical = 6.dp),
-                            )
-                        }
-                        vol.forEach { (chapter, count) ->
-                            item(key = chapter) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { onOpenChapter(chapter) }
-                                        .padding(vertical = 10.dp, horizontal = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(chapter, style = PoemTitleStyle, color = MaterialTheme.colorScheme.onBackground)
-                                    }
-                                    Text(
-                                        "$count 篇",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    item { Spacer(Modifier.height(16.dp)) }
-                }
-            }
-        }
+        item(key = "tail") { Spacer(Modifier.height(16.dp)) }
     }
 }
 
-/** 主题维度：题材两级（四门 → 细类），点细类走列表页 */
+/** 作者维（D-026 拉平）：分组 chips + 作者索引直出（含古文大家） */
 @Composable
-private fun ThemeDimContent(onOpenTheme: (String) -> Unit) {
+private fun AuthorFlatContent(onOpenAuthor: (Int) -> Unit) {
     val context = LocalContext.current
-    var groups by remember { mutableStateOf<Map<String, Map<String, Int>>>(emptyMap()) }
-    var door by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) { groups = PoemsDb.get(context).themeGroups() }
+    var kind by rememberSaveable { mutableStateOf("all") }
+    var authors by remember(kind) { mutableStateOf<List<PoemsDb.Author>>(emptyList()) }
+    var hasMore by remember(kind) { mutableStateOf(true) }
+    var page by remember(kind) { mutableIntStateOf(0) }
+    val pageN = 60
+
+    LaunchedEffect(kind, page) {
+        withContext(Dispatchers.IO) {
+            val batch = PoemsDb.get(context).authorIndex(kind, pageN, page * pageN)
+            authors = if (page == 0) batch else authors + batch
+            hasMore = batch.size == pageN
+        }
     }
-    val doorOrder = listOf("写景", "抒怀", "咏物", "世情")
-    val selected = door
-    if (selected == null) {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            listOf("all" to "全部", "poet" to "诗人", "ciren" to "词人", "wen" to "古文大家")
+                .forEach { (k, label) ->
+                    DimensionChip(label = label, selected = kind == k) { kind = k }
+                }
+        }
+        Spacer(Modifier.height(4.dp))
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
             contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
         ) {
-            doorOrder.forEachIndexed { i, name ->
-                val fine = groups[name].orEmpty()
-                val total = fine.values.sum()
-                item(key = name) {
-                    ModuleCard(
-                        title = name,
-                        brief = fine.keys.take(3).joinToString("·").ifBlank { "题材门类" },
-                        count = total,
-                    ) { door = name }
+            items(authors.size, key = { authors[it].id }) { index ->
+                val a = authors[index]
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenAuthor(a.id) }
+                        .padding(vertical = 12.dp, horizontal = 4.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = a.name,
+                            style = PoemTitleStyle,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = "  ${a.dynasty}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            text = "${a.workCount} 篇",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    formatYears(a.birthYear, a.deathYear).takeIf { it.isNotBlank() }?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
-        }
-    } else {
-        val fine = groups[selected].orEmpty().entries.sortedByDescending { it.value }.toList()
-        Column(Modifier.fillMaxSize()) {
-            TextButton(onClick = { door = null }) { Text("〈 返回四门") }
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
-            ) {
-                items(fine.size, key = { fine[it].key }) { index ->
-                    val (name, count) = fine[index]
-                    ModuleCard(title = name, brief = selected, count = count) { onOpenTheme(name) }
+            if (hasMore && authors.isNotEmpty()) {
+                item {
+                    TextButton(onClick = { page += 1 }, modifier = Modifier.fillMaxWidth()) { Text("加载更多") }
                 }
             }
         }
@@ -517,6 +581,7 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val category = if (tagMode) "tang_poem" else key
     val tag = if (tagMode) key.removePrefix("tag:") else null
     val label = if (tagMode) tag ?: key else BOOK_MODULES.firstOrNull { it.route == key }?.title ?: key
+    val popular = BOOK_MODULES.firstOrNull { it.route == key }?.popular == true
 
     var poems by remember(key) { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
     var hasMore by remember(key) { mutableStateOf(true) }
@@ -526,10 +591,10 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     LaunchedEffect(key, page) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
-            val batch = if (tagMode) {
-                db.listByTag(tag ?: "", pageSize, page * pageSize)
-            } else {
-                db.listByCategory(category, pageSize, page * pageSize)
+            val batch = when {
+                tagMode -> db.listByTag(tag ?: "", pageSize, page * pageSize)
+                popular -> db.listByCategoryPopular(category, pageSize, page * pageSize)
+                else -> db.listByCategory(category, pageSize, page * pageSize)
             }
             poems = if (page == 0) batch else poems + batch
             hasMore = batch.size == pageSize

@@ -37,7 +37,7 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 19  # +1: 批5（D-024）——三书入库（庄子内篇七全+外篇二 9 条 / 史记名段 18 条 / 世说名则 39 条）+ 名句种子 +85（D-020 先例点名录入）+ 自动补种目标 300→400
+DATA_VERSION = 20  # +1: 批7（D-026）——题材 v4 第三批 +8（30 类）+ 文体 13 类浏览范围扩到 老子/庄子/史记。原批5注释：——三书入库（庄子内篇七全+外篇二 9 条 / 史记名段 18 条 / 世说名则 39 条）+ 名句种子 +85（D-020 先例点名录入）+ 自动补种目标 300→400
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -853,6 +853,19 @@ THEME_RULES = [
      ("春节", "元日", "元宵", "清明", "端午", "七夕", "中秋", "重阳", "除夕", "冬至", "岁暮", "新正", "守岁", "寒食", "立春", "立秋"), ()),
     ("儿童",     "世情", ("^童", "^稚", "^儿", "牧童", "^小娃"),
      ("儿童", "童稚", "稚子", "童子", "孩提", "小娃", "儿曹", "牧童", "纸鸢", "风筝"), ()),
+    # v4（批7，D-026）：题材第三批扩容 +8（30 类）；哲理/励志/写风词表难稳，仍延批
+    ("爱情",     "抒怀", ("^恋", "佳偶"),
+     ("连理", "比翼", "结发", "洞房", "合卺", "鸳鸯", "于飞", "红丝"), ()),
+    ("战争",     "世情", ("兵车", "战城南", "燕歌行", "出师"),
+     ("征夫", "白骨", "战马", "征戍", "沙场", "兵戈", "旌旗"), ()),
+    ("读书",     "世情", ("读书", "观书", "夜读", "劝学", "白鹿洞"),
+     ("书卷", "黄卷", "青灯", "韦编", "笔砚"), ()),
+    ("惜时",     "世情", ("惜时", "长歌行", "金缕衣"),
+     ("寸阴", "朝露", "百川东到海", "少壮不努力", "韶华"), ()),
+    ("梅花",     "咏物", ("梅",), ("梅", "萼", "疏影", "暗香"), ()),
+    ("荷花",     "咏物", ("荷", "莲", "芙蕖"), ("荷", "莲", "芙蕖"), ()),
+    ("菊花",     "咏物", ("菊",), ("菊", "东篱"), ()),
+    ("柳树",     "咏物", ("柳",), ("柳", "烟条"), ()),
 ]
 
 POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
@@ -1142,12 +1155,15 @@ def classify_genre(title: str) -> str:
 
 
 def fill_genre(conn):
-    rows = conn.execute("SELECT id, title FROM poems WHERE category='guwen'").fetchall()
+    # 批7/D-026：文体 13 类浏览范围扩到 老子/庄子/史记（世说按门、论语/四书按篇目，不套 13 类）
+    rows = conn.execute(
+        "SELECT id, title FROM poems WHERE category IN ('guwen','laozi','zhuangzi','shiji')"
+    ).fetchall()
     for pid, title in rows:
         conn.execute("UPDATE poems SET genre=? WHERE id=?", (classify_genre(title), pid))
     n = len(rows)
     # 分布统计（打印给建库日志）
-    dist = dict(conn.execute("SELECT genre, count(*) FROM poems WHERE category='guwen' GROUP BY genre ORDER BY 2 DESC"))
+    dist = dict(conn.execute("SELECT genre, count(*) FROM poems WHERE category IN ('guwen','laozi','zhuangzi','shiji') GROUP BY genre ORDER BY 2 DESC"))
     print(f"  古文文体 13 类标注: {n} 篇 | 分布 {dist}")
 
 

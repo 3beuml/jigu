@@ -131,6 +131,16 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
                 JiguSettings.setArtEnabled(context, it)
             },
         )
+        var artBgOn by remember { mutableStateOf(JiguSettings.artBgEnabled(context)) }
+        ToggleRow(
+            title = "正文背景画",
+            note = "详情页淡水墨底图（素雅）；跟随画意总开关",
+            checked = artBgOn,
+            onChecked = {
+                artBgOn = it
+                JiguSettings.setArtBgEnabled(context, it)
+            },
+        )
         ToggleRow(
             title = "每日推送",
             note = if (pushOn) "每天 ${"%02d".format(pushHour)}:${"%02d".format(pushMinute)} 推送今日名句" else "已关闭",

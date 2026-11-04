@@ -493,6 +493,44 @@ class PoemsDb private constructor(context: Context) {
         arrayOf(category, limit.toString(), offset.toString()),
     )
 
+    /** 全藏类按热度名家优先（批7 书架"全唐诗/全宋诗/全宋词"卡；D-010"列表名家优先"落地） */
+    fun listByCategoryPopular(category: String, limit: Int, offset: Int): List<Poem> = queryPoems(
+        "$POEM_SELECT WHERE p.category = ? ORDER BY p.popularity DESC, p.id LIMIT ? OFFSET ?",
+        arrayOf(category, limit.toString(), offset.toString()),
+    )
+
+    /** 文体 13 类计数（批7 题材维"古文文体"块；范围=13 类已标注的散文类） */
+    fun genreCounts(): Map<String, Int> {
+        awaitData()
+        val out = rdb().rawQuery(
+            "SELECT genre, COUNT(*) FROM poems WHERE genre != '' " +
+                "AND category IN ('guwen','laozi','zhuangzi','shiji') GROUP BY genre", null,
+        ).use { c ->
+            val m = mutableMapOf<String, Int>()
+            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+            m
+        }
+        return out
+    }
+
+    private val GENRE_CATS = "('guwen','laozi','zhuangzi','shiji')"
+
+    /** 某诗的题材标签（批8 配画按题材匹配用） */
+    fun themesFor(poemId: Int): List<String> = rdb().rawQuery(
+        "SELECT t.name FROM poem_theme pt JOIN themes t ON t.id = pt.theme_id " +
+            "WHERE pt.poem_id = ? ORDER BY t.id",
+        arrayOf(poemId.toString()),
+    ).use { c ->
+        val out = mutableListOf<String>()
+        while (c.moveToNext()) out += c.getString(0)
+        out
+    }
+
+    fun listByGenre(genre: String, limit: Int, offset: Int): List<Poem> = queryPoems(
+        "$POEM_SELECT WHERE p.genre = ? AND p.category IN $GENRE_CATS ORDER BY p.id LIMIT ? OFFSET ?",
+        arrayOf(genre, limit.toString(), offset.toString()),
+    )
+
     fun listByTag(tag: String, limit: Int, offset: Int): List<Poem> = queryPoems(
         "$POEM_SELECT WHERE p.tags LIKE ? ORDER BY p.id LIMIT ? OFFSET ?",
         arrayOf("%\"$tag\"%", limit.toString(), offset.toString()),
@@ -642,16 +680,28 @@ class PoemsDb private constructor(context: Context) {
             out
         }
 
-    fun authorIndex(limit: Int, offset: Int): List<Author> =
-        rdb().rawQuery(
+    /** 作者索引（批7"作者"维直出）；kind: all | poet | ciren(纯词人) | wen(古文大家) */
+    fun authorIndex(kind: String, limit: Int, offset: Int): List<Author> {
+        val poemCats = "('tang_poem','song_poem','qianjiashi','shijing','chuci','han_wei','gushi19')"
+        val wenCats = "('guwen','laozi','zhuangzi','shishuo','shiji','lunyu','sishu','mengxue')"
+        val ciCats = "('ci','wudai_ci','qing_ci')"
+        val having = when (kind) {
+            "poet" -> "HAVING SUM(CASE WHEN p.category IN $poemCats THEN 1 ELSE 0 END) > 0"
+            "ciren" -> "HAVING SUM(CASE WHEN p.category IN $poemCats THEN 1 ELSE 0 END) = 0 " +
+                "AND SUM(CASE WHEN p.category IN $ciCats THEN 1 ELSE 0 END) > 0"
+            "wen" -> "HAVING COUNT(*) = SUM(CASE WHEN p.category IN $wenCats THEN 1 ELSE 0 END)"
+            else -> ""
+        }
+        return rdb().rawQuery(
             "SELECT $AUTHOR_COLUMNS FROM authors a LEFT JOIN poems p ON p.author_id = a.id " +
-                "GROUP BY a.id ORDER BY cnt DESC, a.name ASC LIMIT ? OFFSET ?",
+                "GROUP BY a.id $having ORDER BY cnt DESC, a.name ASC LIMIT ? OFFSET ?",
             arrayOf(limit.toString(), offset.toString()),
         ).use { c ->
             val out = mutableListOf<Author>()
             while (c.moveToNext()) out += c.toAuthor()
             out
         }
+    }
 
     fun authorById(id: Int): Author? =
         rdb().rawQuery(

@@ -47,7 +47,7 @@ fun CardPreviewScreen(id: Int, onBack: () -> Unit) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
             db.poemById(id)?.let { poem ->
-                val art = ArtworkRepo.forTerm(context, JiguCalendar.currentTerm(LocalDate.now()), poem.id)
+                val art = ArtworkRepo.forPoem(context, PoemsDb.get(context).themesFor(poem.id), JiguCalendar.currentTerm(LocalDate.now()), poem.id)
                 runCatching { PoemCard.render(context, poem, art) }.getOrNull()
             }?.also {
                 cardFile = it

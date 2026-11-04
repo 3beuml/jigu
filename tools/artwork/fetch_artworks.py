@@ -11,6 +11,7 @@
 
 import argparse
 import json
+import re
 import sys
 import urllib.request
 from pathlib import Path
@@ -204,7 +205,12 @@ def main():
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--translate", action="store_true",
                     help="不联网：仅把 ZH_META 汉译合入现有 manifest")
+    ap.add_argument("--expand", type=int, default=0, metavar="TARGET",
+                    help="批8：扩图库到 TARGET 幅（单页拉全 561 幅 CC0 中国画，分类打标，题材配画池）")
     args = ap.parse_args()
+
+    if args.expand:
+        return expand(args.repo, args.expand)
 
     out_dir = args.repo / "app/src/main/assets/art"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -282,6 +288,130 @@ def main():
         json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8",
     )
     print(f"== 完成 {len(manifest)}/24，manifest -> {manifest_path}")
+    return 0
+
+
+
+
+# ============ 批8（D-027）：题材配画池——单页拉全 + 分类打标 ============
+
+SELECT_FIELDS = ("id,title,title_in_original_language,creators,creation_date,"
+                 "technique,collection,images,share_license_status")
+
+# 分类正则：优先级 figure > birdflower > animal > landscape（词最泛放最后防误吞）
+_PATTERNS = {
+    "figure": ("人物", r"portrait|figure|lady|scholar|emperor|consort|children|ancestor|gathering|"
+                        r"immortal|arhat|luohan|bodhisattva|buddha|guanyin|monk|sage|banquet|"
+                        r"bodhidharma|amitabha|manjushri|samantabhadra|zhong kui|tieguai|patriarch"),
+    "birdflower": ("花鸟", r"bird|flower|plum|bamboo|lotus|peony|chrysanth|orchid|magpie|goose|"
+                          r"quail|eagle|crane|butterfly|insect|blossom|willow|narcissus|camellia|wisteria"),
+    "animal": ("动物", r"horse|ox|buffalo|dragon|tiger|fish|monkey|deer|cat|sheep|donkey|"
+                      r"elephant|rabbit|turtle|shrimp"),
+    "landscape": ("山水", r"landscape|mountain|river|stream|pavilion|boat|bridge|snow|moon|"
+                         r"autumn|winter|waterfall|hermit|travelers|fisherman|cliff|valley|mist|"
+                         r"lake|shore|retreat"),
+}
+# 目标配额（总数 ≥300；现有 96 幅计入）
+QUOTA = {"landscape": 115, "birdflower": 85, "figure": 65, "animal": 45, "other": 12}
+
+
+def classify(a: dict) -> str:
+    blob = " ".join([
+        str(a.get("title", "")),
+        str(a.get("title_in_original_language") or ""),
+        str(a.get("technique") or ""),
+        *[str(c.get("description", "")) for c in (a.get("creators") or [])],
+    ]).lower()
+    for cat, (_, pat) in _PATTERNS.items():
+        if re.search(pat, blob):
+            return cat
+    return "other"
+
+
+def expand(repo: Path, target: int) -> int:
+    import io
+    import re
+    out_dir = repo / "app/src/main/assets/art"
+    manifest_path = out_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else []
+    used_ids = {m.get("object_id") for m in manifest}
+
+    # 1) 存量 96 幅补分类 + title_zh（中文原题直填）
+    backfill = 0
+    for m in manifest:
+        if not m.get("category"):
+            m["category"] = classify({"title": m.get("title", "")})
+            backfill += 1
+        if not m.get("title_zh"):
+            pass  # 汉译仍走 ZH_META/人工，原题补译不覆盖已人工校的
+    print(f"  存量补分类 {backfill}")
+
+    # 2) 单页拉全量池（561 幅 CC0 中国绘画；limit=1000 一次到位，勿 skip 翻页——排序漂移）
+    print("  拉取克利夫兰全量池…")
+    d = get_json(f"{API}?department=Chinese%20Art&type=Painting&has_image=1&cc0=1"
+                 f"&limit=1000&select={SELECT_FIELDS}")
+    pool = [a for a in d.get("data", [])
+            if a.get("share_license_status") == "CC0"
+            and (a.get("images") or {}).get("web", {}).get("url")
+            and a["id"] not in used_ids]
+    print(f"  候选 {len(pool)}（库内未用）")
+
+    # 3) 分类 + 分桶
+    buckets: dict[str, list] = {}
+    for a in pool:
+        buckets.setdefault(classify(a), []).append(a)
+    for cat, arr in buckets.items():
+        # 确定性排序：有中文原题者优先（省汉译），再按 id
+        arr.sort(key=lambda x: (0 if x.get("title_in_original_language") else 1, x["id"]))
+    cur = {}
+    for m in manifest:
+        c = m.get("category", "other")
+        cur[c] = cur.get(c, 0) + 1
+
+    # 4) 按配额补齐到 target
+    total = len(manifest)
+    need_total = max(0, target - total)
+    seq = {cat: 0 for cat in QUOTA}
+    for m in manifest:
+        fn = str(m.get("file", "")).replace(".webp", "")
+        if fn.startswith("cat_"):
+            parts = fn.split("_")
+            if len(parts) >= 2:
+                seq[parts[1]] = max(seq[parts[1]], int(parts[-1]))
+    added = 0
+    for cat in ("landscape", "birdflower", "figure", "animal", "other"):
+        goal = QUOTA.get(cat, 0)
+        want = min(len(buckets.get(cat, [])), max(0, goal - cur.get(cat, 0)))
+        for a in buckets.get(cat, [])[:want]:
+            if added >= need_total and total + added >= target:
+                break
+            seq[cat] += 1
+            fname = f"cat_{cat}_{seq[cat]}.webp"
+            url = a["images"]["web"]["url"]
+            if not download(url, out_dir / fname):
+                seq[cat] -= 1
+                continue
+            cr = (a.get("creators") or [{}])[0]
+            manifest.append({
+                "term": "cat",
+                "pinyin": cat,
+                "file": fname,
+                "title": a.get("title", ""),
+                "artist": cr.get("description", "") or "佚名",
+                "date": a.get("creation_date", ""),
+                "object_id": a["id"],
+                "credit": "The Cleveland Museum of Art (CC0)",
+                "category": cat,
+                "title_zh": a.get("title_in_original_language") or "",
+            })
+            added += 1
+            total += 1
+        if total >= target:
+            break
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
+    from collections import Counter
+    dist = Counter(m.get("category", "other") for m in manifest)
+    print(f"== 扩池 +{added}，总计 {len(manifest)} 幅 | 分类分布 {dict(dist)}")
     return 0
 
 
