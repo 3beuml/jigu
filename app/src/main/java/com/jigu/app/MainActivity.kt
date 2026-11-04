@@ -9,16 +9,32 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +42,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
@@ -103,32 +123,12 @@ fun JiguApp() {
 
     val nav = rememberNavController()
     val openDetail: (Int) -> Unit = { id -> nav.navigate("detail/$id") }
+    val route = currentRoute(nav)
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar(modifier = Modifier.height(64.dp)) {
-                NavigationBarItem(
-                    selected = currentRoute(nav) == "today",
-                    onClick = { nav.navigate("today") { launchSingleTop = true; popUpTo("today") { inclusive = true } } },
-                    icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                    label = { Text("今日") },
-                )
-                NavigationBarItem(
-                    selected = currentRoute(nav) == "library",
-                    onClick = { nav.navigate("library") { launchSingleTop = true } },
-                    icon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                    label = { Text("书库") },
-                )
-                NavigationBarItem(
-                    selected = currentRoute(nav) == "mine",
-                    onClick = { nav.navigate("mine") { launchSingleTop = true } },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                    label = { Text("我的") },
-                )
-            }
-        },
-    ) { padding ->
-        NavHost(nav, startDestination = "today", modifier = Modifier.padding(padding)) {
+    // 悬浮胶囊 dock（D-025，骨架移植自 ZZUPocket AppNav 0.33.0 方案）：
+    // 不再吃内容区——内容全高滚动从胶囊底下穿过，各滚动容器挂 DOCK_CLEARANCE。
+    Box(Modifier.fillMaxSize()) {
+        NavHost(nav, startDestination = "today") {
             composable("today") {
                 TodayScreen(
                     onOpen = openDetail,
@@ -254,8 +254,99 @@ fun JiguApp() {
                 )
             }
         }
+
+        // ② 悬浮胶囊 dock 覆盖层：宣纸底 + 细墨线描边 + 墨泡选中态（D-004 彩色秩序：dock 零彩色）。
+        // 胶囊以外的带子只吞 tap（不进语义树、不放行 move）——列表滑动穿透、留白不误触。
+        // 全屏体验页（做卡片预览/赏画）不显示 dock——预览图与画心不被压。
+        if (route?.startsWith("card/") != true && route?.startsWith("artwork/") != true) {
+        DockOverlay(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            currentRoute = route,
+            onToday = { nav.navigate("today") { launchSingleTop = true; popUpTo("today") { inclusive = true } } },
+            onLibrary = { nav.navigate("library") { launchSingleTop = true } },
+            onMine = { nav.navigate("mine") { launchSingleTop = true } },
+        )
+        }
     }
 }
+
+/** 悬浮胶囊 dock：覆盖层对齐底部，滚动内容从胶囊底下穿过（D-025）。 */
+@Composable
+private fun DockOverlay(
+    modifier: Modifier = Modifier,
+    currentRoute: String?,
+    onToday: () -> Unit,
+    onLibrary: () -> Unit,
+    onMine: () -> Unit,
+) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectTapGestures { /* 消费 tap，不下传；move 放行给滚动 */ }
+            },
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f), // 宣纸微透
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            border = BorderStroke(
+                0.5.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f), // 细墨线（非玻璃高光）
+            ),
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .fillMaxWidth()
+                .height(56.dp),
+        ) {
+            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                listOf(
+                    Triple("今日", Icons.Filled.Home to Icons.Outlined.Home, onToday),
+                    Triple("书库", Icons.Filled.Search to Icons.Outlined.Search, onLibrary),
+                    Triple("我的", Icons.Filled.Person to Icons.Outlined.Person, onMine),
+                ).forEach { (label, icons, onClick) ->
+                    val selected = currentRoute == when (label) {
+                        "今日" -> "today"; "书库" -> "library"; else -> "mine"
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(onClick = onClick),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (selected) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)
+                                    else Color.Transparent, // 墨泡：深色下 onBackground 反转为纸色，单配方双态
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                if (selected) icons.first else icons.second,
+                                contentDescription = label,
+                                tint = if (selected) MaterialTheme.colorScheme.onBackground
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(23.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 悬浮 dock 为滚动内容预留下的底部余量：胶囊 56 + 上下边距 16 = 72，再加 16 呼吸。
+ * 各滚动容器把它挂到 contentPadding，最后一条内容才能完整滚出胶囊（D-025）。
+ */
+val DOCK_CLEARANCE = 88.dp
 
 private fun currentRoute(nav: androidx.navigation.NavController): String? =
     nav.currentBackStackEntry?.destination?.route

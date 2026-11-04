@@ -167,7 +167,7 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
         Info("许可", "代码 Apache-2.0；各来源署名见上方与数据包 meta")
         Spacer(Modifier.height(8.dp))
         Info("隐私", "全离线，不联网、不收集任何数据")
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(com.jigu.app.DOCK_CLEARANCE))
     }
 
     if (showTimePicker) {

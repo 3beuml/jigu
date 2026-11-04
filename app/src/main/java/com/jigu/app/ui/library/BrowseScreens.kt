@@ -32,6 +32,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jigu.app.data.PoemsDb
+import com.jigu.app.DOCK_CLEARANCE
+import androidx.compose.foundation.layout.PaddingValues
 import com.jigu.app.ui.theme.PoemTitleStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -75,7 +77,7 @@ private fun rememberPagedPoems(key: Any?, loader: (page: Int) -> List<PoemsDb.Po
 
 @Composable
 private fun PagedPoemList(pager: Pager, onOpen: (Int) -> Unit, header: (@Composable () -> Unit)? = null) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
         header?.let { item { it() } }
         items(pager.items.size, key = { pager.items[it].id }) { index ->
             PoemRow(pager.items[index], onClick = { onOpen(pager.items[index].id) })
@@ -120,7 +122,7 @@ fun EraAuthorsScreen(era: String, onBack: () -> Unit, onOpenAuthor: (Int) -> Uni
     }
 
     BrowseScaffold(title = era, subtitle = ERA_YEARS[era] ?: "", onBack = onBack) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             items(authors.size, key = { authors[it].id }) { index ->
                 val a = authors[index]
                 Column(
@@ -182,7 +184,7 @@ fun AuthorIndexScreen(onBack: () -> Unit, onOpenAuthor: (Int) -> Unit) {
     }
 
     BrowseScaffold(title = "诗人", subtitle = "按作品量排序", onBack = onBack) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             items(authors.size, key = { authors[it].id }) { index ->
                 val a = authors[index]
                 Column(
@@ -344,7 +346,7 @@ fun RhythmicIndexScreen(type: String, onBack: () -> Unit, onOpenRhythmic: (Strin
         subtitle = "调名 · 按篇数排序",
         onBack = onBack,
     ) {
-        LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             items(items.size, key = { items[it].first }) { index ->
                 val (name, count) = items[index]
                 Row(
@@ -459,7 +461,7 @@ fun FamousLinesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
     }
 
     BrowseScaffold(title = "名句", subtitle = "名段 · 今日页与名句表同源", onBack = onBack) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             items(lines.size, key = { lines[it].poemId * 1000 + it }) { index ->
                 val f = lines[index]
                 Column(

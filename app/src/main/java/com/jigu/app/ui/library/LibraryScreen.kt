@@ -39,6 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jigu.app.data.PoemsDb
+import androidx.compose.foundation.layout.PaddingValues
+import com.jigu.app.DOCK_CLEARANCE
 import com.jigu.app.ui.theme.PoemTitleStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -140,7 +142,7 @@ fun LibraryScreen(
         Spacer(Modifier.height(12.dp))
 
         if (query.isNotBlank()) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
                 items(results.size, key = { results[it].id }) { index ->
                     PoemRow(
                         results[index],
@@ -217,7 +219,7 @@ private fun ShelfGrid(onOpenModule: (String) -> Unit) {
         modifier = Modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+        contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
     ) {
         items(BOOK_MODULES, key = { it.route }) { book ->
             ModuleCard(title = book.title, brief = book.brief, count = countOf(book)) { onOpenModule(book.route) }
@@ -261,7 +263,7 @@ private fun EraDimContent(counts: Map<String, Int>, onOpenEra: (String) -> Unit)
                 )
             }
         }
-        item { Spacer(Modifier.height(16.dp)) }
+        item { Spacer(Modifier.height(DOCK_CLEARANCE)) }
     }
 }
 
@@ -330,7 +332,7 @@ private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) ->
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
         ) {
             item(key = "诗") {
                 val n = poemTypes.sumOf(counts)
@@ -350,7 +352,7 @@ private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) ->
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+                    contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
                 ) {
                     poemTypes.forEach { t ->
                         if (counts(t) > 0) item(key = t) {
@@ -363,7 +365,7 @@ private fun TypeDimContent(typeCounts: Map<String, Int>, onOpenType: (String) ->
         "文" -> { // 书卷两级
             Column(Modifier.fillMaxSize()) {
                 TextButton(onClick = { door = null }) { Text("〈 返回四门") }
-                LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
                     chapters.forEach { (cat, vol) ->
                         val bookName = mapOf("guwen" to "古文观止", "lunyu" to "论语", "sishu" to "四书")[cat] ?: cat
                         item(key = cat) {
@@ -419,7 +421,7 @@ private fun ThemeDimContent(onOpenTheme: (String) -> Unit) {
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
         ) {
             doorOrder.forEachIndexed { i, name ->
                 val fine = groups[name].orEmpty()
@@ -442,7 +444,7 @@ private fun ThemeDimContent(onOpenTheme: (String) -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+                contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
             ) {
                 items(fine.size, key = { fine[it].key }) { index ->
                     val (name, count) = fine[index]
@@ -552,7 +554,7 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             // 小节标题（P1-4）：千家诗/唐诗三百首按体裁卷，古文观止按卷次，元曲按「・」前的剧名，
             // 列表不再整卷平铺（元曲 1.1 万首平列表需翻 37 页——剧名分组后按目翻）
             val sectionOf: ((PoemsDb.Poem) -> String?)? = when {

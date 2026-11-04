@@ -283,7 +283,7 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
                 }
             }
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(com.jigu.app.DOCK_CLEARANCE))
         }
     }
 }

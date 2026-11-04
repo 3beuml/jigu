@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
+import com.jigu.app.DOCK_CLEARANCE
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -67,7 +69,7 @@ fun FavoritesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
             )
         }
         Spacer(Modifier.height(4.dp))
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             items(poems.size, key = { poems[it].id }) { index ->
                 val p = poems[index]
                 Row(
