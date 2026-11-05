@@ -47,6 +47,12 @@ python tools/artwork/fetch_artworks.py --force                            # 节�
 5. **Glance**：TextStyle.fontFamily 是枚举、Spacer 用 defaultWeight、actionRunCallback 在 appwidget 包。
 6. **网络窗口**：GitHub/Met 时通时断；克利夫兰 API 稳定可用；推送失败本地 ahead 安全，恢复即补。
 7. **千家诗组诗**段落是嵌套 dict（subchapter），装载器已展开。
+8. **Git Bash 下 adb push 远端路径必须加 `MSYS_NO_PATHCONV=1` 前缀**：否则 `/data/...` 被 MSYS
+   转成 Windows 路径，push 报"成功"但文件不在设备目标位置（pm install 报 Can't open file）。
+9. **真机签名互斥**：debug/release 两签名包不能互相覆盖安装（INSTALL_FAILED_UPDATE_INCOMPATIBLE）。
+   真机现装 debug 签名 v0.2.0（2026-11-06）；换 release 版须先卸载（收藏清空，favorites 无导出）。
+   另：Flyme 禁 run-as（DEBUGGABLE 包也报 unknown package）；adb 偶发 protocol fault 掉线，
+   kill-server 重启即恢复。
 
 ## 构建与发版
 
