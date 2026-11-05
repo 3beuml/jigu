@@ -13,6 +13,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,18 +22,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -47,6 +42,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -268,9 +269,16 @@ fun JiguApp() {
         // 胶囊以外的带子只吞 tap（不进语义树、不放行 move）——列表滑动穿透、留白不误触。
         // dock 只住三个顶层 tab（D-025 真机反馈修订）：子页面有各自返回骨架，
         // 常驻胶囊反而占底部、碍返回视线；全屏体验页同理不显示。
-        if (route in setOf("today", "library", "mine")) {
-        DockOverlay(
+        // 出入场动效：进子页滑出、返回滑入——"书签回来"而非"突然在"（D-025 终版）
+        androidx.compose.animation.AnimatedVisibility(
+            visible = route in setOf("today", "library", "mine"),
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) +
+                androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) +
+                androidx.compose.animation.fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+        DockOverlay(
             currentRoute = route,
             onToday = { nav.navigate("today") { launchSingleTop = true; popUpTo("today") { inclusive = true } } },
             onLibrary = { nav.navigate("library") { launchSingleTop = true } },
@@ -297,29 +305,27 @@ private fun DockOverlay(
             },
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface, // 宣纸实底（微透在浅页面上糊成一片，D-025 真机反馈）
+            shape = RoundedCornerShape(12.dp), // 纸签条（D-025 终版）：非胶囊——界格/书签同族
+            color = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
             border = BorderStroke(
                 0.75.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.9f), // 墨线加重一档
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.9f),
             ),
             modifier = Modifier
-                .navigationBarsPadding()
+                // 手势区沉浸：不再 navigationBarsPadding 让位，纸签条沉到手势条背后
                 .padding(horizontal = 20.dp, vertical = 8.dp)
                 .fillMaxWidth()
                 .height(58.dp),
         ) {
             Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 listOf(
-                    Triple("今日", Icons.Filled.Home to Icons.Outlined.Home, onToday),
-                    Triple("书库", Icons.Filled.Search to Icons.Outlined.Search, onLibrary),
-                    Triple("我的", Icons.Filled.Person to Icons.Outlined.Person, onMine),
-                ).forEach { (label, icons, onClick) ->
-                    val selected = currentRoute == when (label) {
-                        "今日" -> "today"; "书库" -> "library"; else -> "mine"
-                    }
+                    Triple("今日", "today", onToday),
+                    Triple("书库", "library", onLibrary),
+                    Triple("我的", "mine", onMine),
+                ).forEach { (label, routeKey, onClick) ->
+                    val selected = currentRoute == routeKey
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -328,18 +334,38 @@ private fun DockOverlay(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Icon(
-                            if (selected) icons.first else icons.second,
-                            contentDescription = label,
-                            tint = if (selected) MaterialTheme.colorScheme.onBackground
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(21.dp),
-                        )
+                        val iconColor = if (selected) MaterialTheme.colorScheme.onBackground
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                        // 墨线 Canvas 直绘（D-025 终版）：选中=墨形加重
+                        Canvas(Modifier.size(22.dp)) {
+                            val sc = size.minDimension / 24f
+                            withTransform({ scale(sc, sc, pivot = Offset.Zero) }) {
+                                drawPath(
+                                    path = inkPath(label),
+                                    color = iconColor,
+                                    style = Stroke(
+                                        width = if (selected) 2.4f else 1.6f,
+                                        cap = StrokeCap.Round,
+                                        join = StrokeJoin.Round,
+                                    ),
+                                )
+                            }
+                        }
                         Text(
                             label,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (selected) MaterialTheme.colorScheme.onBackground
                             else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        // 朱点：落款性质的用朱（3dp），只给选中项——D-004 彩色秩序内
+                        Spacer(Modifier.height(2.dp))
+                        Box(
+                            Modifier
+                                .size(3.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (selected) Color(0xFF9E2F26) else Color.Transparent,
+                                ),
                         )
                     }
                 }
@@ -348,10 +374,29 @@ private fun DockOverlay(
     }
 }
 
-/**
- * 悬浮 dock 为滚动内容预留下的底部余量：胶囊 56 + 上下边距 16 = 72，再加 16 呼吸。
- * 各滚动容器把它挂到 contentPadding，最后一条内容才能完整滚出胶囊（D-025）。
- */
+/** 墨线三形（D-025 终版）：印（今日）/册（书库）/人（我的），24 视窗单位坐标 */
+private fun inkPath(label: String): Path = Path().apply {
+    when (label) {
+        "今日" -> {
+            moveTo(5f, 3.8f); lineTo(19f, 3.8f); lineTo(19f, 20.2f); lineTo(5f, 20.2f); close()
+            moveTo(5f, 12f); lineTo(19f, 12f)
+        }
+        "书库" -> {
+            moveTo(4f, 6f); lineTo(20f, 6f)
+            moveTo(4f, 12f); lineTo(20f, 12f)
+            moveTo(4f, 18f); lineTo(13f, 18f)
+        }
+        else -> {
+            moveTo(12f, 4.6f); cubicTo(14f, 4.6f, 15.6f, 6.2f, 15.6f, 8.2f)
+            cubicTo(15.6f, 10.2f, 14f, 11.8f, 12f, 11.8f)
+            cubicTo(10f, 11.8f, 8.4f, 10.2f, 8.4f, 8.2f)
+            cubicTo(8.4f, 6.2f, 10f, 4.6f, 12f, 4.6f); close()
+            moveTo(4.6f, 20.4f); cubicTo(4.6f, 15.8f, 7.9f, 13.6f, 12f, 13.6f)
+            cubicTo(16.1f, 13.6f, 19.4f, 15.8f, 19.4f, 20.4f)
+        }
+    }
+}
+
 val DOCK_CLEARANCE = 88.dp
 
 private fun currentRoute(nav: androidx.navigation.NavController): String? =
