@@ -61,25 +61,32 @@ private val BOOK_MODULES = listOf(
     BookModule("楚辞", "chuci", "骚体 · 浪漫之源", 1),
     BookModule("论语", "lunyu", "语录即文章", 2),
     BookModule("老子", "laozi", "道德五千言 · 全 81 章", 3),
-    BookModule("孟子", "sishu", "雄辩滔滔", 4),
+    // 卡名四书：sishu 类实收 大学/中庸/孟子 16 篇（原"孟子"卡混收大学中庸，D-028 改名对齐；论语另卡）
+    BookModule("四书", "sishu", "大学 · 中庸 · 孟子七篇", 4),
     BookModule("庄子", "zhuangzi", "内篇七全 · 外篇名篇", 5),
-    BookModule("古诗十九首", "gushi19", "五言之祖 · 东汉无名氏", 6),
-    BookModule("曹操诗集", "han_wei", "建安风骨", 7),
-    BookModule("史记", "shiji", "纪传之祖 · 名段选", 8),
-    BookModule("世说新语", "shishuo", "魏晋风度 · 名则选", 9),
-    BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 10),
+    // 古诗源（批9/D-029）：沈德潜汉魏六朝诗选，内容时代起汉，插在先秦诸子与西汉之间
+    BookModule("古诗源", "gushiyuan", "汉魏六朝诗选 · 名篇", 6),
+    // 史记（西汉）按内容时代应在古诗十九首（东汉）之前（原误排曹操后，D-028 重排）
+    BookModule("史记", "shiji", "纪传之祖 · 名段选", 7),
+    BookModule("古诗十九首", "gushi19", "五言之祖 · 东汉无名氏", 8),
+    BookModule("曹操诗集", "han_wei", "建安风骨", 9),
+    BookModule("世说新语", "shishuo", "魏晋风度 · 名则选", 10),
     BookModule("唐诗三百首", "tag:唐诗三百首", "家塾课本 · 熟读成诵", 11),
     BookModule("全唐诗", "tang_poem", "五万七千首 · 名家优先", 12, popular = true),
     BookModule("水墨唐诗", "tag:水墨唐诗", "诗画一题 · 唐人选迹", 13),
     BookModule("千家诗", "qianjiashi", "分体选本 · 唐宋名篇", 14),
-    BookModule("宋词三百首", "tag:宋词三百首", "朱祖谋编选 · 两宋词家名篇", 15),
-    BookModule("全宋词", "ci", "两宋词章 · 二万一千首", 16, popular = true),
-    BookModule("全宋诗", "song_poem", "二十五万首 · 名家优先", 17, popular = true),
-    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 18),
-    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 19),
-    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等八种", 20),
-    BookModule("纳兰词", "qing_ci", "清词第一", 21),
-    BookModule("名句", "famous", "千古名句 · 今日页同源", 22),
+    // 五代词（907–960）内容时代在唐后（原误排唐诗三百首前，D-028 重排）
+    BookModule("五代词", "wudai_ci", "花间集 · 南唐二主", 15),
+    BookModule("宋词三百首", "tag:宋词三百首", "朱祖谋编选 · 两宋词家名篇", 16),
+    BookModule("全宋词", "ci", "两宋词章 · 二万一千首", 17, popular = true),
+    BookModule("全宋诗", "song_poem", "二十五万首 · 名家优先", 18, popular = true),
+    // 元曲卡：批1（D-021）声记加入但从未落卡，1.09 万首剧曲散曲一度无书架入口（D-028 补回）
+    BookModule("元曲", "yuan_qu", "杂剧散曲 · 万余首", 19),
+    BookModule("古文观止", "guwen", "散文正宗 · 十二卷", 20),
+    BookModule("幽梦影", "youmengying", "清言小品 · 带评点", 21),
+    BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等九种", 22),
+    BookModule("纳兰词", "qing_ci", "清词第一", 23),
+    BookModule("名句", "famous", "千古名句 · 今日页同源", 24),
 ).sortedBy { it.era }
 
 /** 书库：搜索 + 五维浏览（书架 / 题材·文体 / 体裁 / 作者 / 朝代）——二级门全部拉平上首屏（D-026） */
@@ -174,7 +181,7 @@ fun LibraryScreen(
         when (dim) {
             0 -> ShelfGrid(onOpenModule)
             1 -> ThemeGenreContent(onOpenTheme, onOpenGenre)
-            2 -> TypeFlatContent(typeCounts, onOpenType, onOpenChapter)
+            2 -> TypeFlatContent(typeCounts, counts, onOpenType, onOpenChapter, onOpenModule)
             3 -> AuthorFlatContent(onOpenAuthor)
             4 -> EraDimContent(eraCounts, onOpenEra)
         }
@@ -367,55 +374,67 @@ internal val GENRE_ORDER = listOf(
     "杂记", "箴铭", "颂赞", "辞赋", "哀祭",
 )
 
-/** 体裁维（D-026 拉平）：诗 13 子类直接平铺 + 词/曲入口 + 文（书卷直出） */
+/** 体裁维（D-026 拉平）：诗 13 子类 + 其他兜底 + 词/曲（调名索引，chip 计数=调数）+ 文（九书直出） */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TypeFlatContent(
     typeCounts: Map<String, Int>,
+    catCounts: Map<String, Int>,
     onOpenType: (String) -> Unit,
     onOpenChapter: (String) -> Unit,
+    onOpenModule: (String) -> Unit,
 ) {
     val context = LocalContext.current
     var chapters by remember { mutableStateOf<Map<String, Map<String, Int>>>(emptyMap()) }
+    var rhythmicCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) { chapters = PoemsDb.get(context).chapterCounts() }
+        withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            chapters = db.chapterCounts()
+            rhythmicCounts = db.rhythmicTypeCounts()
+        }
     }
     val poemTypes = listOf(
         "五言绝句", "七言绝句", "五言律诗", "七言律诗", "五言排律", "七言排律",
         "古体诗", "五言古诗", "七言古诗", "乐府", "四言诗", "诗经体", "骚体",
     )
     val counts = { t: String -> typeCounts[t] ?: 0 }
+    // 文 · 书卷：九书全直出（D-028）。章 chips 用于 chapter 有值的书；
+    // 老子/幽梦影/蒙学章号在题内（chapter 空），以书级 chip 进 ModuleScreen 按序浏览
+    val wenBooks = listOf(
+        "guwen" to "古文观止", "lunyu" to "论语", "sishu" to "四书",
+        "laozi" to "老子", "zhuangzi" to "庄子", "shiji" to "史记",
+        "shishuo" to "世说新语", "youmengying" to "幽梦影", "mengxue" to "蒙学",
+    )
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
     ) {
-        // —— 诗：子体裁全平铺 ——
+        // —— 诗：子体裁全平铺 + 其他兜底（原 175 篇 type="其他" 无 chip 不可达） ——
         item(key = "h_shi") { BlockTitle("诗 · 子体裁") }
         item(key = "chips_shi") {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                poemTypes.forEach { t ->
+                (poemTypes + "其他").forEach { t ->
                     val c = counts(t)
                     if (c > 0) CountChip(label = t, count = c) { onOpenType(t) }
                 }
             }
         }
-        // —— 词 / 曲：词牌 / 曲牌索引入口 ——
+        // —— 词 / 曲：词牌 / 曲牌索引入口（计数=调名数，非篇数） ——
         item(key = "h_cq") { BlockTitle("词 · 曲") }
         item(key = "chips_cq") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CountChip(label = "词牌", count = counts("词")) { onOpenType("词") }
-                CountChip(label = "曲牌", count = counts("曲")) { onOpenType("曲") }
+                CountChip(label = "词牌", count = rhythmicCounts["词"] ?: 0) { onOpenType("词") }
+                CountChip(label = "曲牌", count = rhythmicCounts["曲"] ?: 0) { onOpenType("曲") }
             }
         }
-        // —— 文：书卷直出（原两级拉平） ——
+        // —— 文：书卷直出（原只白名单三书，三书/幽梦影/蒙学漏，D-028 补全九书） ——
         item(key = "h_wen") { BlockTitle("文 · 书卷") }
-        chapters.forEach { (cat, vol) ->
-            val bookName = mapOf(
-                "guwen" to "古文观止", "lunyu" to "论语", "sishu" to "四书",
-            )[cat] ?: cat
+        wenBooks.forEach { (cat, bookName) ->
+            val vol = chapters[cat]
             item(key = "bk_$cat") {
                 Text(
                     bookName,
@@ -429,8 +448,12 @@ private fun TypeFlatContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    vol.forEach { (chapter, count) ->
-                        CountChip(label = chapter, count = count) { onOpenChapter(chapter) }
+                    if (vol.isNullOrEmpty()) {
+                        CountChip(label = "全书", count = catCounts[cat] ?: 0) { onOpenModule(cat) }
+                    } else {
+                        vol.forEach { (chapter, count) ->
+                            CountChip(label = chapter, count = count) { onOpenChapter(chapter) }
+                        }
                     }
                 }
             }
@@ -439,7 +462,8 @@ private fun TypeFlatContent(
     }
 }
 
-/** 作者维（D-026 拉平）：分组 chips + 作者索引直出（含古文大家） */
+/** 作者维（D-026 拉平；D-028 修订）：分组 = 有该体裁作品即入组（诗/词/文按该体裁作品量序），
+ *  多栖作者（苏轼/欧阳修/韩愈）在各组都可见；体裁组排除无名氏/佚名防霸榜 */
 @Composable
 private fun AuthorFlatContent(onOpenAuthor: (Int) -> Unit) {
     val context = LocalContext.current
@@ -464,7 +488,7 @@ private fun AuthorFlatContent(onOpenAuthor: (Int) -> Unit) {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            listOf("all" to "全部", "poet" to "诗人", "ciren" to "词人", "wen" to "古文大家")
+            listOf("all" to "全部", "poet" to "诗", "ci" to "词", "wen" to "文")
                 .forEach { (k, label) ->
                     DimensionChip(label = label, selected = kind == k) { kind = k }
                 }
@@ -566,6 +590,7 @@ private val CATEGORY_LABELS = mapOf(
     "zhuangzi" to "庄子", "shishuo" to "世说新语", "shiji" to "史记",
     "youmengying" to "幽梦影", "mengxue" to "蒙学",
     "han_wei" to "曹操诗集", "yuan_qu" to "元曲",
+    "gushiyuan" to "古诗源",
 )
 internal fun sourceLabelOf(p: PoemsDb.Poem): String = when {
     p.tags.contains("唐诗三百首") -> "唐诗三百首"

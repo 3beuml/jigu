@@ -37,7 +37,7 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 20  # +1: 批7（D-026）——题材 v4 第三批 +8（30 类）+ 文体 13 类浏览范围扩到 老子/庄子/史记。原批5注释：——三书入库（庄子内篇七全+外篇二 9 条 / 史记名段 18 条 / 世说名则 39 条）+ 名句种子 +85（D-020 先例点名录入）+ 自动补种目标 300→400
+DATA_VERSION = 21  # +1: 批9（D-029 古文/古诗源补全）；历史记录：批7（D-026）——题材 v4 第三批 +8（30 类）+ 文体 13 类浏览范围扩到 老子/庄子/史记。原批5注释：——三书入库（庄子内篇七全+外篇二 9 条 / 史记名段 18 条 / 世说名则 39 条）+ 名句种子 +85（D-020 先例点名录入）+ 自动补种目标 300→400
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -309,11 +309,12 @@ def classify_type(category: str, title: str, rhythmic: str, paragraphs: list[str
     return "古体诗"
 
 
-# 朝代归一：时间轴按此分组；先秦含诸子，两汉并入汉
+# 朝代归一：时间轴按此分组；先秦含诸子，两汉并入汉。
+# 三国并入魏晋（D-028）：朝代维 ERA_ORDER 无"三国"，原样映射会让三国作者在时间轴静默消失
 ERA_MAP = {
     "唐代": "唐", "宋朝": "宋", "宋代": "宋", "汉朝": "汉", "两汉": "汉",
     "战国": "先秦", "明代": "明", "清朝": "清", "元朝": "元", "隋朝": "隋",
-    "五代十国": "五代", "三国": "三国",
+    "五代十国": "五代", "三国": "魏晋",
 }
 
 # 主要作者生卒年种子（负数=公元前）。只收把握大的；无年份者时间轴内排在其朝代末尾。
@@ -337,6 +338,13 @@ BIRTH_DEATH = [
     ("李清照", 1084, 1155), ("陈与义", 1090, 1139), ("岳飞", 1103, 1142),
     ("陆游", 1125, 1210), ("范成大", 1126, 1193), ("杨万里", 1127, 1206), ("朱熹", 1130, 1200),
     ("张孝祥", 1132, 1170), ("辛弃疾", 1140, 1207), ("姜夔", 1154, 1221), ("文天祥", 1236, 1283),
+    ("项羽", -232, -202), ("刘邦", -256, -195),
+    ("张衡", 78, 139), ("蔡邕", 133, 192), ("蔡琰", 177, 239),
+    ("曹丕", 187, 226), ("曹植", 192, 232), ("阮籍", 210, 263), ("嵇康", 223, 262),
+    ("刘琨", 271, 318), ("左思", 248, 305),
+    ("谢灵运", 385, 433), ("陶潜", 365, 427),
+    ("江淹", 444, 505), ("谢朓", 464, 499),
+    ("鲍照", 414, 466), ("王褒", 513, 576), ("薛道衡", 540, 609),
     ("白朴", 1226, 1306), ("张养浩", 1270, 1329),
     ("纳兰性德", 1655, 1685), ("郑燮", 1693, 1765), ("袁枚", 1716, 1798), ("龚自珍", 1792, 1841),
 ]
@@ -608,6 +616,23 @@ def it_shishuo(dataset: Path):
         }
 
 
+def it_sanzijing(dataset: Path):
+    """三字经（批9，D-029）：corpus/sanzijing.json（数据集 sanzijing-new.json 繁体转简+茍→苟，王应麟）。"""
+    d = load_json(REPO / "tools/datapack/corpus/sanzijing.json")
+    for a in d["pieces"]:
+        yield {"category": "mengxue", "title": a["title"], "author": a["author"],
+               "dynasty": a.get("dynasty", "宋"), "paragraphs": a["paragraphs"]}
+
+
+def it_gushiyuan(dataset: Path):
+    """古诗源（批9，D-029）：corpus/gushiyuan.json——沈德潜《古诗源》汉魏六朝名篇选段制，
+    陈列层选本（gushiyuan 分类/书架卡）。out_author 通行名，dynasty 按卷。"""
+    d = load_json(REPO / "tools/datapack/corpus/gushiyuan.json")
+    for a in d["pieces"]:
+        yield {"category": "gushiyuan", "title": a["title"], "author": a["author"],
+               "dynasty": a.get("dynasty", "汉"), "paragraphs": a["paragraphs"]}
+
+
 def it_nalan(dataset: Path):
     for r in load_json(dataset / "纳兰性德" / "纳兰性德诗集.json"):
         title = r["title"]
@@ -869,7 +894,7 @@ THEME_RULES = [
 ]
 
 POETRY_CATEGORIES = ("tang_poem", "song_poem", "ci", "qing_ci", "wudai_ci", "qianjiashi",
-                     "shijing", "chuci", "han_wei", "gushi19")
+                     "shijing", "chuci", "han_wei", "gushi19", "gushiyuan")
 
 CALENDAR_KEYWORDS = {
     "solar_term": {
@@ -948,6 +973,16 @@ FAMOUS_LINES = [
     ("鹊桥仙", "金风玉露一相逢"), ("破阵子", "醉里挑灯看剑"), ("永遇乐", "千古江山"),
     ("青玉案", "蓦然回首"), ("卜算子", "零落成泥碾作尘"), ("游山西村", "山重水复疑无路"),
 
+    # ---------- 批9（D-029）：古诗源/三书 名句种子 ----------
+    ("饮酒·其五", "采菊东篱下"), ("归园田居·其三", "晨兴理荒秽"), ("归园田居·其一", "误落尘网中"),
+    ("杂诗·其一", "盛年不重来"), ("读山海经·其一", "孟夏草木长"), ("咏荆轲", "君子死知己"),
+    ("木兰诗", "万里赴戎机"), ("木兰诗", "雄兔脚扑朔"), ("敕勒歌", "天似穹庐"),
+    ("上邪", "山无陵"), ("长歌行", "百川东到海"), ("陌上桑", "日出东南隅"),
+    ("李延年歌", "北方有佳人"), ("咏怀·其一", "夜中不能寐"), ("李陵诗·其一", "风波一失所"),
+    ("咏史·其二", "郁郁涧底松"), ("拟行路难·其四", "吞声踯躅不敢言"), ("石壁精舍还湖中作", "山水含清晖"),
+    ("白头吟", "愿得一心人"), ("相逢行", "君家诚易知"), ("秋风辞", "少壮几时兮奈老何"),
+    ("庄子·山木", "此木以不材得终其天年"), ("庄子·马蹄", "蹄可以践霜雪"), ("庄子·天下", "独与天地精神往来"),
+    ("史记·管晏列传", "生我者父母"), ("史记·太史公自序·发愤著书", "郁结"),
     # ---------- P1-9 扩容（D-019）：经典短句 + 清降配名句精选 + 古文补遗 ----------
     # 四书五经短句（篇目整类在库；题锚用篇名——title 不含书名，P1-9 修正）
     ("学而篇", "学而时习之"), ("为政篇", "温故而知新"), ("里仁篇", "德不孤"),
@@ -1327,7 +1362,7 @@ def fill_famous_lines(conn):
     seeded = n
     # 第二轮：popularity 自动补种到目标量 —— 陈列层优先，全藏层高热度诗只做末位补充
     TARGET = 400
-    CURATED_CATS = "('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei','qianjiashi','wudai_ci','guwen','laozi','gushi19','zhuangzi','shishuo','shiji','mengxue')"
+    CURATED_CATS = "('shijing','chuci','qing_ci','youmengying','lunyu','sishu','han_wei','qianjiashi','wudai_ci','guwen','laozi','gushi19','zhuangzi','shishuo','shiji','mengxue','gushiyuan')"
     rank = conn.execute(
         "SELECT id FROM poems WHERE title NOT LIKE '%其%' AND title NOT LIKE '%□%' AND title NOT LIKE '佚题%' "  # 组诗分篇/缺字题/佚题不入名句池
         "ORDER BY "
@@ -1458,6 +1493,8 @@ CORE_SOURCES = [
     ("纳兰词", lambda ds: it_nalan(ds)),
     ("曹操诗集", lambda ds: it_caocao(ds)),
     ("蒙学补全", lambda ds: it_mengxue_extra(ds)),
+    ("三字经", lambda ds: it_sanzijing(ds)),
+    ("古诗源", lambda ds: it_gushiyuan(ds)),
 ]
 
 FULL_EXTRA_SOURCES = [

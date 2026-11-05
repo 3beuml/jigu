@@ -22,8 +22,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // 版本规则见 docs/DECISIONS.md D-009：versionCode = major×10000+minor×100+patch
-        versionCode = 100
-        versionName = "0.1.0"
+        versionCode = 200
+        versionName = "0.2.0"
     }
 
     signingConfigs {

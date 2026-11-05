@@ -36,7 +36,7 @@ def main() -> None:
     conn = sqlite3.connect(f"file:{args.db}?mode=ro", uri=True)
     cats = ",".join("?" for _ in POETRY_CATEGORIES)
     rows = conn.execute(
-        f"SELECT id, title, body, category FROM poems WHERE category IN ({cats})",
+        f"SELECT id, title, paragraphs, category FROM poems WHERE category IN ({cats})",
         POETRY_CATEGORIES,
     ).fetchall()
 
@@ -50,7 +50,9 @@ def main() -> None:
     cat_tagged: dict[str, int] = {}
     cat_total: dict[str, int] = {}
 
+    import json as _json
     for pid, title, body, cat in rows:
+        body = "".join(_json.loads(body))
         hits = theme_hits_for(title, body)
         cat_total[cat] = cat_total.get(cat, 0) + 1
         if hits:
@@ -69,7 +71,7 @@ def main() -> None:
 
     def poem_info(pid: int) -> str:
         t, a, b = conn.execute(
-            "SELECT p.title, IFNULL(a.name,''), substr(p.body,1,30) FROM poems p "
+            "SELECT p.title, IFNULL(a.name,''), substr(paragraphs,1,60) FROM poems p "
             "LEFT JOIN authors a ON a.id = p.author_id WHERE p.id = ?", (pid,)
         ).fetchone()
         return f"《{t}》{a or '佚名'}：{b}…"

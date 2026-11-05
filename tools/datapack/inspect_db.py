@@ -9,6 +9,7 @@
 """
 
 import argparse
+import json
 import sqlite3
 import sys
 from pathlib import Path
@@ -16,6 +17,15 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 CORE = REPO / "build-datapack/jigu-core.db"
 FULL = REPO / "build-datapack/jigu-full.db"
+
+
+def body_preview(poems_json: str, n: int) -> str:
+    """SCHEMA 7 后 poems.paragraphs 为 JSON 数组，预览时拼接取首 n 字。"""
+    try:
+        paras = json.loads(poems_json)
+        return ("".join(paras))[:n]
+    except Exception:
+        return (poems_json or "")[:n]
 
 
 def main():
@@ -43,25 +53,25 @@ def main():
     if args.search:
         print(f"\n== FTS 搜索「{args.search}」 ==")
         rows = db.execute(
-            "SELECT p.category, p.title, a.name, substr(p.body, 1, 40) "
+            "SELECT p.category, p.title, a.name, p.paragraphs "
             "FROM poems_fts JOIN poems p ON p.id = poems_fts.rowid "
             "LEFT JOIN authors a ON a.id = p.author_id "
             "WHERE poems_fts MATCH ? LIMIT 10", (args.search,)
         ).fetchall()
         for r in rows:
-            print(f"  [{r[0]}] {r[1]} · {r[2]}：{r[3]}…")
+            print(f"  [{r[0]}] {r[1]} · {r[2]}：{body_preview(r[3], 40)}…")
         if not rows:
             print("  （无结果；trigram 分词仅支持 ≥3 字查询）")
 
     if args.title:
         print(f"\n== 标题「{args.title}」 ==")
         rows = db.execute(
-            "SELECT p.category, p.title, a.name, substr(p.body, 1, 60) "
+            "SELECT p.category, p.title, a.name, p.paragraphs "
             "FROM poems p LEFT JOIN authors a ON a.id = p.author_id "
             "WHERE p.title LIKE ? LIMIT 10", (args.title + "%",)
         ).fetchall()
         for r in rows:
-            print(f"  [{r[0]}] {r[1]} · {r[2]}：{r[3]}…")
+            print(f"  [{r[0]}] {r[1]} · {r[2]}：{body_preview(r[3], 60)}…")
         if not rows:
             print("  （无结果）")
 
@@ -73,12 +83,12 @@ def main():
         for cat, n in cats:
             print(f"\n  [{cat}] 共 {n} 条")
             rows = db.execute(
-                "SELECT p.title, IFNULL(a.name,'佚名'), substr(p.body, 1, 50) "
+                "SELECT p.title, IFNULL(a.name,'佚名'), p.paragraphs "
                 "FROM poems p LEFT JOIN authors a ON a.id = p.author_id "
                 "WHERE p.category = ? ORDER BY RANDOM() LIMIT ?", (cat, args.n)
             ).fetchall()
             for r in rows:
-                print(f"    《{r[0]}》 {r[1]}：{r[2]}…")
+                print(f"    《{r[0]}》 {r[1]}：{body_preview(r[2], 50)}…")
     return 0
 
 
