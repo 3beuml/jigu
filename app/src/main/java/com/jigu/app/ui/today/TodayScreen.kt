@@ -1,9 +1,7 @@
 package com.jigu.app.ui.today
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,20 +32,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jigu.app.data.ArtworkRepo
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemOfDay
 import com.jigu.app.data.PoemsDb
-import com.jigu.app.ui.art.PaperInk
-import com.jigu.app.ui.art.paperFeather
 import com.jigu.app.ui.signatureWithTitle
 import com.jigu.app.ui.theme.PoemTextStyle
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +55,7 @@ import java.time.format.DateTimeFormatter
  * 角隅画（D-019）：淡墨融合 + 羽化入纸 + 竖排小字注，点击进全屏鉴赏页。
  */
 @Composable
-fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -> Unit = {}) {
+fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<PoemOfDay.Result?>(null) }
@@ -72,7 +64,7 @@ fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
-            val r = PoemOfDay.pick(db, LocalDate.now())
+            val r = PoemOfDay.pick(context, db, LocalDate.now())
             result = r
             r?.let { fav = db.isFavorite(it.poem.id) }
         }
@@ -94,47 +86,7 @@ fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -
         ?: poem.paragraphs.joinToString("").takeIf { it.isNotBlank() }
         ?: ""
 
-    // 角隅画（D-019 photo-revival 法则）：淡墨融合 + 羽化入纸 + 竖排小字注；点击进鉴赏页；
-    // 深色模式隐藏；画意开关可全关；护栏"文字区净空"：总字数 >64（长文/长调）不配画
-    val artEnabled = JiguSettings.artEnabled(context)
-    val shortPoem = poem.paragraphs.sumOf { it.length } <= 64
-    val themes = remember(poem.id) { PoemsDb.get(context).themesFor(poem.id) }
-    val artwork = if (artEnabled && !isSystemInDarkTheme() && shortPoem) {
-        ArtworkRepo.forPoem(context, themes, badge, poem.id)
-    } else null
-    var artBitmap by remember(artwork?.file) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(artwork?.file) {
-        artBitmap = artwork?.let {
-            withContext(Dispatchers.IO) { ArtworkRepo.decode(context, it) }
-        }?.asImageBitmap()
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
-        val bmp = artBitmap
-        if (bmp != null) {
-            Image(
-                bitmap = bmp,
-                contentDescription = "节气配画（点击鉴赏）",
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 10.dp, bottom = 84.dp)
-                    .size(width = 144.dp, height = 192.dp)
-                    .paperFeather(0.20f)
-                    .clickable { onArtwork(poem.id) },
-                contentScale = ContentScale.Crop,
-                colorFilter = PaperInk.composeColorFilter(PaperInk.INK_SOFT),
-            )
-            // 竖排小字注（photo-revival 的 tiny caption）
-            Text(
-                text = "《${artwork?.displayTitle()}》${artwork?.displayArtist() ?: ""}".take(14),
-                fontSize = 10.sp,
-                lineHeight = 15.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 158.dp, bottom = 96.dp),
-            )
-        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -180,12 +132,20 @@ fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = line,
-                style = PoemTextStyle,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+            // 今日卡逐联分行（P0-7）：摘句按句读组建行，与详情页排版同构；不再整段流排
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                com.jigu.app.ui.detail.paragraphToLines(line, maxSentence = 14).forEach { l ->
+                    Text(
+                        text = l,
+                        style = PoemTextStyle,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            }
             Spacer(Modifier.height(24.dp))
             Text(
                 text = attribution(poem),
@@ -218,24 +178,19 @@ fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit, onArtwork: (Int) -
             }
             TextButton(onClick = { onCard(poem.id) }) { Text("做卡片", fontSize = 14.sp) }
             TextButton(onClick = {
-                // 换一首：当日精选池内顺位后移，重开 App 不变
+                // 换一首：当日精选池内顺位后移，持久化（P0-6：偏移现在被 pick 读取，重开/切页不变）
                 scope.launch {
                     withContext(Dispatchers.IO) {
                         val db = PoemsDb.get(context)
                         val prefs = context.getSharedPreferences(
                             "jigu_prefs", android.content.Context.MODE_PRIVATE,
                         )
-                        val day = LocalDate.now().toEpochDay()
-                        val key = "swap_$day"
-                        val next = prefs.getInt(key, 0) + 1
-                        prefs.edit().putInt(key, next).apply()
-                        val n = db.curatedCount()
-                        if (n > 0) {
-                            val off = (((day + next) % n + n) % n).toInt()
-                            db.curatedAtOffset(off)?.let { p ->
-                                result = PoemOfDay.Result(p, JiguCalendar.currentTerm(LocalDate.now()))
-                                fav = db.isFavorite(p.id)
-                            }
+                        val key = "swap_${LocalDate.now().toEpochDay()}"
+                        prefs.edit().putInt(key, prefs.getInt(key, 0) + 1).apply()
+                        val r = PoemOfDay.pick(context, db, LocalDate.now())
+                        r?.let {
+                            result = it
+                            fav = db.isFavorite(it.poem.id)
                         }
                     }
                 }

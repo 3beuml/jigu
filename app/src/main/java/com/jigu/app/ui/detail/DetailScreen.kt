@@ -1,10 +1,8 @@
 package com.jigu.app.ui.detail
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,31 +33,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jigu.app.data.ArtworkRepo
-import com.jigu.app.ui.art.PaperInk
-import com.jigu.app.data.JiguCalendar
-import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
-import com.jigu.app.ui.art.paperFeather
 import com.jigu.app.ui.attributionSubtitle
 import com.jigu.app.ui.signatureOf
+import com.jigu.app.ui.theme.PoemBodySmallStyle
 import com.jigu.app.ui.theme.PoemTitleStyle
+import com.jigu.app.ui.theme.Wenkai
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** 详情页：原文 / 诗人小传 / 意象与标签 / 相关诗词；横竖排切换（D-007 雅言取材） */
+/** 详情页：原文 / 诗人小传 / 意象与标签 / 相关诗词；横竖排切换（D-007 雅言取材）。
+ *  批11：赏画体系整体拆除（用户定案美术搁置）——正文背景画、赏画行、鉴赏入口已移除。 */
 @Composable
-fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwork: (Int) -> Unit = {}) {
+fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
     var poem by remember { mutableStateOf<PoemsDb.Poem?>(null) }
     var related by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
@@ -83,28 +75,6 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
     }
 
     val p = poem
-    // 正文背景画（批8/D-027）：题材匹配的画做淡水墨底（低 alpha + 纸墨映射 + 羽化），
-    // 深色模式与画意/背景画开关关闭时不渲染；朴素淡雅，不与正文争墨
-    val dark = isSystemInDarkTheme()
-    val bgArt = p?.let {
-        if (JiguSettings.artEnabled(context) && JiguSettings.artBgEnabled(context) && !dark) {
-            ArtworkRepo.forPoem(context, themes, null, it.id)
-        } else null
-    }
-    val bgBmp = bgArt?.let { a -> remember(a.file) { ArtworkRepo.decodeScaled(context, a, 4) } }
-    Box(Modifier.fillMaxSize()) {
-        if (bgBmp != null) {
-            Image(
-                bitmap = bgBmp.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .paperFeather(0.35f),
-                alpha = 0.09f,
-                contentScale = ContentScale.Crop,
-                colorFilter = PaperInk.composeColorFilter(PaperInk.INK_SOFT),
-            )
-        }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -179,28 +149,29 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
             }
             Spacer(Modifier.height(28.dp))
 
-            // 意象 / 标签
-            val chips = (p.imagery + p.tags).distinct()
-            if (chips.isNotEmpty()) {
+            // 意象 / 标签（P1-16）：分类与意象分两行；季节词归一（秋天/秋 并存去重）
+            val seasonCanon = mapOf("春天" to "春", "夏天" to "夏", "秋天" to "秋", "冬天" to "冬")
+            val tagChips = p.tags.map { seasonCanon[it] ?: it }.distinct()
+            val imageryChips = p.imagery.distinct()
+            if (tagChips.isNotEmpty()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    chips.forEach { chip ->
-                        Text(
-                            text = chip,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    MaterialTheme.shapes.small,
-                                )
-                                .padding(horizontal = 10.dp, vertical = 5.dp),
-                        )
-                    }
+                    tagChips.forEach { chip -> Chip(chip) }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            if (imageryChips.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    imageryChips.forEach { chip -> Chip(chip) }
                 }
                 Spacer(Modifier.height(24.dp))
             }
@@ -230,60 +201,6 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
                 Spacer(Modifier.height(24.dp))
             }
 
-            // 赏画常驻预览条（D-019）：蒸馏缩略 + 汉译题名，点击进全屏鉴赏页；深色模式隐藏
-            val artEnabled = JiguSettings.artEnabled(context)
-            val dArt = if (artEnabled && !isSystemInDarkTheme()) {
-                ArtworkRepo.forPoem(context, themes, JiguCalendar.currentTerm(java.time.LocalDate.now()), p.id)
-            } else null
-            if (dArt != null) {
-                var thumb by remember(dArt.file, p.id) { mutableStateOf<android.graphics.Bitmap?>(null) }
-                LaunchedEffect(dArt.file, p.id) {
-                    thumb = withContext(Dispatchers.IO) { ArtworkRepo.distill(context, dArt, p.id) }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenArtwork(p.id) }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val t = thumb
-                    if (t != null) {
-                        Image(
-                            bitmap = t.asImageBitmap(),
-                            contentDescription = "画之蒸馏缩略",
-                            modifier = Modifier
-                                .width(56.dp)
-                                .height(74.dp)
-                                .paperFeather(0.10f),
-                            contentScale = ContentScale.FillBounds,
-                        )
-                        Spacer(Modifier.width(14.dp))
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = "赏画",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = "《${dArt.displayTitle()}》 ${dArt.displayArtist()}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 3.dp),
-                        )
-                    }
-                    Text(
-                        text = "鉴赏 ›",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
             // 相关诗词
             if (related.isNotEmpty()) {
                 SectionTitle("相关诗词")
@@ -301,7 +218,7 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
                         )
                         Text(
                             text = "${rp.author} ｜ " + rp.body.replace('\n', ' ').take(28) + "…",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = PoemBodySmallStyle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -310,7 +227,6 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, onOpenArtwo
             }
             Spacer(Modifier.height(com.jigu.app.DOCK_CLEARANCE))
         }
-    }
     }
 }
 
@@ -321,6 +237,21 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun Chip(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                MaterialTheme.shapes.small,
+            )
+            .padding(horizontal = 10.dp, vertical = 5.dp),
     )
 }
 
@@ -336,11 +267,12 @@ private fun TextButton2(text: String, onClick: () -> Unit) {
     )
 }
 
-/** 竖排（v0.1）：段落分列、列内自上而下；用 RTL 布局方向实现段与列自右向左。
- * 标点按习惯旋转 90°（P0-2 附带），不再横占整格。
+/** 竖排（P0-1/P0-2 修订）：段落分列、列内自上而下；用 RTL 布局方向实现段与列自右向左。
+ * 字体改文楷子集（原 Serif 平台字体缺生僻字出豆腐）；竖排按古书式去标点
+ * （原旋转 90° 的逗号成波浪线、句号悬空，观感差且子集无竖排标点形式码位）。
  * P排-1 同步：句读组建列（一列一句读组 ≤12 字，取法龙谱句断），多行段=章时列距加空；
  * 小序/长段仍按定长分列。 */
-private val VERTICAL_ROTATE = "，。、；：！？"
+private val VERTICAL_DROP = "，。、；：！？,.;:!?\"“”‘’·—…《》〈〉（）()「」『』"
 private const val VERTICAL_MAX_COLUMN = 12
 
 @Composable
@@ -355,7 +287,9 @@ private fun VerticalPoem(paragraphs: List<String>) {
         ) {
             paragraphs.forEachIndexed { index, para ->
                 val lines = paragraphToLines(para, maxSentence = VERTICAL_MAX_COLUMN)
-                val columns = if (lines.size > 10) para.chunked(VERTICAL_MAX_COLUMN + 2) else lines
+                val columns = if (lines.size > 10) {
+                    para.filterNot { it in VERTICAL_DROP }.chunked(VERTICAL_MAX_COLUMN)
+                } else lines
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = if (index > 0 && lines.size > 1) Modifier.padding(start = 8.dp) else Modifier,
@@ -363,15 +297,14 @@ private fun VerticalPoem(paragraphs: List<String>) {
                     columns.forEach { colText ->
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             colText.forEach { ch ->
-                                val rotate = ch in VERTICAL_ROTATE
+                                if (ch in VERTICAL_DROP) return@forEach
                                 Text(
                                     text = ch.toString(),
                                     fontSize = 24.sp,
                                     lineHeight = 28.sp,
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+                                    fontFamily = Wenkai,
                                     color = MaterialTheme.colorScheme.onBackground,
                                     textAlign = TextAlign.Center,
-                                    modifier = if (rotate) Modifier.rotate(90f) else Modifier,
                                 )
                             }
                         }

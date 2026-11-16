@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -324,20 +327,26 @@ fun ThemePoemsScreen(theme: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     }
 }
 
-/** 词牌/曲牌索引（批3）：体裁"词"/"曲"的二级页，调名按篇数降序，再点调进同调作品列表 */
+/** 词牌/曲牌索引（批3）：体裁"词"/"曲"的二级页，调名按篇数降序，再点调进同调作品列表。
+ *  批10（P1-12）：加调名筛选框——1477 调长尾靠翻页难找，输入直达（命中 DB LIKE 检索）。 */
 @Composable
 fun RhythmicIndexScreen(type: String, onBack: () -> Unit, onOpenRhythmic: (String) -> Unit) {
     val context = LocalContext.current
     var items by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
     var hasMore by remember { mutableStateOf(true) }
     var page by remember { mutableIntStateOf(0) }
+    var filter by remember { mutableStateOf("") }
     val pageN = 120
 
-    LaunchedEffect(page) {
+    LaunchedEffect(page, filter) {
         withContext(Dispatchers.IO) {
-            val batch = PoemsDb.get(context).rhythmicCounts(type, pageN, page * pageN)
-            items = if (page == 0) batch else items + batch
-            hasMore = batch.size == pageN
+            val batch = if (filter.isBlank()) {
+                PoemsDb.get(context).rhythmicCounts(type, pageN, page * pageN)
+            } else {
+                PoemsDb.get(context).rhythmicCountsSearch(type, filter.trim())
+            }
+            items = if (page == 0 || filter.isNotBlank()) batch else items + batch
+            hasMore = filter.isBlank() && batch.size == pageN
         }
     }
 
@@ -346,7 +355,21 @@ fun RhythmicIndexScreen(type: String, onBack: () -> Unit, onOpenRhythmic: (Strin
         subtitle = "调名 · 按篇数排序",
         onBack = onBack,
     ) {
-        LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
+        Column {
+            OutlinedTextField(
+                value = filter,
+                onValueChange = {
+                    filter = it
+                    page = 0
+                },
+                singleLine = true,
+                placeholder = { Text("筛选调名（如：浣溪）", style = MaterialTheme.typography.bodyMedium) },
+                textStyle = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+            )
+            LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             items(items.size, key = { items[it].first }) { index ->
                 val (name, count) = items[index]
                 Row(
@@ -386,6 +409,7 @@ fun RhythmicIndexScreen(type: String, onBack: () -> Unit, onOpenRhythmic: (Strin
                     )
                 }
             }
+        }
         }
     }
 }
@@ -507,5 +531,121 @@ fun GenreScreen(genre: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     }
     BrowseScaffold(title = genre, subtitle = "古文文体", onBack = onBack) {
         PagedPoemList(pager, onOpen)
+    }
+}
+
+/** 经史名段（D-032）：观止 222 篇内藏 左传/战国策/史记/国语/礼记/公羊/谷梁 等经史选段，
+ *  按出处书聚合浮出水面——原藏于"古文观止"卡按卷次排列，出处不可见 */
+@Composable
+fun GuwenSourcesScreen(onBack: () -> Unit, onOpenSource: (String) -> Unit) {
+    val context = LocalContext.current
+    var sources by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { sources = PoemsDb.get(context).guwenSourceCounts() }
+    }
+    BrowseScaffold(title = "经史名段", subtitle = "古文观止选本 · 按出处书", onBack = onBack) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
+            itemsIndexed(sources) { _, (name, count) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenSource(name) }
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (name == "历代文集") "历代文集（唐宋明清诸家）" else name,
+                        style = PoemTitleStyle,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "$count 篇",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            }
+        }
+    }
+}
+
+/** 某出处书的观止篇目（D-032）：按库序（原书卷次）排 */
+@Composable
+fun GuwenSourceScreen(source: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+    val context = LocalContext.current
+    val pager = rememberPagedPoems(source) { page ->
+        PoemsDb.get(context).listByGuwenSection(source, PAGE, page * PAGE)
+    }
+    BrowseScaffold(
+        title = source.ifBlank { "历代文集" },
+        subtitle = "古文观止选段 · 按原书序",
+        onBack = onBack,
+    ) {
+        PagedPoemList(pager, onOpen)
+    }
+}
+
+/** 名篇榜（D-031）：全库可信搜索热度序（rank/ 四引擎之和；残卷/摘句题已沉底不列），
+ *  序位跨页连续（page*页量+行序）。 */
+@Composable
+fun PopularListScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {    val context = LocalContext.current
+    var poems by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
+    var hasMore by remember { mutableStateOf(true) }
+    var page by remember { mutableIntStateOf(0) }
+    val pageN = 100
+
+    LaunchedEffect(page) {
+        withContext(Dispatchers.IO) {
+            val batch = PoemsDb.get(context).listByPopularity(pageN, page * pageN)
+            poems = if (page == 0) batch else poems + batch
+            hasMore = batch.size == pageN
+        }
+    }
+
+    BrowseScaffold(title = "名篇榜", subtitle = "千古名篇 · 按热度序", onBack = onBack) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
+            itemsIndexed(poems) { index, p ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpen(p.id) }
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${page * pageN + index + 1}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.width(32.dp),
+                        )
+                        Text(
+                            text = "《${p.title}》",
+                            style = PoemTitleStyle,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Text(
+                        text = "${p.author}（${p.dynasty}）· " +
+                            ellipsize(p.paragraphs.firstOrNull().orEmpty(), 30),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            }
+            if (hasMore && poems.isNotEmpty()) {
+                item {
+                    TextButton(
+                        onClick = { page += 1 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    ) { Text("加载更多") }
+                }
+            }
+        }
     }
 }

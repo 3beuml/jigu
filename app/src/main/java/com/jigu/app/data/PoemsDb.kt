@@ -282,23 +282,30 @@ class PoemsDb private constructor(context: Context) {
     @Volatile
     private var cachedCounts: Map<String, Int>? = null
 
-    fun eraCounts(): Map<String, Int> {
+    /** 朝代计数（D-030 分栏）：poetry=true 统计诗词曲类，false 统计古文类——两栏时间轴互不干扰 */
+    fun eraCounts(poetry: Boolean): Map<String, Int> {
         awaitData()
-        cachedEras?.let { return it }
+        (if (poetry) cachedEraPoetry else cachedEraProse)?.let { return it }
+        val poetryCats = "('tang_poem','song_poem','ci','qing_ci','wudai_ci','qianjiashi'," +
+            "'shijing','chuci','han_wei','gushi19','gushiyuan','yuan_qu')"
+        val where = if (poetry) "p.category IN $poetryCats" else "p.category NOT IN $poetryCats"
         val out = rdb().rawQuery(
             "SELECT a.dynasty, count(*) FROM poems p " +
-                "JOIN authors a ON a.id = p.author_id GROUP BY a.dynasty", null,
+                "JOIN authors a ON a.id = p.author_id WHERE $where GROUP BY a.dynasty", null,
         ).use { c ->
             val m = mutableMapOf<String, Int>()
             while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
             m
         }
-        cachedEras = out
+        if (poetry) cachedEraPoetry = out else cachedEraProse = out
         return out
     }
 
     @Volatile
-    private var cachedEras: Map<String, Int>? = null
+    private var cachedEraPoetry: Map<String, Int>? = null
+
+    @Volatile
+    private var cachedEraProse: Map<String, Int>? = null
 
     fun typeCounts(): Map<String, Int> {
         awaitData()
@@ -472,6 +479,30 @@ class PoemsDb private constructor(context: Context) {
         return poemById(order[Math.floorMod(offset, order.size)])
     }
 
+    /** 偏好题材池（D-030「今日诗偏好」）：精选池序内筛出命中题材的作品——
+     *  保留洗牌/连片修复后的顺位，(day+顺位) 指针语义与全池一致；themes 空即全池。 */
+    fun curatedThemeOrder(themes: List<String>): List<Int> {
+        if (themes.isEmpty()) return curatedOrder()
+        awaitData()
+        val hit = mutableSetOf<Int>()
+        val marks = themes.joinToString(",") { "?" }
+        rdb().rawQuery(
+            "SELECT pt.poem_id FROM poem_theme pt JOIN themes t ON t.id = pt.theme_id " +
+                "WHERE t.name IN ($marks)", themes.toTypedArray(),
+        ).use { c ->
+            while (c.moveToNext()) hit.add(c.getInt(0))
+        }
+        return curatedOrder().filter { it in hit }
+    }
+
+    fun curatedThemeCount(themes: List<String>): Int = curatedThemeOrder(themes).size
+
+    fun curatedThemeAtOffset(offset: Int, themes: List<String>): Poem? {
+        val order = curatedThemeOrder(themes)
+        if (order.isEmpty()) return null
+        return poemById(order[Math.floorMod(offset, order.size)])
+    }
+
     // ---------- 作品查询 ----------
 
     fun poemById(id: Int): Poem? = queryPoem(
@@ -502,6 +533,48 @@ class PoemsDb private constructor(context: Context) {
         "$POEM_SELECT WHERE p.category = ? ORDER BY p.popularity DESC, p.id LIMIT ? OFFSET ?",
         arrayOf(category, limit.toString(), offset.toString()),
     )
+
+    /** 名篇榜（D-031）：全库按搜索热度序（rank/ 四引擎之和回填；残卷/摘句题负热度沉底、
+     *  短题热度弃用归 0——只取正热度，即"可信热度"排序）。 */
+    fun listByPopularity(limit: Int, offset: Int): List<Poem> = queryPoems(
+        "$POEM_SELECT WHERE p.popularity > 0 ORDER BY p.popularity DESC, p.id LIMIT ? OFFSET ?",
+        arrayOf(limit.toString(), offset.toString()),
+    )
+
+    fun popularCount(): Int {
+        awaitData()
+        return rdb().rawQuery("SELECT COUNT(*) FROM poems WHERE popularity > 0", null).use { c ->
+            if (c.moveToFirst()) c.getInt(0) else 0
+        }
+    }
+
+    /** 古文观止出处书聚合（D-032"经史名段"）：观止 222 篇内藏 左传 34/战国策 14/史记 14/
+     *  国语 11/礼记·檀弓 6/公羊 3/谷梁 2——按出处浮出水面；无出处者归"历代文集"。
+     *  返回 [(出处书, 篇数)]，传世顺序优先（左传→战国策→…），其余按篇数序。 */
+    fun guwenSourceCounts(): List<Pair<String, Int>> {
+        awaitData()
+        val raw = rdb().rawQuery(
+            "SELECT IFNULL(NULLIF(section,''),'历代文集') AS src, count(*) FROM poems " +
+                "WHERE category='guwen' GROUP BY src", null,
+        ).use { c ->
+            val m = mutableMapOf<String, Int>()
+            while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+            m
+        }
+        val order = listOf("左传", "战国策", "史记", "国语", "礼记·檀弓", "公羊传", "谷梁传")
+        return (order.mapNotNull { it to (raw[it] ?: 0) }.filter { it.second > 0 } +
+            raw.entries.filter { it.key !in order }
+                .sortedByDescending { it.value }.map { it.key to it.value })
+    }
+
+    /** 某出处书的观止篇目（D-032）：source="历代文集" 映射 section=''，按库序（原书卷次） */
+    fun listByGuwenSection(source: String, limit: Int, offset: Int): List<Poem> {
+        val sec = if (source == "历代文集") "" else source
+        return queryPoems(
+            "$POEM_SELECT WHERE p.category='guwen' AND IFNULL(p.section,'') = ? ORDER BY p.id LIMIT ? OFFSET ?",
+            arrayOf(sec, limit.toString(), offset.toString()),
+        )
+    }
 
     /** 文体 13 类计数（批7 题材维"古文文体"块；范围=13 类已标注的散文类） */
     fun genreCounts(): Map<String, Int> {
@@ -562,6 +635,18 @@ class PoemsDb private constructor(context: Context) {
             "SELECT rhythmic, COUNT(*) FROM poems WHERE type = ? AND rhythmic != '' " +
                 "GROUP BY rhythmic ORDER BY 2 DESC, rhythmic LIMIT ? OFFSET ?",
             arrayOf(type, limit.toString(), offset.toString()),
+        ).use { c ->
+            val out = mutableListOf<Pair<String, Int>>()
+            while (c.moveToNext()) out += c.getString(0) to c.getInt(1)
+            out
+        }
+
+    /** 调名过滤（P1-12 词牌页筛选框）：1477 调长尾靠滚动难找，页内检索直达 */
+    fun rhythmicCountsSearch(type: String, q: String, limit: Int = 100): List<Pair<String, Int>> =
+        rdb().rawQuery(
+            "SELECT rhythmic, COUNT(*) FROM poems WHERE type = ? AND rhythmic != '' AND rhythmic LIKE ? " +
+                "GROUP BY rhythmic ORDER BY 2 DESC, rhythmic LIMIT ?",
+            arrayOf(type, "%$q%", limit.toString()),
         ).use { c ->
             val out = mutableListOf<Pair<String, Int>>()
             while (c.moveToNext()) out += c.getString(0) to c.getInt(1)
@@ -661,28 +746,54 @@ class PoemsDb private constructor(context: Context) {
         arrayOf("%$q%", "%$q%", limit.toString()),
     )
 
+    /** 相关诗词（P1-10 语义重排）：候选池 = 同作者 ∪ 共享意象 ∪ 同体裁，加权合分：
+     *  同作者 +3、共享意象 每项 +2、同体裁 +1（有名言再 +1）。分数降序取前 N。
+     *  旧实现单取意象交集（垓下之围→夜雨寄北的噪声源），兜底体裁又无排序——重排后
+     *  同作者/同体裁名家先行，散文类（无意象）自然回到同书同作者。 */
     fun related(poem: Poem, limit: Int = 6): List<Poem> {
+        val scored = linkedMapOf<Int, Pair<Poem, Int>>()
+        fun add(rows: List<Poem>, score: (Poem) -> Int) {
+            rows.forEach { r ->
+                if (r.id == poem.id) return@forEach
+                val cur = scored[r.id]
+                scored[r.id] = r to ((cur?.second ?: 0) + score(r))
+            }
+        }
+        if (poem.author.isNotBlank() && poem.author != "佚名") {
+            add(
+                queryPoems(
+                    "$POEM_SELECT WHERE p.id != ? AND p.author_id IN (SELECT author_id FROM poems WHERE id = ?) " +
+                        "AND p.author_id != 0 ORDER BY p.popularity DESC, p.id LIMIT 12",
+                    arrayOf(poem.id.toString(), poem.id.toString()),
+                ),
+            ) { 3 }
+        }
         if (poem.imagery.isNotEmpty()) {
             val marks = poem.imagery.joinToString(",") { "?" }
-            val rows = queryPoems(
-                "SELECT DISTINCT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line " +
-                    "FROM poems p LEFT JOIN authors a ON a.id = p.author_id " +
-                    "JOIN poem_imagery pi ON pi.poem_id = p.id " +
-                    "JOIN imagery i ON i.id = pi.imagery_id " +
-                    "WHERE i.name IN ($marks) AND p.id != ? LIMIT ?",
-                (poem.imagery + listOf(poem.id.toString(), limit.toString())).toTypedArray(),
-            )
-            if (rows.isNotEmpty()) return rows
+            add(
+                queryPoems(
+                    "SELECT DISTINCT $CORE_COLUMNS, $IMAGERY_SUB AS imagery, $FAMOUS_SUB AS famous_line " +
+                        "FROM poems p LEFT JOIN authors a ON a.id = p.author_id " +
+                        "JOIN poem_imagery pi ON pi.poem_id = p.id " +
+                        "JOIN imagery i ON i.id = pi.imagery_id " +
+                        "WHERE i.name IN ($marks) AND p.id != ? LIMIT 40",
+                    (poem.imagery + listOf(poem.id.toString())).toTypedArray(),
+                ),
+            ) { r -> 2 * r.imagery.count { g -> poem.imagery.contains(g) } }
         }
-        return queryPoems(
-            "$POEM_SELECT WHERE p.id != ? AND (a.name = ? OR p.category = ?) LIMIT ?",
-            arrayOf(poem.id.toString(), poem.author, poem.category, limit.toString()),
-        ).ifEmpty {
+        add(
             queryPoems(
+                "$POEM_SELECT WHERE p.id != ? AND p.category = ? ORDER BY p.popularity DESC, p.id LIMIT 20",
+                arrayOf(poem.id.toString(), poem.category),
+            ),
+        ) { if (it.famousLine.isNotBlank()) 2 else 1 }
+        if (scored.isEmpty()) {
+            return queryPoems(
                 "$POEM_SELECT WHERE p.id != ? LIMIT ?",
                 arrayOf(poem.id.toString(), limit.toString()),
             )
         }
+        return scored.values.sortedByDescending { it.second }.take(limit).map { it.first }
     }
 
     // ---------- 作者 ----------
@@ -700,14 +811,19 @@ class PoemsDb private constructor(context: Context) {
             out
         }
 
-    /** 作者索引（批7"作者"维直出）；kind: all | poet(有诗) | ci(有词) | wen(有文)，按该体裁作品量序。
+    /** 作者索引（批7"作者"维直出）；kind: all | poet(有诗) | ci(有词曲) | wen(有文)，按该体裁作品量序。
      *  D-028 修订：原"词人=纯词人、古文大家=纯文作者"把苏轼/欧阳修/韩愈这类诗词文多栖大家
      *  挡在对应分组外（"词人"搜不到苏轼、"古文大家"没有唐宋八大家）；改为"有该体裁作品即入组"。
+     *  D-030 修订：wenCats 补 youmengying（幽梦影漏出"文家"组）；ciCats 补 yuan_qu（元曲名家
+     *  入"词曲"组，分组名同步）。
      *  体裁 tab 排除无名氏/佚名/空名防霸榜（全宋词无名氏 1568 首会压过辛弃疾）；"全部"保留。 */
     fun authorIndex(kind: String, limit: Int, offset: Int): List<Author> {
-        val poemCats = "('tang_poem','song_poem','qianjiashi','shijing','chuci','han_wei','gushi19')"
-        val wenCats = "('guwen','laozi','zhuangzi','shishuo','shiji','lunyu','sishu','mengxue')"
-        val ciCats = "('ci','wudai_ci','qing_ci')"
+        val poemCats = "('tang_poem','song_poem','qianjiashi','shijing','chuci','han_wei','gushi19','gushiyuan','yuan_shi','qing_shi')"
+        val wenCats = "('guwen','laozi','zhuangzi','shishuo','shiji','lunyu','sishu','mengxue','youmengying'," +
+            // 批11（D-033）经史子扩容：左丘明/墨翟/孙武等入"文家"组
+            "'zuozhuan','guoyu','zhanguoce','mozi','xunzi','hanfeizi','liezi','sunzi'," +
+            "'huainanzi','lvshi','guanzi','yanzi','shangjunshu')"
+        val ciCats = "('ci','wudai_ci','qing_ci','yuan_qu','jinyuan_ci','jinsanbai_ci','tang_ci')"
         val kindSum = when (kind) {
             "poet" -> "SUM(CASE WHEN p.category IN $poemCats THEN 1 ELSE 0 END)"
             "ci" -> "SUM(CASE WHEN p.category IN $ciCats THEN 1 ELSE 0 END)"

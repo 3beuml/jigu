@@ -2,6 +2,7 @@ package com.jigu.app.ui.share
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,7 +32,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.jigu.app.data.ArtworkRepo
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.PoemsDb
 import kotlinx.coroutines.Dispatchers
@@ -47,8 +49,7 @@ fun CardPreviewScreen(id: Int, onBack: () -> Unit) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
             db.poemById(id)?.let { poem ->
-                val art = ArtworkRepo.forPoem(context, PoemsDb.get(context).themesFor(poem.id), JiguCalendar.currentTerm(LocalDate.now()), poem.id)
-                runCatching { PoemCard.render(context, poem, art) }.getOrNull()
+                runCatching { PoemCard.render(context, poem) }.getOrNull()
             }?.also {
                 cardFile = it
             }
@@ -83,24 +84,31 @@ fun CardPreviewScreen(id: Int, onBack: () -> Unit) {
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentAlignment = Alignment.Center,
         ) {
-            val file = cardFile
-            if (file == null) {
-                CircularProgressIndicator()
-            } else {
-                val bmp = BitmapFactory.decodeFile(file.absolutePath)
-                if (bmp != null) {
-                    Image(
-                        bitmap = bmp.asImageBitmap(),
-                        contentDescription = "分享诗卡预览",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp, vertical = 16.dp),
-                        contentScale = ContentScale.FillWidth,
-                    )
+            // P1-19：卡片比例大于视口（横屏/平板）时可纵向滚动，不再上下裁切
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                val file = cardFile
+                if (file == null) {
+                    CircularProgressIndicator()
                 } else {
-                    Text("卡片生成失败", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val bmp = BitmapFactory.decodeFile(file.absolutePath)
+                    if (bmp != null) {
+                        Image(
+                            bitmap = bmp.asImageBitmap(),
+                            contentDescription = "分享诗卡预览",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 32.dp, vertical = 16.dp),
+                            contentScale = ContentScale.FillWidth,
+                        )
+                    } else {
+                        Text("卡片生成失败", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }

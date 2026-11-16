@@ -10,7 +10,6 @@ import android.graphics.Typeface
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.jigu.app.R
-import com.jigu.app.data.ArtworkRepo
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.art.PaperInk
 import com.jigu.app.ui.signatureWithTitle
@@ -25,7 +24,7 @@ object PoemCard {
     private const val W = 1080
     private const val H = 1620
 
-    fun render(context: Context, poem: PoemsDb.Poem, artwork: ArtworkRepo.Artwork? = null): File {
+    fun render(context: Context, poem: PoemsDb.Poem): File {
         val tf = Typeface.create(ResourcesCompat_typeface(context), Typeface.NORMAL)
         val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
@@ -72,26 +71,6 @@ object PoemCard {
         }
         val sigY = textTop + (lines.size - 1).coerceAtLeast(0) * lh + 110f
         canvas.drawText("——  ${signatureWithTitle(poem)}", W / 2f, sigY, meta)
-
-        // 画心：居中放大，淡墨映射 + 四边羽化（融纸，无渐隐罩硬边）
-        val artBmp = artwork?.let { ArtworkRepo.decode(context, it) }
-        if (artBmp != null) {
-            val dst = RectF((W - 480f) / 2f, 690f, (W + 480f) / 2f, 690f + 640f)
-            val blended = PaperInk.featheredInk(artBmp, PaperInk.INK, 52, key = "card-${artwork!!.file}")
-            canvas.drawBitmap(blended, null, dst, Paint(Paint.FILTER_BITMAP_FLAG))
-            val caption = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFF8A8272.toInt()
-                textSize = 30f
-                typeface = tf
-                textAlign = Paint.Align.CENTER
-            }
-            val capText = Canvas_trunc(
-                "赏画 · 《${artwork!!.displayTitle()}》 ${artwork.displayArtist()}",
-                caption,
-                W - 260f,
-            )
-            canvas.drawText(capText, W / 2f, dst.bottom + 62f, caption)
-        }
 
         // 朱印：圆角方 + 白字「汲古」竖排，固定右下留白
         val seal = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF9E2F26.toInt() }

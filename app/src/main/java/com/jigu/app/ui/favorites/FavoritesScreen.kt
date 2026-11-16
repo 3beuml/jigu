@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.PoemRow
+import com.jigu.app.ui.theme.PoemBodySmallStyle
 import com.jigu.app.ui.theme.PoemTitleStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -89,7 +90,7 @@ fun FavoritesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
                         )
                         Text(
                             text = "${p.author} ｜ " + p.body.replace('\n', ' ').take(30),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = PoemBodySmallStyle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 20.dp),
                         )

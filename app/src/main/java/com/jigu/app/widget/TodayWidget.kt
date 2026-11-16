@@ -44,7 +44,7 @@ class TodayWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = withContext(Dispatchers.IO) {
-            runCatching { PoemOfDay.pick(PoemsDb.get(context), LocalDate.now()) }.getOrNull()
+            runCatching { PoemOfDay.pick(context, PoemsDb.get(context), LocalDate.now()) }.getOrNull()
         }
         provideContent {
             GlanceTheme {

@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row as LayoutRow
@@ -48,10 +51,10 @@ import com.jigu.app.data.PoemsDb
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** 我的：收藏入口、真实设置开关、数据信息、致谢与许可 */
-@OptIn(ExperimentalMaterial3Api::class)
+/** 我的：收藏/名句入口、今日诗偏好、真实设置开关、数据信息、致谢与许可 */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MineScreen(onOpenFavorites: () -> Unit) {
+fun MineScreen(onOpenFavorites: () -> Unit, onOpenFamous: () -> Unit) {
     val context = LocalContext.current
     var dataInfo by remember { mutableStateOf("…") }
     var version by remember { mutableStateOf("…") }
@@ -60,6 +63,9 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
     var pushHour by remember { mutableIntStateOf(JiguSettings.pushHour(context)) }
     var pushMinute by remember { mutableIntStateOf(JiguSettings.pushMinute(context)) }
     var showTimePicker by remember { mutableStateOf(false) }
+    // 今日诗偏好（D-030）：题材多选，pick 时优选偏好题材池
+    var allThemes by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
+    var preferred by remember { mutableStateOf(JiguSettings.preferredThemes(context)) }
 
     fun reloadPush() {
         if (pushOn) DailyPush.schedule(context, pushHour, pushMinute)
@@ -75,6 +81,7 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
             }.getOrDefault("?")
             favCount = db.favoriteIds().size
+            allThemes = db.themeCounts().entries.sortedByDescending { it.value }.map { it.key to it.value }
         }
     }
 
@@ -94,53 +101,15 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
         )
         Spacer(Modifier.height(20.dp))
 
-        // 收藏入口
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpenFavorites),
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("我的收藏", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "$favCount 篇",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
+        // 收藏 / 名句入口（名句卡移自书架，D-030）
+        EntryRow("我的收藏", "$favCount 篇", onOpenFavorites)
+        EntryRow("名句", "千古名句 · 四百条", onOpenFamous)
         Spacer(Modifier.height(20.dp))
 
         Info("数据", dataInfo)
         Spacer(Modifier.height(20.dp))
 
-        // 真实开关：画意 / 每日推送 + 推送时间
-        var artOn by remember { mutableStateOf(JiguSettings.artEnabled(context)) }
-        ToggleRow(
-            title = "画意",
-            note = "界面淡入节气配画；关闭则为纯文字",
-            checked = artOn,
-            onChecked = {
-                artOn = it
-                JiguSettings.setArtEnabled(context, it)
-            },
-        )
-        var artBgOn by remember { mutableStateOf(JiguSettings.artBgEnabled(context)) }
-        ToggleRow(
-            title = "正文背景画",
-            note = "详情页淡水墨底图（素雅）；跟随画意总开关",
-            checked = artBgOn,
-            onChecked = {
-                artBgOn = it
-                JiguSettings.setArtBgEnabled(context, it)
-            },
-        )
+        // 真实开关：每日推送 + 推送时间（批11：画意/正文背景画随赏画体系拆除）
         ToggleRow(
             title = "每日推送",
             note = if (pushOn) "每天 ${"%02d".format(pushHour)}:${"%02d".format(pushMinute)} 推送今日名句" else "已关闭",
@@ -168,6 +137,52 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
             Spacer(Modifier.height(14.dp))
         }
         Setting("桌面小部件", "桌面长按添加「汲古 · 今日一首」")
+        Spacer(Modifier.height(24.dp))
+
+        // 今日诗偏好（D-030）：题材多选，换一首/推送/小部件同源生效
+        Text("今日诗偏好", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            if (preferred.isEmpty()) "不勾选 = 随缘（默认全池轮转）" else "今日将优先在所选题材内轮转 · 已选 ${preferred.size} 类",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        // 30 类按热度排布，FlowRow 多选 chips
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            allThemes.forEach { (name, count) ->
+                val on = name in preferred
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    onClick = {
+                        val next = if (on) preferred - name else preferred + name
+                        preferred = next
+                        JiguSettings.setPreferredThemes(context, next)
+                    },
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 12.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "$count",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(24.dp))
 
         Info("数据来源", "chinese-poetry（MIT）· cnlunar（MIT）· 霞鹜文楷（OFL）· 节气配画：克利夫兰艺术博物馆（CC0）")
@@ -201,6 +216,31 @@ fun MineScreen(onOpenFavorites: () -> Unit) {
             text = { TimePicker(state = state) },
         )
     }
+}
+
+@Composable
+private fun EntryRow(title: String, note: String, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                note,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+    Spacer(Modifier.height(10.dp))
 }
 
 @Composable

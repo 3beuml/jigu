@@ -9,7 +9,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -24,10 +23,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -53,20 +56,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
-import com.jigu.app.ui.art.ArtworkScreen
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
 import com.jigu.app.ui.library.ChapterScreen
 import com.jigu.app.ui.library.EraAuthorsScreen
 import com.jigu.app.ui.library.FamousLinesScreen
+import com.jigu.app.ui.library.GuwenSourceScreen
+import com.jigu.app.ui.library.GuwenSourcesScreen
+import com.jigu.app.ui.library.PopularListScreen
 import com.jigu.app.ui.library.GenreScreen
 import com.jigu.app.ui.favorites.FavoritesScreen
 import com.jigu.app.ui.library.LibraryScreen
+import com.jigu.app.ui.library.LibrarySection
 import com.jigu.app.ui.library.ModuleScreen
 import com.jigu.app.ui.library.RhythmicIndexScreen
 import com.jigu.app.ui.library.RhythmicListScreen
@@ -126,7 +133,9 @@ fun JiguApp() {
 
     val nav = rememberNavController()
     val openDetail: (Int) -> Unit = { id -> nav.navigate("detail/$id") }
-    val route = currentRoute(nav)
+    // D-038 修复：currentBackStackEntry 直读不具备组合可观察性（route 启动后定格，
+    // dock 永显/今日恒选中）——改用 currentBackStackEntryAsState() 订阅导航状态
+    val route = nav.currentBackStackEntryAsState().value?.destination?.route
 
     // 悬浮胶囊 dock（D-025，骨架移植自 ZZUPocket AppNav 0.33.0 方案）：
     // 不再吃内容区——内容全高滚动从胶囊底下穿过，各滚动容器挂 DOCK_CLEARANCE。
@@ -136,13 +145,16 @@ fun JiguApp() {
                 TodayScreen(
                     onOpen = openDetail,
                     onCard = { id -> nav.navigate("card/$id") },
-                    onArtwork = { id -> nav.navigate("artwork/$id") },
                 )
             }
-            composable("library") {
+            // 诗词 / 古文分栏（D-030）：原"书库"拆两个顶层 tab，各有专属维度
+            composable("poetry") {
                 LibraryScreen(
+                    section = LibrarySection.POETRY,
                     onOpenModule = { key ->
-                        if (key == "famous") nav.navigate("famous") else nav.navigate("module/$key")
+                        if (key == "famous") nav.navigate("famous")
+                        else if (key == "popular") nav.navigate("popular")
+                        else nav.navigate("module/$key")
                     },
                     onOpenEra = { era -> nav.navigate("era/$era") },
                     onOpenAuthor = { id -> nav.navigate("author/$id") },
@@ -154,6 +166,42 @@ fun JiguApp() {
                     },
                     onOpenTheme = { name -> nav.navigate("theme/$name") },
                     onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
+                    onOpen = openDetail,
+                )
+            }
+            composable("guwen") {
+                LibraryScreen(
+                    section = LibrarySection.PROSE,
+                    onOpenModule = { key ->
+                        when (key) {
+                            "famous" -> nav.navigate("famous")
+                            // 经史名段（D-032）：观止出处聚合，非 module 卡
+                            "guwen_sources" -> nav.navigate("guwen_sources")
+                            else -> nav.navigate("module/$key")
+                        }
+                    },
+                    onOpenEra = { era -> nav.navigate("era/$era") },
+                    onOpenAuthor = { id -> nav.navigate("author/$id") },
+                    onOpenGenre = { name -> nav.navigate("genre/$name") },
+                    onOpenType = { name ->
+                        if (name == "词" || name == "曲") nav.navigate("rhythmic_index/$name")
+                        else nav.navigate("type/$name")
+                    },
+                    onOpenTheme = { name -> nav.navigate("theme/$name") },
+                    onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
+                    onOpen = openDetail,
+                )
+            }
+            composable("guwen_sources") {
+                GuwenSourcesScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenSource = { name -> nav.navigate("guwen_source/$name") },
+                )
+            }
+            composable("guwen_source/{name}") { back ->
+                GuwenSourceScreen(
+                    source = back.arguments?.getString("name") ?: "",
+                    onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )
             }
@@ -193,6 +241,12 @@ fun JiguApp() {
             }
             composable("famous") {
                 FamousLinesScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
+                )
+            }
+            composable("popular") {
+                PopularListScreen(
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )
@@ -242,7 +296,12 @@ fun JiguApp() {
                     onOpen = openDetail,
                 )
             }
-            composable("mine") { MineScreen(onOpenFavorites = { nav.navigate("favorites") }) }
+            composable("mine") {
+                MineScreen(
+                    onOpenFavorites = { nav.navigate("favorites") },
+                    onOpenFamous = { nav.navigate("famous") },
+                )
+            }
             composable("card/{id}") { back ->
                 CardPreviewScreen(
                     id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
@@ -254,24 +313,17 @@ fun JiguApp() {
                     id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
-                    onOpenArtwork = { id -> nav.navigate("artwork/$id") },
-                )
-            }
-            composable("artwork/{id}") { back ->
-                ArtworkScreen(
-                    poemId = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
-                    onBack = { nav.popBackStack() },
                 )
             }
         }
 
-        // ② 悬浮胶囊 dock 覆盖层：宣纸底 + 细墨线描边 + 墨泡选中态（D-004 彩色秩序：dock 零彩色）。
-        // 胶囊以外的带子只吞 tap（不进语义树、不放行 move）——列表滑动穿透、留白不误触。
-        // dock 只住三个顶层 tab（D-025 真机反馈修订）：子页面有各自返回骨架，
-        // 常驻胶囊反而占底部、碍返回视线；全屏体验页同理不显示。
+        // ② 悬浮纸签条 dock 覆盖层：宣纸底 + 细墨线描边 + 朱点选中态（D-004 彩色秩序：dock 零彩色）。
+        // 签条以外的带子只吞 tap（不进语义树、不放行 move）——列表滑动穿透、留白不误触。
+        // dock 只住四个顶层 tab（D-030：今日/诗词/古文/我的）：子页面有各自返回骨架，
+        // 常驻签条反而占底部、碍返回视线；全屏体验页同理不显示。
         // 出入场动效：进子页滑出、返回滑入——"书签回来"而非"突然在"（D-025 终版）
         androidx.compose.animation.AnimatedVisibility(
-            visible = route in setOf("today", "library", "mine"),
+            visible = route in setOf("today", "poetry", "guwen", "mine"),
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) +
                 androidx.compose.animation.fadeIn(),
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) +
@@ -281,20 +333,22 @@ fun JiguApp() {
         DockOverlay(
             currentRoute = route,
             onToday = { nav.navigate("today") { launchSingleTop = true; popUpTo("today") { inclusive = true } } },
-            onLibrary = { nav.navigate("library") { launchSingleTop = true } },
+            onPoetry = { nav.navigate("poetry") { launchSingleTop = true } },
+            onGuwen = { nav.navigate("guwen") { launchSingleTop = true } },
             onMine = { nav.navigate("mine") { launchSingleTop = true } },
         )
         }
     }
 }
 
-/** 悬浮胶囊 dock：覆盖层对齐底部，滚动内容从胶囊底下穿过（D-025）。 */
+/** 悬浮纸签条 dock：覆盖层对齐底部，滚动内容从签条底下穿过（D-025；四栏见 D-030）。 */
 @Composable
 private fun DockOverlay(
     modifier: Modifier = Modifier,
     currentRoute: String?,
     onToday: () -> Unit,
-    onLibrary: () -> Unit,
+    onPoetry: () -> Unit,
+    onGuwen: () -> Unit,
     onMine: () -> Unit,
 ) {
     Box(
@@ -304,33 +358,43 @@ private fun DockOverlay(
                 detectTapGestures { /* 消费 tap，不下传；move 放行给滚动 */ }
             },
     ) {
+        // 贴底固定条（D-031，参照小红书）：全宽、无左右边距、宣纸底沉到手势条背后，
+        // 图标行坐在导航手势区上方；顶部发丝分隔线替代原纸签条描边
         Surface(
-            shape = RoundedCornerShape(12.dp), // 纸签条（D-025 终版）：非胶囊——界格/书签同族
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
-            border = BorderStroke(
-                0.75.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.9f),
-            ),
-            modifier = Modifier
-                // 手势区沉浸：不再 navigationBarsPadding 让位，纸签条沉到手势条背后
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .fillMaxWidth()
-                .height(58.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Column(Modifier.fillMaxWidth()) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(0.75.dp)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.9f)),
+                )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        // 手势区：图标行避开导航手势条，宣纸底延伸到屏底
+                        .windowInsetsPadding(
+                            WindowInsets.navigationBars.only(WindowInsetsSides.Bottom),
+                        )
+                        .height(58.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
                 listOf(
-                    Triple("今日", "today", onToday),
-                    Triple("书库", "library", onLibrary),
-                    Triple("我的", "mine", onMine),
-                ).forEach { (label, routeKey, onClick) ->
-                    val selected = currentRoute == routeKey
+                    DockTab("今日", "today", onToday),
+                    DockTab("诗词", "poetry", onPoetry),
+                    DockTab("古文", "guwen", onGuwen),
+                    DockTab("我的", "mine", onMine),
+                ).forEach { tab ->
+                    val selected = currentRoute == tab.routeKey
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .clickable(onClick = onClick),
+                            .clickable(onClick = tab.onClick),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -341,7 +405,7 @@ private fun DockOverlay(
                             val sc = size.minDimension / 24f
                             withTransform({ scale(sc, sc, pivot = Offset.Zero) }) {
                                 drawPath(
-                                    path = inkPath(label),
+                                    path = inkPath(tab.routeKey),
                                     color = iconColor,
                                     style = Stroke(
                                         width = if (selected) 2.4f else 1.6f,
@@ -352,7 +416,7 @@ private fun DockOverlay(
                             }
                         }
                         Text(
-                            label,
+                            tab.label,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (selected) MaterialTheme.colorScheme.onBackground
                             else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -369,22 +433,36 @@ private fun DockOverlay(
                         )
                     }
                 }
+                }
             }
         }
     }
 }
 
-/** 墨线三形（D-025 终版）：印（今日）/册（书库）/人（我的），24 视窗单位坐标 */
-private fun inkPath(label: String): Path = Path().apply {
-    when (label) {
-        "今日" -> {
+/** dock 项：label + 路由 + 点击（D-030 四栏）。 */
+private data class DockTab(val label: String, val routeKey: String, val onClick: () -> Unit)
+
+/** 墨线四形（D-030）：印（今日）/诗行（诗词）/韦编简册（古文）/人（我的），24 视窗单位坐标 */
+private fun inkPath(routeKey: String): Path = Path().apply {
+    when (routeKey) {
+        "today" -> {
             moveTo(5f, 3.8f); lineTo(19f, 3.8f); lineTo(19f, 20.2f); lineTo(5f, 20.2f); close()
             moveTo(5f, 12f); lineTo(19f, 12f)
         }
-        "书库" -> {
-            moveTo(4f, 6f); lineTo(20f, 6f)
-            moveTo(4f, 12f); lineTo(20f, 12f)
-            moveTo(4f, 18f); lineTo(13f, 18f)
+        // 诗行：竖排诗句，长短参差（D-030）
+        "poetry" -> {
+            moveTo(7f, 5f); lineTo(7f, 19f)
+            moveTo(12f, 8f); lineTo(12f, 16f)
+            moveTo(17f, 4f); lineTo(17f, 14f)
+        }
+        // 韦编简册：四简 + 上下两道编绳——"册"字本形（D-030）
+        "guwen" -> {
+            moveTo(5f, 4.6f); lineTo(5f, 19.4f)
+            moveTo(9.7f, 4.6f); lineTo(9.7f, 19.4f)
+            moveTo(14.3f, 4.6f); lineTo(14.3f, 19.4f)
+            moveTo(19f, 4.6f); lineTo(19f, 19.4f)
+            moveTo(4f, 8.2f); lineTo(20f, 8.2f)
+            moveTo(4f, 15.8f); lineTo(20f, 15.8f)
         }
         else -> {
             moveTo(12f, 4.6f); cubicTo(14f, 4.6f, 15.6f, 6.2f, 15.6f, 8.2f)
@@ -399,5 +477,3 @@ private fun inkPath(label: String): Path = Path().apply {
 
 val DOCK_CLEARANCE = 88.dp
 
-private fun currentRoute(nav: androidx.navigation.NavController): String? =
-    nav.currentBackStackEntry?.destination?.route

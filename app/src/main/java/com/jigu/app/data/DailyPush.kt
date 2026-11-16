@@ -74,7 +74,7 @@ class DailyPoemWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val context = applicationContext
         if (!DailyPush.hasPermission(context)) return@withContext Result.success()
-        val result = runCatching { PoemOfDay.pick(PoemsDb.get(context), LocalDate.now()) }.getOrNull()
+        val result = runCatching { PoemOfDay.pick(context, PoemsDb.get(context), LocalDate.now()) }.getOrNull()
             ?: return@withContext Result.success()
         val poem = result.poem
         val line = poem.famousLine.ifBlank { poem.paragraphs.firstOrNull().orEmpty() }

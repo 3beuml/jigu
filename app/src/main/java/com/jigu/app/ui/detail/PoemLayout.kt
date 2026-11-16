@@ -31,9 +31,16 @@ import com.jigu.app.ui.theme.Wenkai
  * 标题与署名由调用方居中。
  */
 
-private val PROSE_CATEGORIES = setOf("guwen", "laozi", "zhuangzi", "shishuo", "shiji", "lunyu", "sishu", "mengxue", "youmengying")
+private val PROSE_CATEGORIES = setOf(
+    "guwen", "laozi", "zhuangzi", "shishuo", "shiji", "lunyu", "sishu", "mengxue", "youmengying",
+    // 批11（D-033）经史子扩容：左传/国语/战国策 + 诸子九流
+    "zuozhuan", "guoyu", "zhanguoce",
+    "mozi", "xunzi", "hanfeizi", "liezi", "sunzi",
+    "huainanzi", "lvshi", "guanzi", "yanzi", "shangjunshu",
+)
 
-private val TERM = setOf('，', '。', '！', '？', '；', '：', '、', ',', '.', ';', ':')
+private val TERM = setOf('，', '。', '！', '？', '；', '：', '、', ',', '.', ';', ':',
+    '"', '\u201d', '\u2019', '）', '》', '」', '』', '）', '］', '】')
 
 /** 段首缩进用两枚全角空格：离线只读，复制带缩进可接受（P排-3 实现备案） */
 private const val INDENT = "　　"
@@ -46,8 +53,14 @@ fun paragraphToLines(paragraph: String, maxSentence: Int = 18): List<String> {
     // 句 = 以 。！？ 收束的整句（保留标点）
     val sentences = Regex("(?<=[。！？])").split(paragraph.trim())
         .map { it.trim() }.filter { it.isNotEmpty() }
+    // 纯闭合标点碎片（如句末引号被切断）并回前句，不单独成行也不丢弃
+    val merged = mutableListOf<String>()
+    for (s in sentences) {
+        if (s.plainLen() == 0 && merged.isNotEmpty()) merged[merged.size - 1] += s
+        else merged += s
+    }
     val out = mutableListOf<String>()
-    for (sentence in sentences) {
+    for (sentence in merged) {
         val plain = sentence.plainLen()
         when {
             plain == 0 -> {}
@@ -80,7 +93,9 @@ fun poemFontSize(screenWidthDp: Float, maxLineLen: Int, lineCount: Int, longForm
 @Composable
 fun PoemBody(paragraphs: List<String>, category: String, modifier: Modifier = Modifier) {
     if (category in PROSE_CATEGORIES) {
-        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // 段距 20dp（D-032）：论语/孟子语录体每则 1-3 句独立成段——刻本"每则另起"的呼吸感，
+        // 原 12dp 使短段连成一片（用户真机反馈"句子紧挨着"）
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(20.dp)) {
             paragraphs.forEach { para ->
                 Text(
                     text = INDENT + para,

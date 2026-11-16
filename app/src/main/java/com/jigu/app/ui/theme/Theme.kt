@@ -31,6 +31,14 @@ val PoemTitleStyle = TextStyle(
     lineHeight = 26.sp,
 )
 
+/** 列表预览行（收藏/相关/搜索）：用文楷子集——系统字体缺生僻字会出豆腐（走查 P0-4） */
+val PoemBodySmallStyle = TextStyle(
+    fontFamily = Wenkai,
+    fontWeight = FontWeight.Normal,
+    fontSize = 13.sp,
+    lineHeight = 18.sp,
+)
+
 // 宣纸与墨（D-004 素雅主调），主色随节气换传统色（D-004 节气换肤），印章朱红保持品牌不变
 private val XuanPaper = Color(0xFFF7F3EA)
 private val XuanPaperDim = Color(0xFFEFE9DC)
