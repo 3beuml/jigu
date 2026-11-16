@@ -37,7 +37,7 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 21  # +1: 批9（D-029 古文/古诗源补全）；历史记录：批7（D-026）——题材 v4 第三批 +8（30 类）+ 文体 13 类浏览范围扩到 老子/庄子/史记。原批5注释：——三书入库（庄子内篇七全+外篇二 9 条 / 史记名段 18 条 / 世说名则 39 条）+ 名句种子 +85（D-020 先例点名录入）+ 自动补种目标 300→400
+DATA_VERSION = 27  # +1: 批13 诗词补全（D-037）——晚晴簃诗汇（清诗全本）22914 首 5840 家 198 卷新分类 qing_shi（清诗卡）；近三百年名家词选 441 首 jinsanbai_ci（近三百年词卡）；全唐五代词 877 首 tang_ci（唐五代词卡，与前五代词首 12 字去重）；底本=殆知阁 诗藏 有标点整理本（qingshi13/cib13 状态机解析）
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -176,6 +176,7 @@ def s(text: str) -> str:
     """繁->简 + 清理不可见空白 + 字形门闩（文楷缺字替换为 Unihan 可映射的通行字）+ 清洗 PUA 乱码。"""
     out = T2S.convert(text).strip()
     # OpenCC 不处理的生僻变体，点名映射（茍=苟之异体，四书五经源文本出现）
+    # 批11（D-033）+= 殆知阁底本异体：搆蜯鑚兎逺舎髄讐徳鼈衞凢蠧鬭竒碬阨愼 歴
     for a, b in MANUAL_VARIANTS.items():
         out = out.replace(a, b)
     out = "".join(ch for ch in out if not (0xE000 <= ord(ch) <= 0xF8FF))
@@ -185,7 +186,14 @@ def s(text: str) -> str:
 
 
 # 手工变体映射（谨慎点名，每条有据；不做批量异体归并）
-MANUAL_VARIANTS = {"茍": "苟"}
+MANUAL_VARIANTS = {
+    "茍": "苟",
+    # 批11（D-033）殆知阁底本异体 → 通行字
+    "搆": "构", "蜯": "蚌", "鑚": "钻", "兎": "兔", "逺": "远", "舎": "舍",
+    "髄": "髓", "讐": "仇", "徳": "德", "鼈": "鳖", "衞": "卫", "凢": "凡",
+    "蠧": "蠹", "鬭": "斗", "竒": "奇", "碬": "碫", "阨": "厄", "愼": "慎",
+    "歴": "历", "畧": "略", "廻": "回", "灋": "法", "髙": "高",
+}
 
 
 # 字形门闩状态（main 里加载）
@@ -266,11 +274,15 @@ def classify_type(category: str, title: str, rhythmic: str, paragraphs: list[str
     if category == "gushi19":  # 古诗十九首（D-010 外部扩容，批4）：五言古体之祖
         return "五言古诗"
     if category in ("lunyu", "sishu", "guwen", "laozi", "zhuangzi", "shishuo", "shiji",
-                    "youmengying", "mengxue"):
+                    "youmengying", "mengxue",
+                    # 批11（D-033）经史子扩容：左传/国语/战国策 + 诸子九流
+                    "zuozhuan", "guoyu", "zhanguoce",
+                    "mozi", "xunzi", "hanfeizi", "liezi", "sunzi",
+                    "huainanzi", "lvshi", "guanzi", "yanzi", "shangjunshu"):
         return "文"
     if category == "yuan_qu":
         return "曲"
-    if category in ("ci", "qing_ci", "wudai_ci") or rhythmic:
+    if category in ("ci", "qing_ci", "wudai_ci", "jinyuan_ci", "jinsanbai_ci", "tang_ci") or rhythmic:
         return "词"
 
     if title and (any(k in title for k in ("乐府", "曲辞")) or title.endswith(("行", "引", "歌", "吟"))):
@@ -296,10 +308,9 @@ def classify_type(category: str, title: str, rhythmic: str, paragraphs: list[str
         return "五言律诗"
     if n == 8 and first == 7:
         return "七言律诗"
-    if n > 8 and first == 5:
-        return "五言排律"
-    if n > 8 and first == 7:
-        return "七言排律"
+    # 批10（P1-18，D-028 遗留重定）：不再从启发式判排律——排律是近体（平仄/对仗有硬约束），
+    # 匀言句数无法验证，原 n>8 →"五言排律 28037"名不副实（D-028），n≥12 也仍有 25970。
+    # 匀言长篇一律如实归古体；排律类不再产出（体裁 chips 自动消失），待有可靠判据再上。
     if first == 4:
         return "四言诗"
     if first == 5:
@@ -321,6 +332,9 @@ ERA_MAP = {
 BIRTH_DEATH = [
     ("孔子", -551, -479), ("孟子", -372, -289), ("屈原", -340, -278),
     ("曹操", 155, 220),
+    # 批11（D-033）：诸子/汉人编者，只收生卒确凿者
+    ("刘向", -77, 6), ("刘安", -179, -122), ("韩非", -280, -233),
+    ("吕不韦", -292, -235), ("商鞅", -390, -338),
     ("骆宾王", 619, 687), ("王勃", 650, 676), ("贺知章", 659, 744), ("陈子昂", 661, 702),
     ("张九龄", 678, 740), ("王之涣", 688, 742), ("孟浩然", 689, 740), ("王昌龄", 698, 757),
     ("王维", 701, 761), ("李白", 701, 762), ("高适", 704, 765), ("岑参", 718, 769),
@@ -452,6 +466,38 @@ def author_desc(dataset: Path, fname: str) -> dict[str, str]:
     return out
 
 
+def yuding_biography(dataset: Path) -> dict[str, str]:
+    """御定全唐詩（900 卷，ctext/维基文库校对版）原书小传 -> {author: biography}（P1-10）。
+    纯繁体由 s() 转简；与 authors.tang.json desc 互补——desc 优先，缺者以原书小传兜底。"""
+    out = {}
+    d = dataset / "御定全唐詩" / "json"
+    if not d.exists():
+        return out
+    for p in sorted(d.glob("*.json")):
+        for r in load_json(p):
+            name, bio = s(r.get("author", "")), s(r.get("biography", ""))
+            if name and bio and name not in out:
+                out[name] = bio
+    return out
+
+
+def tang_descs(dataset: Path) -> dict[str, str]:
+    """唐诗人小传合并（P1-10）：authors.tang.json desc 优先，御定版原书 biography 补缺。"""
+    yd = yuding_biography(dataset)
+    tang = author_desc(dataset, "authors.tang.json")
+    return {**{k: v for k, v in yd.items() if v}, **{k: v for k, v in tang.items() if v}}
+
+
+def ci_author_desc(dataset: Path) -> dict[str, str]:
+    """宋词词人小传（宋词/author.song.json，1563 位，description 更长）-> {name: desc}（P1-10）。"""
+    out = {}
+    p = dataset / "宋词" / "author.song.json"
+    if p.exists():
+        for a in load_json(p):
+            out[a["name"]] = a.get("description", "") or a.get("short_description", "")
+    return out
+
+
 # ---------- 各数据源适配器：yield 归一化 rec ----------
 
 def it_tang_song(dataset: Path, prefix: str, category: str, dynasty: str, descs: dict):
@@ -475,12 +521,14 @@ def it_tang300(dataset: Path, descs: dict | None = None):
 
 
 def it_ci(dataset: Path):
+    descs = ci_author_desc(dataset)  # 词人小传（P1-10，1563 位）
     for p in sorted((dataset / "宋词").glob("ci.song.*.json")):
         for r in load_json(p):
             # 宋词数据无 title 字段，以词牌为题
             yield {
                 "category": "ci", "title": r.get("rhythmic", "") or "无题", "author": r["author"],
                 "dynasty": "宋", "paragraphs": r["paragraphs"], "rhythmic": r.get("rhythmic", ""),
+                "brief": descs.get(r["author"], ""),
             }
 
 
@@ -594,9 +642,15 @@ def it_zhuangzi(dataset: Path):
 
 def it_shiji(dataset: Path):
     """史记名段（批5，D-010 外部扩容第四例）：corpus/shiji.json——地标切片，
-    段题为编者拟（通行称谓），chapter=卷名。收名段不收整本（D-010 ⑤）。"""
+    段题为编者拟（通行称谓），chapter=卷名。收名段不收整本（D-010 ⑤）。
+    批10（P0-5）：名段一律不得停在句读中段——构建期断言（原数据 18/22 段句中截断，
+    已逐段修复：句尾残字删除、缺句按通行本补齐）。"""
     d = load_json(REPO / "tools/datapack/corpus/shiji.json")
+    enders = set("。！？”』」）》】")
     for a in d["pieces"]:
+        tail = (a["paragraphs"][-1] if a["paragraphs"] else "").rstrip()
+        if tail and tail[-1] not in enders:
+            raise ValueError(f"史记名段句中截断：{a['title']}（尾部「…{tail[-8:]}」）")
         yield {
             "category": "shiji", "title": a["title"], "author": "司马迁",
             "dynasty": a.get("dynasty", "汉"), "paragraphs": a["paragraphs"],
@@ -724,9 +778,12 @@ def it_shuimotangshi(dataset: Path):
     if not p.exists():
         return
     for r in load_json(p):
+        # prologue 实为现代赏析文（非古典小序），入 notes 评点区，标"赏析："（P1-10）
+        notes = ([f"赏析：{r['prologue']}"] if r.get("prologue") else [])
         yield {
             "category": "tang_poem", "title": r["title"], "author": r["author"],
             "dynasty": "唐", "paragraphs": r["paragraphs"], "tags": ["水墨唐诗"],
+            "notes": notes,
         }
 
 
@@ -819,6 +876,15 @@ def it_mengxue_extra(dataset: Path):
 # 单字物象：正文字符集命中即打标（快、准）
 SINGLE_IMAGERY = "月雪雨云风山江海花柳松竹梅兰菊荷桃雁燕鹤蝉马剑琴酒茶梦愁春秋冬夏夜舟桥楼灯笛箫"
 
+# 意象负词（批10，P1-9 实证修复）：《六月》被判"月"、"吉甫燕喜"被判"燕"——
+# 单字存在即命中的误伤。命中字符前先剔除负向组合词，全部命中点都在负词内则不打标。
+# 策略与题材"写月"月份负词对齐：八月保留（赏月题多）。
+IMAGERY_NEG = {
+    "月": ("岁月", "日月", "正月", "二月", "三月", "四月", "五月", "六月", "七月",
+           "九月", "十月", "十一月", "十二月", "腊月", "月氏"),
+    "燕": ("燕喜", "燕饮", "燕居", "燕国", "燕王", "燕丹", "燕赵", "燕市", "燕山", "燕蓟"),
+}
+
 # 复合意象：任意关键词子串命中即打标（启发式，宁滥勿缺，人工精修随阶段推进）
 COMPOUND_IMAGERY = {
     "思乡": ["思乡", "乡书", "故乡", "故园", "还乡", "客路", "客心", "归梦"],
@@ -871,7 +937,7 @@ THEME_RULES = [
      ("报国", "社稷", "汗青", "丹心", "忧国", "家国", "国破", "国恨", "九州",
       "王师", "遗民", "胡尘", "中原", "故国", "神州", "山河"), ()),
     ("闺怨",     "抒怀", ("闺怨", "闺情", "春怨"), ("罗帏", "绣帘", "空闺", "画眉", "深院", "玉阶"), ()),
-    ("饮酒",     "咏物", ("饮", "对酒", "醉后", "酒后"), ("酒", "醉", "樽", "酌", "觞", "醅", "盏"), ()),
+    ("饮酒",     "抒怀", ("饮", "对酒", "醉后", "酒后"), ("酒", "醉", "樽", "酌", "觞", "醅", "盏"), ()),
     ("咏物",     "咏物", (), (), ()),  # 特判：标题以"咏"开头（且非咏史/咏物怀古）单独打
     ("边塞",     "世情", ("塞下", "塞上", "从军", "出塞", "入塞"), ("关山", "胡马", "烽火", "征人", "大漠", "阴山", "玉门", "楼兰", "燕然", "羌笛"), ()),
     ("节令",     "世情", ("人日", "元日", "上元", "清明", "寒食", "重九", "七夕", "中秋", "腊八", "除夕", "冬至"),
@@ -881,12 +947,13 @@ THEME_RULES = [
     # v4（批7，D-026）：题材第三批扩容 +8（30 类）；哲理/励志/写风词表难稳，仍延批
     ("爱情",     "抒怀", ("^恋", "佳偶"),
      ("连理", "比翼", "结发", "洞房", "合卺", "鸳鸯", "于飞", "红丝"), ()),
-    ("战争",     "世情", ("兵车", "战城南", "燕歌行", "出师"),
-     ("征夫", "白骨", "战马", "征戍", "沙场", "兵戈", "旌旗"), ()),
+    ("战争",     "世情", ("兵车", "战城南", "燕歌行", "出师", "从军行", "塞上曲", "塞下曲", "陇西行"),
+     ("征夫", "白骨", "战马", "征戍", "沙场", "兵戈", "旌旗", "烽火", "铁衣", "金鼓", "辕门",
+      "干戈", "都护", "校尉", "介胄", "杀气", "刁斗", "百战"), ()),
     ("读书",     "世情", ("读书", "观书", "夜读", "劝学", "白鹿洞"),
      ("书卷", "黄卷", "青灯", "韦编", "笔砚"), ()),
     ("惜时",     "世情", ("惜时", "长歌行", "金缕衣"),
-     ("寸阴", "朝露", "百川东到海", "少壮不努力", "韶华"), ()),
+     ("寸阴", "朝露", "百川东到海", "少壮不努力", "韶华", "蹉跎", "流年", "白驹"), ()),
     ("梅花",     "咏物", ("梅",), ("梅", "萼", "疏影", "暗香"), ()),
     ("荷花",     "咏物", ("荷", "莲", "芙蕖"), ("荷", "莲", "芙蕖"), ()),
     ("菊花",     "咏物", ("菊",), ("菊", "东篱"), ()),
@@ -1416,7 +1483,18 @@ def annotate(conn):
         # 瘦身（SCHEMA 7）：body 列已删，正文由 paragraphs 还原（与 Kotlin Poem.body 同构）
         body = "\n".join(json.loads(paras_json))
         chars = set(body)
-        hits = [SINGLE_IMAGERY[i] for i, ch in enumerate(SINGLE_IMAGERY) if ch in chars]
+        hits = []
+        for i, ch in enumerate(SINGLE_IMAGERY):
+            negs = IMAGERY_NEG.get(ch)
+            if negs:
+                work = body
+                for n in negs:
+                    work = work.replace(n, "")
+                if ch not in work:
+                    continue
+            elif ch not in chars:
+                continue
+            hits.append(ch)
         hits += [name for name, kws in COMPOUND_IMAGERY.items() if any(k in body for k in kws)]
         for h in hits:
             pi_rows.append((pid, name_ids[h]))
@@ -1472,7 +1550,7 @@ def annotate(conn):
 # ---------- 组装 ----------
 
 CORE_SOURCES = [
-    ("唐诗三百首", lambda ds: it_tang300(ds, author_desc(ds, "authors.tang.json"))),
+    ("唐诗三百首", lambda ds: it_tang300(ds, tang_descs(ds))),
     ("千家诗", lambda ds: it_qianjiashi(ds)),
     ("宋词三百首", lambda ds: it_songci300(ds)),
     ("诗经", lambda ds: it_shijing(ds)),
@@ -1495,10 +1573,63 @@ CORE_SOURCES = [
     ("蒙学补全", lambda ds: it_mengxue_extra(ds)),
     ("三字经", lambda ds: it_sanzijing(ds)),
     ("古诗源", lambda ds: it_gushiyuan(ds)),
+    ("经史子扩容", lambda ds: it_jingzi11(ds)),
 ]
 
+
+def it_jingzi11(dataset: Path):
+    """经史子扩容（批11，D-033/D-034）：corpus/jingzi11_full.json（整本，D-034 用户拍板
+    整本收录修订 D-010 选段制——有标点整理本 7 书 409 单元）+ corpus/jingzi11.json
+    （选段：白文底本诸书 孙子13/韩非4/吕览3/管子1——整本断句候下批；同分类以整本为准，
+    选段不再重复收录，循 D-010 不重复）。底本=殆知阁，verify_j11 校验环。"""
+    full = load_json(REPO / "tools/datapack/corpus/jingzi11_full.json")
+    full_cats = {a["category"] for a in full["pieces"]}
+    for a in full["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", "先秦"), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+        }
+    sel = load_json(REPO / "tools/datapack/corpus/jingzi11.json")
+    for a in sel["pieces"]:
+        if a["category"] in full_cats:
+            continue  # 整本已含（D-010 不重复）
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", "先秦"), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+        }
+    # 批12 诗词补全（D-035）：阳春集→wudai_ci、全金元词→jinyuan_ci、
+    # 全唐诗补编→tang_poem、元诗选→yuan_shi（殆知阁有标点整理本，shici12.py 切分）
+    # 批13 诗词补全（D-037）：晚晴簃诗汇→qing_shi（清诗全本 2.29 万首）、
+    # 近三百年名家词选→jinsanbai_ci、全唐五代词→tang_ci（殆知阁有标点整理本）
+    s13 = load_json(REPO / "tools/datapack/corpus/shici13.json")
+    for a in s13["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", "清"), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    s13b = load_json(REPO / "tools/datapack/corpus/shici13b.json")
+    for a in s13b["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", "清"), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    s12 = load_json(REPO / "tools/datapack/corpus/shici12.json")
+    for a in s12["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+
 FULL_EXTRA_SOURCES = [
-    ("全唐诗", lambda ds, d: it_tang_song(ds, "poet.tang", "tang_poem", "唐", author_desc(ds, "authors.tang.json"))),
+    ("全唐诗", lambda ds, d: it_tang_song(ds, "poet.tang", "tang_poem", "唐", tang_descs(ds))),
     ("全宋诗", lambda ds, d: it_tang_song(ds, "poet.song", "song_poem", "宋", author_desc(ds, "authors.song.json"))),
     ("全宋词", lambda ds, d: it_ci(ds)),
     ("元曲", lambda ds, d: it_yuanqu(ds)),
@@ -1507,8 +1638,25 @@ FULL_EXTRA_SOURCES = [
 
 
 def fill_popularity(conn, dataset: Path):
-    """rank/ 搜索热度（百度/360/必应/谷歌之和）按 作者+标题 回填 popularity 列"""
+    """rank/ 搜索热度（百度/360/必应/谷歌之和）按 作者+标题 回填 popularity 列。
+    批10 v5 修订（P0-3 全唐诗排序污染根治）：实测短题常用词的搜索热度是天文数字
+    （"□和"22 亿、"句"6.2 亿、《看花》9 亿——词频不等于诗的热度），把李白/杜甫压出首屏。
+    规则：残卷记号题（□/〔〕）、摘句题（句*）→ 负热度沉底（排在未回填 0 之后）；
+    短题（实字 ≤2）热度不可信 → 弃用（归 0，随 id 序）；可信题热度封顶 500 万（仍保序）。"""
     import glob
+
+    def title_trust(t: str) -> bool:
+        if any(0xE000 <= ord(ch) <= 0xF8FF for ch in t):
+            return False
+        if any(k in t for k in ("□", "〔", "〕")):
+            return False
+        if t.startswith("句"):
+            return False
+        plain = "".join(ch for ch in t if "\u4e00" <= ch <= "\u9fff")
+        if len(plain) <= 2:
+            return False
+        return True
+
     pop: dict[tuple[str, str], int] = {}
     for f in glob.glob(str(dataset / "rank" / "*" / "*.json")):
         try:
@@ -1524,11 +1672,14 @@ def fill_popularity(conn, dataset: Path):
     rows = []
     for pid, title, aid in conn.execute("SELECT id, title, author_id FROM poems"):
         v = pop.get((title, names.get(aid, "")))
-        if v:
-            rows.append((v, pid))
+        if not title_trust(title):
+            rows.append((-1, pid))
+        elif v:
+            rows.append((min(v, 5_000_000), pid))
     conn.executemany("UPDATE poems SET popularity = ? WHERE id = ?", rows)
     top = conn.execute("SELECT title FROM poems ORDER BY popularity DESC LIMIT 5").fetchall()
-    print(f"  名气回填: {len(rows)} 首 | 热度Top5: {[t[0] for t in top]}")
+    sunk = conn.execute("SELECT COUNT(*) FROM poems WHERE popularity = -1").fetchone()[0]
+    print(f"  名气回填: {len(rows)} 首 | 沉底 {sunk} 首 | 热度Top5: {[t[0] for t in top]}")
 
 
 def build(db_path: Path, dataset: Path, label: str, full: bool, fts: bool = True):

@@ -11,6 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from build import (  # noqa: E402
+    IMAGERY_NEG,
+    SINGLE_IMAGERY,
     ERA_MAP,
     THEME_RULES,
     TITLE_FIXES,
@@ -84,6 +86,38 @@ def test_gushi19_and_placeholder_head():
     assert clean_placeholder_title("・分得金字") == "分得金字"
     assert clean_placeholder_title("静夜思") == "静夜思"
     print("ok  古诗十九首五种定型 + 空题根「·」头（P2-5）")
+
+
+def test_theme_v5_war_xishi():
+    """v5 词表（批10）：战争/惜时扩词一正一负。"""
+    assert "战争" in theme_hits_for("古从军行", "白日登山望烽火，黄昏饮马傍交河。行人刁斗风沙暗，公主琵琶幽怨多。")
+    assert "战争" in theme_hits_for("从军行", "烽火照西京，自怀愤不平。铁衣远戍辛勤久，金鼓振动思飞鸣。")
+    assert "战争" not in theme_hits_for("山居秋暝", "空山新雨后，天气晚来秋。明月松间照，清泉石上流。")
+    assert "惜时" in theme_hits_for("杂诗", "盛年不重来，一日难再晨。岁月不待人，蹉跎成白发。流年似水去。")
+    assert "惜时" not in theme_hits_for("静夜思", "床前明月光，疑是地上霜。举头望明月，低头思故乡。")
+
+
+def test_imagery_negatives():
+    """批10 意象负词：《六月》不再判"月"、"燕喜"不再判"燕"（与 annotate 同逻辑）。"""
+    def imagery_hits(body: str) -> list:
+        hits = []
+        for ch in SINGLE_IMAGERY:
+            negs = IMAGERY_NEG.get(ch)
+            if negs:
+                work = body
+                for n in negs:
+                    work = work.replace(n, "")
+                if ch not in work:
+                    continue
+            elif ch not in body:
+                continue
+            hits.append(ch)
+        return hits
+    assert "月" not in imagery_hits("六月栖栖，戎车既饬。四牡骙骎，载是常服。")
+    assert "月" in imagery_hits("明月松间照，清泉石上流。")
+    assert "燕" not in imagery_hits("吉甫燕喜，既多受祉。")
+    assert "燕" in imagery_hits("落花人独立，微雨燕双飞。")
+    print("ok  意象负词（月：岁月/X月纪事；燕：燕喜/燕国等）")
 
 
 def test_theme_rules_grounded():

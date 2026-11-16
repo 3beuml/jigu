@@ -9,7 +9,7 @@
 定位：**一天一首诗，跟着节气过日子；把诗送进生活，而不是把用户拉进 App**。
 无社区、无账号、无信息流、全离线。GitHub: 3beuml/jigu，Apache-2.0。
 
-**全部产品决策见 `docs/DECISIONS.md`（D-001~D-011）**——动手前必读。
+**全部产品决策见 `docs/DECISIONS.md`（D-001~D-038）**——动手前必读；`docs/REFERENCES.md` 含开源语料库与同类 App 数据源地图（D-036 调查专项）。
 **参考资料与参照 App 研究状态见 `docs/REFERENCES.md`**。
 
 ## 硬约束（违反即返工）
@@ -53,6 +53,23 @@ python tools/artwork/fetch_artworks.py --force                            # 节�
    真机现装 debug 签名 v0.2.0（2026-11-06）；换 release 版须先卸载（收藏清空，favorites 无导出）。
    另：Flyme 禁 run-as（DEBUGGABLE 包也报 unknown package）；adb 偶发 protocol fault 掉线，
    kill-server 重启即恢复。
+10. **GitHub API**：匿名 60/hr 限额易尽（contents+search 同池）；`C:\Work\.jigu_token.txt` 是
+    单仓库 fine-grained，**对公共大仓库无效**；>1MB 文件 contents API 返回空 content——
+    改走 `git/blobs/{sha}`（先 contents 拿 sha）。网络窗口抖动用"探测循环+稀疏克隆
+    （blob:none + 文件级 sparse-checkout）+ 限额重置定时"三接力（D-033 实战）。
+11. **殆知阁 txt**：部分文件是 UTF-8-mojibake（GBK 误读）——`s.encode('gbk').decode('utf-8')`
+    反向还原（含 PUA 时逐字兜底）；目录繁简混杂（諸子/诸子并存）、文件别名（商君书=商子、
+    晏子春秋在史藏/传记、列子在道藏、春秋左传在儒藏/春秋）；白文本带【夹注】需剥。
+    校验环范式：verify 脚本归一化（t2s+异体表+去标点）+ 双锚裁窗 + difflib（verify_j11.py）。
+12. **Compose 导航可观察性**：`currentRoute(nav)` 直读 `nav.currentBackStackEntry` **不可观察**
+    （route 启动定格后永不更新 → dock 子页不隐藏、tab 恒选中，D-025 起潜伏至 D-038 才爆）——
+    必须 `nav.currentBackStackEntryAsState().value`。
+13. **LazyColumn 分组头 key 重复必崩**（`Key "h_X" was already used`）：分组数据非连续出现
+    同组名时 `sec != lastSection` 判重失效——分组模式先按组排序渲染 + seen 集合去重兜底
+    （唐诗三百首体裁交错 208 处，D-038）。
+14. **第二台手机 adb 装**：`INSTALL_FAILED_USER_RESTRICTED` = 机上"USB 安装"授权未开，
+    adb 绕不过，须人在机上开（设置→开发者选项→USB 安装）；两台机分辨率不同（1080×2376 /
+    ~1220×2800），**input tap 坐标不可跨机复用**。
 
 ## 构建与发版
 
@@ -68,5 +85,10 @@ git tag 对应 GitHub Release（draft，正文用户自写）。CI：`.github/wo
 
 ## 当前待办
 
-见 `docs/DECISIONS.md` 尾部「当前遗留」。摘要：TTS 朗读、APK 瘦身、纸纹质感、
-古文文体标注（222 篇）、名句表扩容（生僻字形已由 Jigmo 嫁接解决）、小传白话化三选一。
+见 `docs/DECISIONS.md` 尾部（D-033~D-038 各条"遗留/延批"）。现状摘要（2026-11-15）：
+库=39.4 万条（DATA 27），古文 15 类（批11 整本：左传 255 年/国语/墨荀韩孙吕管晏商）+
+诗词断层补全（批12 阳春集/金元词/元诗/唐诗补编；批13 清诗全本 2.29 万/唐五代词/近三百年词）。
+**下批候选**：乐府诗集体例细析（解析器首版质检否决）、全唐诗补编二期（剩 ~5,700 首）、
+明诗综/全金诗选段（白文）、先秦汉魏晋南北朝诗（〖逯案〗剥除待细析）、列子/战国策底本、
+韩非/吕览/管子整本断句、宋诗平仄标注（strains）、文白对照（NiuTrans）、
+陈涉世家（候外网）。旧待办：纸纹质感、小传白话化三选一；TTS 已由 D-013 否决。
