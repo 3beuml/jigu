@@ -3,6 +3,9 @@ package com.jigu.app.data
 import android.content.Context
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -49,6 +52,10 @@ class PoemsDb private constructor(context: Context) {
         @Volatile
         private var instance: PoemsDb? = null
 
+        /** 书库准备状态：首启/升级解压拷库期间给 UI 明示（D-034"空入口"误判的结构性修复） */
+        private val _prepState = MutableStateFlow(PrepState.Checking)
+        val prepState: StateFlow<PrepState> = _prepState.asStateFlow()
+
         fun get(context: Context): PoemsDb =
             instance ?: synchronized(this) { instance ?: PoemsDb(context).also { instance = it } }
     }
@@ -67,6 +74,7 @@ class PoemsDb private constructor(context: Context) {
                 val required = readAssetDataVersion(appContext)
                 val installed = prefs.getInt("data_version", -1)
                 if (!dbFile.exists() || installed != required) {
+                    _prepState.value = PrepState.Copying
                     val kept = if (dbFile.exists()) readFavoritesRaw(dbFile) else emptyList()
                     copyFromAssets(dbFile)
                     if (kept.isNotEmpty()) restoreFavorites(dbFile, kept)
@@ -75,7 +83,9 @@ class PoemsDb private constructor(context: Context) {
                 database = SQLiteDatabase.openDatabase(
                     dbFile.path, null, SQLiteDatabase.OPEN_READWRITE,
                 )
+                _prepState.value = PrepState.Ready
             } catch (t: Throwable) {
+                _prepState.value = PrepState.Failed
                 android.util.Log.e("PoemsDb", "数据拷库失败", t)
             } finally {
                 readyLatch.countDown()
@@ -891,7 +901,104 @@ class PoemsDb private constructor(context: Context) {
     }
 
     fun poemsByIds(ids: List<Int>): List<Poem> = ids.mapNotNull { poemById(it) }
+
+    // ---------- 收藏备份（导出/导入） ----------
+
+    data class FavoriteRow(
+        val id: Int,
+        val title: String,
+        val author: String,
+        val category: String,
+        val createdAt: Long,
+    )
+
+    data class ImportResult(val added: Int, val existed: Int, val skipped: Int)
+
+    fun favoriteRows(): List<FavoriteRow> {
+        awaitData()
+        return rdb().rawQuery(
+            "SELECT p.id, p.title, IFNULL(a.name,'佚名'), p.category, f.created_at " +
+                "FROM favorites f JOIN poems p ON p.id = f.poem_id " +
+                "LEFT JOIN authors a ON a.id = p.author_id ORDER BY f.created_at DESC", null,
+        ).use { c ->
+            val out = mutableListOf<FavoriteRow>()
+            while (c.moveToNext()) {
+                out += FavoriteRow(c.getInt(0), c.getString(1), c.getString(2), c.getString(3), c.getLong(4))
+            }
+            out
+        }
+    }
+
+    /** 收藏导出 JSON（format=1）：title/author/category 供人读，导回仅用 id（库版本变更后防串 id 可人工核对） */
+    fun exportFavoritesJson(): String {
+        val rows = favoriteRows()
+        val items = JSONArray()
+        rows.forEach { r ->
+            items.put(JSONObject().apply {
+                put("id", r.id)
+                put("title", r.title)
+                put("author", r.author)
+                put("category", r.category)
+                put("created_at", r.createdAt)
+            })
+        }
+        return JSONObject().apply {
+            put("app", "jigu")
+            put("type", "favorites")
+            put("format", 1)
+            put("data_version", meta("data_version")?.toIntOrNull() ?: 0)
+            put("exported_at", java.text.SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ssZ", java.util.Locale.US,
+            ).format(java.util.Date()))
+            put("count", rows.size)
+            put("items", items)
+        }.toString(2)
+    }
+
+    /** 导入收藏：只补不删；不存在的 id 跳过，已收藏计入 existed。容错纯数组 [1,2,3] 格式。 */
+    fun importFavoritesJson(text: String): ImportResult {
+        val ids = runCatching {
+            val arr = JSONObject(text).optJSONArray("items") ?: JSONArray()
+            (0 until arr.length()).mapNotNull { i -> arr.optJSONObject(i)?.optInt("id", 0)?.takeIf { it > 0 } }
+        }.getOrElse {
+            runCatching {
+                val arr = JSONArray(text)
+                (0 until arr.length()).mapNotNull { i -> arr.optInt(i, 0).takeIf { it > 0 } }
+            }.getOrElse { emptyList() }
+        }
+        require(ids.isNotEmpty()) { "文件里没有可识别的收藏条目" }
+        val db = wdb()
+        var added = 0
+        var existed = 0
+        var skipped = 0
+        val now = System.currentTimeMillis()
+        db.beginTransaction()
+        try {
+            ids.distinct().forEachIndexed { index, id ->
+                val poemExists = db.rawQuery(
+                    "SELECT 1 FROM poems WHERE id = ?", arrayOf(id.toString()),
+                ).use { it.moveToFirst() }
+                if (!poemExists) { skipped++; return@forEachIndexed }
+                val favExists = db.rawQuery(
+                    "SELECT 1 FROM favorites WHERE poem_id = ?", arrayOf(id.toString()),
+                ).use { it.moveToFirst() }
+                if (favExists) { existed++; return@forEachIndexed }
+                db.insert("favorites", null, ContentValues().apply {
+                    put("poem_id", id)
+                    put("created_at", now - index) // 保持导出顺序（首条最新）
+                })
+                added++
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        return ImportResult(added, existed, skipped)
+    }
 }
+
+/** 书库准备状态：Checking=启动检查（秒开路径不打扰）；Copying=首启/升级解压拷库；Ready；Failed。 */
+enum class PrepState { Checking, Copying, Ready, Failed }
 
 /** 同时代连片 >2 修复：连片第 3 位与后方最近异时代位交换（纯函数便于单测，D-018）。 */
 internal fun breakEraRuns(seq: MutableList<Pair<Int, String>>) {

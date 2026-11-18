@@ -1,5 +1,7 @@
 package com.jigu.app.ui.favorites
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,22 +21,26 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.library.PoemRow
 import com.jigu.app.ui.theme.PoemBodySmallStyle
 import com.jigu.app.ui.theme.PoemTitleStyle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** 收藏列表：我的页入口进来，点 X 移除收藏 */
@@ -43,11 +49,59 @@ fun FavoritesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
     var poems by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
     var version by remember { mutableIntStateOf(0) }
+    var status by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(version) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
             poems = db.poemsByIds(db.favoriteIds())
+        }
+    }
+
+    // 导出/导入状态行 4 秒后自清
+    LaunchedEffect(status) {
+        if (status != null) {
+            kotlinx.coroutines.delay(4000)
+            status = null
+        }
+    }
+
+    // 收藏备份（坑9：换 release 签名须卸载、收藏将清空——先导出再换包）
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                status = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val db = PoemsDb.get(context)
+                        val json = db.exportFavoritesJson()
+                        context.contentResolver.openOutputStream(uri)?.use {
+                            it.write(json.toByteArray(Charsets.UTF_8))
+                        } ?: error("无法写入所选文件")
+                        "已导出 ${db.favoriteIds().size} 条收藏"
+                    }.getOrElse { "导出失败：${it.message ?: it.javaClass.simpleName}" }
+                }
+            }
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                status = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val text = context.contentResolver.openInputStream(uri)
+                            ?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                            ?: error("无法读取所选文件")
+                        val r = PoemsDb.get(context).importFavoritesJson(text)
+                        "导入完成：新增 ${r.added}，已在收藏 ${r.existed}，未找到 ${r.skipped}"
+                    }.getOrElse { "导入失败：${it.message ?: it.javaClass.simpleName}" }
+                }
+                version += 1
+            }
         }
     }
 
@@ -67,6 +121,21 @@ fun FavoritesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
                 text = "我的收藏",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = {
+                exportLauncher.launch("jigu-favorites-${java.time.LocalDate.now()}.json")
+            }) { Text("导出", fontSize = 14.sp) }
+            TextButton(onClick = { importLauncher.launch(arrayOf("application/json")) }) {
+                Text("导入", fontSize = 14.sp)
+            }
+        }
+        status?.let {
+            Text(
+                text = it,
+                style = PoemBodySmallStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 2.dp),
             )
         }
         Spacer(Modifier.height(4.dp))

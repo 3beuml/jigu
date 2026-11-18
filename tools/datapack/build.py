@@ -37,7 +37,7 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 27  # +1: 批13 诗词补全（D-037）——晚晴簃诗汇（清诗全本）22914 首 5840 家 198 卷新分类 qing_shi（清诗卡）；近三百年名家词选 441 首 jinsanbai_ci（近三百年词卡）；全唐五代词 877 首 tang_ci（唐五代词卡，与前五代词首 12 字去重）；底本=殆知阁 诗藏 有标点整理本（qingshi13/cib13 状态机解析）
+DATA_VERSION = 28  # +1: 作者名异文归一（韩竑→韩翃/杜小山→杜耒/赵匡胤→宋太祖·宋）——同诗跨卡同作者；归一同文同卡条目被 UNIQUE(category,hash) 吞并
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -368,6 +368,25 @@ def j(obj) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
 
+# 作者名异文归一（夜班查重发现：同诗跨卡显示两作者名）
+#   name -> (规范名, 强制朝代或 None)
+AUTHOR_FIX = {
+    "韩竑": ("韩翃", None),      # 千家诗底本讹形（《寒食》与全唐诗韩翃条同文）
+    "杜小山": ("杜耒", None),    # 千家诗以字行（杜耒字小山，全宋诗作杜耒）
+    "赵匡胤": ("宋太祖", "宋"),  # 全唐诗补编署名与全宋诗统一；此人属宋，时代一并归宋
+}
+
+
+def fix_author(name: str, dynasty: str) -> tuple[str, str]:
+    name = s(name)
+    fixed = AUTHOR_FIX.get(name)
+    if fixed:
+        name = fixed[0]
+        if fixed[1]:
+            dynasty = fixed[1]
+    return name, s(dynasty)
+
+
 class Db:
     def __init__(self, path: Path):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -381,6 +400,7 @@ class Db:
         self.dups: dict[str, int] = {}
 
     def author(self, name: str, dynasty: str, brief: str = "") -> int:
+        name, dynasty = fix_author(name, dynasty)
         name, brief = s(name), clean_brief(s(brief))
         dynasty = s(dynasty)
         dynasty = ERA_MAP.get(dynasty, dynasty)
@@ -408,9 +428,11 @@ class Db:
         body = "\n".join(paras)
         title = clean_placeholder_title(norm_title(s(rec.get("title") or "无题")))
         title = next((new for old, new in TITLE_FIXES if title == old), title)
-        h = hashlib.md5(f"{title}|{s(rec.get('author',''))}|{body}".encode()).hexdigest()
+        # 作者名先归一再算 hash——归一的同文同卡条目由 UNIQUE(category,hash) 自动去重
+        aname, adyn = fix_author(rec.get("author", ""), rec.get("dynasty", ""))
+        h = hashlib.md5(f"{title}|{aname}|{body}".encode()).hexdigest()
         cat = rec["category"]
-        era = ERA_MAP.get(s(rec.get("dynasty", "")), s(rec.get("dynasty", "")))
+        era = ERA_MAP.get(adyn, adyn)
         typ = rec.get("type") or classify_type(cat, title, s(rec.get("rhythmic", "")), paras)
         try:
             cur = self.conn.execute(
@@ -418,7 +440,7 @@ class Db:
                 "paragraphs,tags,notes,hash,source_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     cat, typ, era, title,
-                    self.author(rec.get("author", ""), rec.get("dynasty", ""), rec.get("brief", "")),
+                    self.author(aname, adyn, rec.get("brief", "")),
                     s(rec.get("rhythmic", "")), s(rec.get("chapter", "")), s(rec.get("section", "")),
                     j(paras), j(rec.get("tags", [])), j(rec.get("notes", [])),
                     h, rec.get("source_id", ""),

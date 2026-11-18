@@ -31,12 +31,14 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +64,7 @@ import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
+import com.jigu.app.data.PrepState
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
 import com.jigu.app.ui.library.ChapterScreen
@@ -337,6 +340,73 @@ fun JiguApp() {
             onGuwen = { nav.navigate("guwen") { launchSingleTop = true } },
             onMine = { nav.navigate("mine") { launchSingleTop = true } },
         )
+        }
+
+        // 书库准备中/失败覆盖层（D-034"空入口"误判的结构性修复）：首启/升级解压约 700MB 期间
+        // 各页查询阻塞在 awaitData，列表会是空的——给明示而非空白。日常秒开（Checking→Ready
+        // 快于 400ms）不显示，避免闪一下。
+        val prep by PoemsDb.prepState.collectAsState()
+        var showPrep by remember { mutableStateOf(false) }
+        LaunchedEffect(prep) {
+            when (prep) {
+                PrepState.Copying -> {
+                    kotlinx.coroutines.delay(400)
+                    showPrep = true
+                }
+                PrepState.Failed -> showPrep = true
+                else -> showPrep = false
+            }
+        }
+        if (showPrep) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .pointerInput(Unit) { detectTapGestures { /* 准备期间吞掉全部点击 */ } },
+            ) {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "汲古",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    if (prep == PrepState.Failed) {
+                        Text(
+                            text = "书库准备失败",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "请重启应用；若仍失败，请卸载重装",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(26.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.height(18.dp))
+                        Text(
+                            text = "正在整理书库…",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "首次启动需解压约 700MB 书库，请稍候",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
     }
 }
