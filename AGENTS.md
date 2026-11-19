@@ -33,7 +33,6 @@ python tools/datapack/build_calendar.py                                   # 节�
 python tools/fonts/subset_font.py --font C:/Work/scratch/fonts/wenkai.ttf --supplement C:/Work/scratch/fonts  # 字体子集（--supplement 用 Jigmo 补 Ext-B+ 生僻字形）
 python tools/datapack/test_pipeline.py                                    # 单元测试（必跑）
 python tools/datapack/inspect_db.py --full -n 2                           # 抽查
-python tools/artwork/fetch_artworks.py --force                            # 节气配画（需外网）
 ```
 
 数据集克隆在 `C:\Work\scratch\chinese-poetry`；`assets/data/` 为构建产物已 gitignore。

@@ -672,3 +672,14 @@
 - **版本**：DATA 28 / SCHEMA 7 / v0.2.1（versionCode 201，D-009 规则）。
 - **验收**：真机（魅族 21 Note / 468QBGES222HV）装 debug 包——首启见准备态覆盖层→收藏
   导出/导入往返→寒食/日诗作者显示统一。
+
+## D-040 美术方向终止（2026-11-19，用户拍板"这部分舍弃"）
+
+- **背景**：赏画体系批11（2026-11-12）已整体拆除（DetailScreen 背景画/赏画行、TodayScreen
+  角隅画、ArtworkScreen、PoemCard 画心、assets/art 23MB 全移除）；chips 画片生成管线
+  （豆包 Seedream 36 槽，2026-11-08 暂停）用户一直不满意美术效果（形体偏蛋形、取样色压平）。
+  本日用户拍板美术部分舍弃，不再保留恢复路径。
+- **执行**：删 `tools/artwork/` 全部（fetch_artworks.py 克利夫兰配画脚本——批11 后已无
+  消费方的死管线 + chips/ 未跟踪管线试点）。AGENTS.md 数据管线行移除。scratch 侧产物
+  （jigu-chips 源图等，repo 外）保留不动不碍 git。DECISIONS/REFERENCES 中历史记录照旧保留。
+- **结论**：汲古视觉语言定格为 D-004 零彩色秩序（宣纸/墨字/朱点），无图像内容。
