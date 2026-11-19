@@ -36,8 +36,8 @@ T2S = OpenCC("t2s")
 
 REPO = Path(__file__).resolve().parents[2]
 
-SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 30  # +1: 批15（2026-11-19）——列子整本 8 篇（道藏白文+双见证校验）、乐府诗集 3,336 首
+SCHEMA_VERSION = 8  # +1: follows 关注诗人表（D-043 R2）
+DATA_VERSION = 31  # +1: 批16——史记整本 125 卷 + follows 关注诗人表（SCHEMA 8）+ R1/R2 无数据面变更
 #                    （曲题锚+乐章作者继承）、近三百年词评点转 notes、敦煌曲子词尾标剥除
 
 SCHEMA = """
@@ -145,6 +145,14 @@ CREATE TABLE collection_items(
 -- 用户数据（收藏；自建诗单阶段 6 定）
 CREATE TABLE favorites(
   poem_id    INTEGER PRIMARY KEY REFERENCES poems(id),
+  created_at INTEGER NOT NULL
+);
+
+-- 关注诗人（D-043 R2）：用户数据表（与 favorites 同为随版本迁移保留；restore 按姓名重解析 id）
+CREATE TABLE follows(
+  author_id  INTEGER PRIMARY KEY REFERENCES authors(id),
+  name       TEXT NOT NULL DEFAULT '',   -- 快照姓名：跨版本 id 漂移时按 name+dynasty 重解析
+  dynasty    TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL
 );
 """
@@ -1727,6 +1735,16 @@ def it_jingzi11(dataset: Path):
     # 批15 乐府诗集（D-042）：郭茂倩百卷十二类，yuefu14.py v1 否决后 yuefu15.py 重析
     s14 = load_json(REPO / "tools/datapack/corpus/shici14.json")
     for a in s14["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    # 批16 史记整本（D-043 R10）：130 卷有标点整理本（卷头锚+目录对齐+首句锚定补切 14 缺头卷；
+    # 底本整卷缺：孝武本纪/赵世家/魏世家/陈涉世家，记档 D-043）
+    sjf = load_json(REPO / "tools/datapack/corpus/shiji_full.json")
+    for a in sjf["pieces"]:
         yield {
             "category": a["category"], "title": a["title"], "author": a.get("author", ""),
             "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],

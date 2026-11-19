@@ -37,7 +37,8 @@ class PoemsDb private constructor(context: Context) {
         private const val CORE_COLUMNS =
             "p.id, p.category, p.title, IFNULL(a.name,'佚名') AS author, IFNULL(a.brief,'') AS brief, " +
                 "p.rhythmic, p.chapter, p.section, p.paragraphs, p.tags, p.notes, " +
-                "IFNULL(a.dynasty,'') AS dynasty, p.type AS type, p.era AS era, p.genre AS genre"
+                "IFNULL(a.dynasty,'') AS dynasty, p.type AS type, p.era AS era, p.genre AS genre, " +
+                "p.popularity AS popularity"
 
         private const val IMAGERY_SUB =
             "(SELECT GROUP_CONCAT(i.name, '、') FROM poem_imagery pi " +
@@ -75,9 +76,11 @@ class PoemsDb private constructor(context: Context) {
                 val installed = prefs.getInt("data_version", -1)
                 if (!dbFile.exists() || installed != required) {
                     _prepState.value = PrepState.Copying
-                    val kept = if (dbFile.exists()) readFavoritesRaw(dbFile) else emptyList()
+                    val keptFav = if (dbFile.exists()) readFavoritesRaw(dbFile) else emptyList()
+                    val keptFollows = if (dbFile.exists()) readFollowsRaw(dbFile) else emptyList()
                     copyFromAssets(dbFile)
-                    if (kept.isNotEmpty()) restoreFavorites(dbFile, kept)
+                    if (keptFav.isNotEmpty()) restoreFavorites(dbFile, keptFav)
+                    if (keptFollows.isNotEmpty()) restoreFollows(dbFile, keptFollows)
                     prefs.edit().putInt("data_version", required).apply()
                 }
                 database = SQLiteDatabase.openDatabase(
@@ -148,6 +151,40 @@ class PoemsDb private constructor(context: Context) {
         }
     }
 
+    /** 关注诗人跨版本迁移（D-043 R2）：follows 表自带 name/dynasty 快照，
+     *  新库按 姓名+朝代 重解析 author_id（版本重建后 id 会漂移，id 直迁会指错人）。 */
+    private data class FollowSnapshot(val name: String, val dynasty: String, val createdAt: Long)
+
+    private fun readFollowsRaw(dbFile: File): List<FollowSnapshot> = runCatching {
+        SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            val out = mutableListOf<FollowSnapshot>()
+            db.rawQuery("SELECT name, dynasty, created_at FROM follows", null).use { c ->
+                while (c.moveToNext()) out += FollowSnapshot(c.getString(0), c.getString(1) ?: "", c.getLong(2))
+            }
+            out
+        }
+    }.getOrDefault(emptyList())
+
+    private fun restoreFollows(dbFile: File, rows: List<FollowSnapshot>) {
+        runCatching {
+            SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+                db.execSQL("DELETE FROM follows")
+                rows.forEach { f ->
+                    val id = db.rawQuery(
+                        "SELECT id FROM authors WHERE name = ? AND dynasty = ? LIMIT 1",
+                        arrayOf(f.name, f.dynasty),
+                    ).use { c -> if (c.moveToFirst()) c.getInt(0) else null }
+                    if (id != null) {
+                        db.execSQL(
+                            "INSERT OR IGNORE INTO follows(author_id, name, dynasty, created_at) VALUES (?,?,?,?)",
+                            arrayOf(id, f.name, f.dynasty, f.createdAt),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     // ---------- 模型 ----------
 
     data class Poem(
@@ -169,6 +206,7 @@ class PoemsDb private constructor(context: Context) {
         val type: String,
         val era: String,
         val genre: String,
+        val popularity: Long = 0,
     )
 
     data class Author(
@@ -198,7 +236,8 @@ class PoemsDb private constructor(context: Context) {
 
     private fun android.database.Cursor.toPoem(): Poem {
         val i = this
-        // 列序与 POEM_SELECT 严格对应：CORE_COLUMNS 0..14，imagery/famous_line 为 15/16。
+        // 列序与 POEM_SELECT 严格对应：CORE_COLUMNS 0..15（popularity=15，SCHEMA 8 加），
+        // imagery/famous_line 为 16/17。
         // 此处曾整体错位一格（imagery 误读 type 列、era 误读 imagery 串等），务必对齐。
         // 瘦身（SCHEMA 7）：body 列已删，正文 = paragraphs 逐行 \n 拼接（与建库端同构）。
         val paragraphs = i.getString(8).toJsonList()
@@ -219,9 +258,10 @@ class PoemsDb private constructor(context: Context) {
             type = i.getString(12) ?: "",
             era = i.getString(13) ?: "",
             genre = i.getString(14) ?: "",
-            imagery = (if (i.isNull(15)) "" else i.getString(15))
+            popularity = i.getLong(15),
+            imagery = (if (i.isNull(16)) "" else i.getString(16))
                 .split('、').filter { it.isNotBlank() },
-            famousLine = if (i.isNull(16)) "" else i.getString(16) ?: "",
+            famousLine = if (i.isNull(17)) "" else i.getString(17) ?: "",
         )
     }
 
@@ -697,11 +737,51 @@ class PoemsDb private constructor(context: Context) {
         )
     }
 
+    /** 搜索作者命中（D-043 R1）：搜"柳永"出作者卡，修"搜得到词搜不到人"。
+     *  精确名 > 前缀 > 包含，再按作品量序；只出有作品的作者。 */
+    fun searchAuthors(query: String, limit: Int = 3): List<Author> {
+        val q = query.trim()
+        if (q.isEmpty()) return emptyList()
+        return rdb().rawQuery(
+            "$AUTHOR_COLUMNS FROM authors a LEFT JOIN poems p ON p.author_id = a.id " +
+                "WHERE a.name LIKE ? GROUP BY a.id HAVING cnt > 0 " +
+                "ORDER BY (a.name = ?) DESC, (a.name LIKE ? || '%') DESC, cnt DESC, a.name LIMIT ?",
+            arrayOf("%$q%", q, q, limit.toString()),
+        ).use { c ->
+            val out = mutableListOf<Author>()
+            while (c.moveToNext()) out += c.toAuthor()
+            out
+        }
+    }
+
+    /** 名句命中（D-043 R1）：搜名句行 → 原诗（UI 直达详情并高亮该句）。 */
+    fun searchFamousLines(query: String, limit: Int = 8): List<FamousLine> {
+        val q = query.trim()
+        if (q.isEmpty()) return emptyList()
+        return rdb().rawQuery(
+            "SELECT f.poem_id, f.line, p.title, IFNULL(a.dynasty,''), IFNULL(a.name,'佚名') " +
+                "FROM famous_lines f JOIN poems p ON p.id = f.poem_id " +
+                "LEFT JOIN authors a ON a.id = p.author_id " +
+                "WHERE f.line LIKE ? " +
+                "ORDER BY (f.line LIKE ? || '%') DESC, f.source = 'manual' DESC, length(f.line) LIMIT ?",
+            arrayOf("%$q%", q, limit.toString()),
+        ).use { c ->
+            val out = mutableListOf<FamousLine>()
+            while (c.moveToNext()) {
+                out += FamousLine(
+                    poemId = c.getInt(0), line = c.getString(1), title = c.getString(2) ?: "",
+                    dynasty = c.getString(3) ?: "", author = c.getString(4) ?: "",
+                )
+            }
+            out
+        }
+    }
+
     fun search(query: String, limit: Int = 30): List<Poem> {
         val q = query.trim()
         if (q.isEmpty()) return emptyList()
-        // 抓三倍候选再去重，避免去重后结果偏少（D-015）
-        val fetch = limit * 3
+        // 抓四倍候选：去重（D-015）+ 名气重排后结果不偏少
+        val fetch = limit * 4
         val raw = if (q.length >= 3) {
             runCatching {
                 queryPoems(
@@ -715,7 +795,25 @@ class PoemsDb private constructor(context: Context) {
         } else {
             emptyList()
         }.ifEmpty { searchByLike(q, fetch) }
-        return dedupeSearchResults(raw).take(limit)
+        // 匹配度×名气混合排序（D-043 R1）：题名/词牌/作者/名句命中升权，popularity 归一封顶
+        return dedupeSearchResults(raw)
+            .sortedWith(
+                compareByDescending<Poem> { searchScore(it, q) }
+                    .thenComparator { a, b -> compareSearchRank(a, b) },
+            )
+            .take(limit)
+    }
+
+    /** 搜索得分（匹配度 × 名气）：题名 10000 / 词牌 6000 / 作者 8000 / 名句 3000，
+     *  popularity（3~5,000,000）归一为 0..40 的名气加分。 */
+    private fun searchScore(p: Poem, q: String): Long {
+        var s = 0L
+        if (p.title.contains(q)) s += 10000
+        if (p.rhythmic.contains(q)) s += 6000
+        if (p.author.contains(q)) s += 8000
+        if (p.famousLine.isNotBlank() && p.famousLine.contains(q)) s += 3000
+        s += (p.popularity.coerceAtMost(5_000_000L) / 125_000L)  // 0..40
+        return s
     }
 
     /** 陈列层（书架/选本与名句收录的类），同名同文时优先保留（D-015） */
@@ -862,10 +960,81 @@ class PoemsDb private constructor(context: Context) {
             arrayOf(id.toString()),
         ).use { c -> if (c.moveToFirst()) c.toAuthor() else null }
 
-    fun poemsByAuthor(authorId: Int, limit: Int, offset: Int): List<Poem> = queryPoems(
-        "$POEM_SELECT WHERE p.author_id = ? ORDER BY p.id LIMIT ? OFFSET ?",
-        arrayOf(authorId.toString(), limit.toString(), offset.toString()),
+    fun poemsByAuthor(
+        authorId: Int, limit: Int, offset: Int,
+        type: String? = null, excludeIds: Collection<Int> = emptyList(),
+    ): List<Poem> {
+        val where = buildString {
+            append("p.author_id = ?")
+            if (type != null) append(" AND p.type = ?")
+            if (excludeIds.isNotEmpty()) append(" AND p.id NOT IN (${excludeIds.joinToString(",")})")
+        }
+        val args = mutableListOf(authorId.toString())
+        type?.let { args += it }
+        args += listOf(limit.toString(), offset.toString())
+        return queryPoems("$POEM_SELECT WHERE $where ORDER BY p.id LIMIT ? OFFSET ?", args.toTypedArray())
+    }
+
+    /** 诗人主页名篇置顶（D-043 R2）：有名句或有人气者，按名气序取头部。 */
+    fun poemsByAuthorTop(authorId: Int, limit: Int = 6): List<Poem> = queryPoems(
+        "$POEM_SELECT WHERE p.author_id = ? AND (p.popularity > 0 " +
+            "OR EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id)) " +
+            "ORDER BY p.popularity DESC LIMIT ?",
+        arrayOf(authorId.toString(), limit.toString()),
     )
+
+    /** 诗人主页体裁筛选 chips：type -> 作品数。 */
+    fun authorTypeCounts(authorId: Int): Map<String, Int> = rdb().rawQuery(
+        "SELECT p.type, count(*) FROM poems p WHERE p.author_id = ? GROUP BY p.type ORDER BY count(*) DESC",
+        arrayOf(authorId.toString()),
+    ).use { c ->
+        val m = linkedMapOf<String, Int>()
+        while (c.moveToNext()) m[c.getString(0)] = c.getInt(1)
+        m
+    }
+
+    // ---------- 关注诗人（D-043 R2） ----------
+
+    fun followAuthor(authorId: Int, name: String, dynasty: String) {
+        wdb().insertWithOnConflict(
+            "follows", null,
+            ContentValues().apply {
+                put("author_id", authorId)
+                put("name", name)
+                put("dynasty", dynasty)
+                put("created_at", System.currentTimeMillis())
+            },
+            SQLiteDatabase.CONFLICT_REPLACE,
+        )
+    }
+
+    fun unfollowAuthor(authorId: Int) {
+        wdb().delete("follows", "author_id = ?", arrayOf(authorId.toString()))
+    }
+
+    fun isFollowing(authorId: Int): Boolean = rdb().rawQuery(
+        "SELECT 1 FROM follows WHERE author_id = ?", arrayOf(authorId.toString()),
+    ).use { it.moveToFirst() }
+
+    fun followedAuthorIds(): Set<Int> = rdb().rawQuery(
+        "SELECT author_id FROM follows", null,
+    ).use { c ->
+        val out = mutableSetOf<Int>()
+        while (c.moveToNext()) out += c.getInt(0)
+        out
+    }
+
+    /** 关注列表（独立页）：按关注时间倒序，作者带作品量。 */
+    fun followedAuthors(): List<Author> = rdb().rawQuery(
+        "$AUTHOR_COLUMNS FROM follows fo JOIN authors a ON a.id = fo.author_id " +
+            "LEFT JOIN poems p ON p.author_id = a.id " +
+            "GROUP BY a.id ORDER BY fo.created_at DESC",
+        null,
+    ).use { c ->
+        val out = mutableListOf<Author>()
+        while (c.moveToNext()) out += c.toAuthor()
+        out
+    }
 
     // ---------- 收藏 ----------
 

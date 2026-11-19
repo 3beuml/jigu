@@ -69,6 +69,7 @@ import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
 import com.jigu.app.ui.library.ChapterScreen
 import com.jigu.app.ui.library.EraAuthorsScreen
+import com.jigu.app.ui.library.FollowsScreen
 import com.jigu.app.ui.library.FamousLinesScreen
 import com.jigu.app.ui.library.GuwenSourceScreen
 import com.jigu.app.ui.library.GuwenSourcesScreen
@@ -136,6 +137,10 @@ fun JiguApp() {
 
     val nav = rememberNavController()
     val openDetail: (Int) -> Unit = { id -> nav.navigate("detail/$id") }
+    // 名句直达（D-043 R1）：带高亮句进详情——hl 经 URL 编码走 query 参数
+    val openDetailHighlight: (Int, String) -> Unit = { id, hl ->
+        nav.navigate("detail/$id?hl=${android.net.Uri.encode(hl)}")
+    }
     // D-038 修复：currentBackStackEntry 直读不具备组合可观察性（route 启动后定格，
     // dock 永显/今日恒选中）——改用 currentBackStackEntryAsState() 订阅导航状态
     val route = nav.currentBackStackEntryAsState().value?.destination?.route
@@ -170,6 +175,7 @@ fun JiguApp() {
                     onOpenTheme = { name -> nav.navigate("theme/$name") },
                     onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
                     onOpen = openDetail,
+                    onOpenHighlight = openDetailHighlight,
                 )
             }
             composable("guwen") {
@@ -193,6 +199,7 @@ fun JiguApp() {
                     onOpenTheme = { name -> nav.navigate("theme/$name") },
                     onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
                     onOpen = openDetail,
+                    onOpenHighlight = openDetailHighlight,
                 )
             }
             composable("guwen_sources") {
@@ -303,6 +310,14 @@ fun JiguApp() {
                 MineScreen(
                     onOpenFavorites = { nav.navigate("favorites") },
                     onOpenFamous = { nav.navigate("famous") },
+                    onOpenFollows = { nav.navigate("follows") },
+                )
+            }
+            // 关注诗人列表（D-043 R2）：独立页，作者名下直达诗人主页
+            composable("follows") {
+                FollowsScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenAuthor = { id -> nav.navigate("author/$id") },
                 )
             }
             composable("card/{id}") { back ->
@@ -311,9 +326,10 @@ fun JiguApp() {
                     onBack = { nav.popBackStack() },
                 )
             }
-            composable("detail/{id}") { back ->
+            composable("detail/{id}?hl={hl}") { back ->
                 DetailScreen(
                     id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
+                    highlight = back.arguments?.getString("hl") ?: "",
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )

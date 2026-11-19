@@ -1,6 +1,8 @@
 package com.jigu.app.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jigu.app.data.PoemsDb
 import com.jigu.app.DOCK_CLEARANCE
@@ -238,21 +242,35 @@ fun AuthorIndexScreen(onBack: () -> Unit, onOpenAuthor: (Int) -> Unit) {
     }
 }
 
-/** 作者主页：小传 + 全部作品 */
+/** 作者主页（D-043 R2 四件套）：关注 + 小传 + 名篇置顶 + 全部作品（体裁筛选） */
 @Composable
 fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
     var author by remember { mutableStateOf<PoemsDb.Author?>(null) }
+    var following by remember { mutableStateOf(false) }
+    var topPoems by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
+    var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var selectedType by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(authorId) {
-        withContext(Dispatchers.IO) { author = PoemsDb.get(context).authorById(authorId) }
+        withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            author = db.authorById(authorId)
+            following = db.isFollowing(authorId)
+            topPoems = db.poemsByAuthorTop(authorId)
+            typeCounts = db.authorTypeCounts(authorId)
+        }
+    }
+    val topIds = topPoems.map { it.id }
+    // key 换（作者/体裁筛选/名篇加载完）即重挂分页——excludeIds 随之生效
+    val pager = rememberPagedPoems(authorId to selectedType to topIds) { page ->
+        PoemsDb.get(context).poemsByAuthor(
+            authorId, PAGE, page * PAGE,
+            type = selectedType, excludeIds = topIds,
+        )
     }
 
     val a = author
-    // pager 必须无条件创建（Compose 规则），author 尚未加载时先用 id 查询
-    val pager = rememberPagedPoems(authorId) { page ->
-        PoemsDb.get(context).poemsByAuthor(authorId, PAGE, page * PAGE)
-    }
     BrowseScaffold(
         title = a?.name ?: "…",
         subtitle = a?.let {
@@ -272,12 +290,22 @@ fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
             )
         } else {
             PagedPoemList(pager, onOpen) {
-                if (a.brief.isNotBlank()) {
-                    Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                Column(Modifier.padding(horizontal = 20.dp)) {
+                    // 关注（独立列表页入口在「我的」，今日诗适度加权）
+                    FollowToggle(following) {
+                        following = !following
+                        Thread {
+                            val db = PoemsDb.get(context)
+                            if (following) db.followAuthor(authorId, a.name, a.dynasty)
+                            else db.unfollowAuthor(authorId)
+                        }.start()
+                    }
+                    if (a.brief.isNotBlank()) {
                         Text(
                             "小传",
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 6.dp),
                         )
                         Text(
                             a.brief,
@@ -285,6 +313,157 @@ fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    // 名篇置顶（有名句/人气者，按名气序）
+                    if (topPoems.isNotEmpty()) {
+                        Text(
+                            "名篇",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                        )
+                        topPoems.forEach { p ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onOpen(p.id) }
+                                    .padding(vertical = 6.dp),
+                            ) {
+                                Text(
+                                    p.title,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                if (p.famousLine.isNotBlank()) {
+                                    Text(
+                                        p.famousLine,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    // 体裁筛选 chips（全部 + 各体裁按作品量）
+                    if (typeCounts.size > 1) {
+                        Text(
+                            "全部作品",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            val all = listOf("全部" to typeCounts.values.sum()) +
+                                typeCounts.map { (t, c) -> (t.ifBlank { "未分" }) to c }
+                            all.forEach { (label, cnt) ->
+                                val selected = (label == "全部" && selectedType == null) ||
+                                    (label != "全部" && selectedType == typeCounts.keys.find { it.ifBlank { "未分" } == label })
+                                AuthorTypeChip("$label $cnt", selected) {
+                                    selectedType = if (label == "全部") null
+                                    else typeCounts.keys.find { it.ifBlank { "未分" } == label }
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 关注开关（墨字极简：选中朱点前缀，呼应 D-004 零彩色秩序） */
+@Composable
+private fun FollowToggle(following: Boolean, onToggle: () -> Unit) {
+    Text(
+        text = if (following) "● 已关注（点按取消）" else "○ 关注这位诗人",
+        style = MaterialTheme.typography.titleSmall,
+        color = if (following) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .clickable(onClick = onToggle)
+            .padding(vertical = 6.dp),
+    )
+}
+
+/** 体裁筛选 chip（与书库维度 chips 同款形制） */
+@Composable
+private fun AuthorTypeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+    }
+}
+
+/** 我关注的诗人（D-043 R2 独立列表页）：按关注时间倒序 */
+@Composable
+fun FollowsScreen(onBack: () -> Unit, onOpenAuthor: (Int) -> Unit) {
+    val context = LocalContext.current
+    var authors by remember { mutableStateOf<List<PoemsDb.Author>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { authors = PoemsDb.get(context).followedAuthors() }
+    }
+    BrowseScaffold(title = "关注的诗人", subtitle = "${authors.size} 位", onBack = onBack) {
+        if (authors.isEmpty()) {
+            Text(
+                "还没有关注的诗人。\n在诗人主页点「关注」，他就会出现在这里。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(20.dp),
+            )
+        } else {
+            LazyColumn(Modifier.fillMaxSize()) {
+                itemsIndexed(authors, key = { _, a -> a.id }) { _, a ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenAuthor(a.id) }
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
+                        Row {
+                            Text(
+                                a.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                listOfNotNull(
+                                    a.dynasty.takeIf { it.isNotBlank() },
+                                    "${a.workCount} 首",
+                                ).joinToString(" · "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (a.brief.isNotBlank()) {
+                            Text(
+                                a.brief,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
                 }
             }
         }

@@ -49,9 +49,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** 详情页：原文 / 诗人小传 / 意象与标签 / 相关诗词；横竖排切换（D-007 雅言取材）。
- *  批11：赏画体系整体拆除（用户定案美术搁置）——正文背景画、赏画行、鉴赏入口已移除。 */
+ *  批11：赏画体系整体拆除（用户定案美术搁置）——正文背景画、赏画行、鉴赏入口已移除。
+ *  highlight（D-043 R1）：名句搜索直达时高亮命中的句/段（竖排模式暂不标记）。 */
 @Composable
-fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, highlight: String = "") {
     val context = LocalContext.current
     var poem by remember { mutableStateOf<PoemsDb.Poem?>(null) }
     var related by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
@@ -145,7 +146,7 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
             if (vertical) {
                 VerticalPoem(p.paragraphs)
             } else {
-                PoemBody(p.paragraphs, p.category)
+                PoemBody(p.paragraphs, p.category, highlight)
             }
             Spacer(Modifier.height(28.dp))
 

@@ -54,7 +54,11 @@ import kotlinx.coroutines.withContext
 /** 我的：收藏/名句入口、今日诗偏好、真实设置开关、数据信息、致谢与许可 */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MineScreen(onOpenFavorites: () -> Unit, onOpenFamous: () -> Unit) {
+fun MineScreen(
+    onOpenFavorites: () -> Unit,
+    onOpenFamous: () -> Unit,
+    onOpenFollows: () -> Unit = {},
+) {
     val context = LocalContext.current
     var dataInfo by remember { mutableStateOf("…") }
     var version by remember { mutableStateOf("…") }
@@ -101,9 +105,10 @@ fun MineScreen(onOpenFavorites: () -> Unit, onOpenFamous: () -> Unit) {
         )
         Spacer(Modifier.height(20.dp))
 
-        // 收藏 / 名句入口（名句卡移自书架，D-030）
+        // 收藏 / 名句入口（名句卡移自书架，D-030）；关注诗人（D-043 R2）
         EntryRow("我的收藏", "$favCount 篇", onOpenFavorites)
         EntryRow("名句", "千古名句 · 四百条", onOpenFamous)
+        EntryRow("关注的诗人", "诗人主页点「关注」", onOpenFollows)
         Spacer(Modifier.height(20.dp))
 
         Info("数据", dataInfo)

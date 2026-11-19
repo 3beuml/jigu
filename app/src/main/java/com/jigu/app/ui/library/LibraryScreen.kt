@@ -46,6 +46,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jigu.app.data.PoemsDb
 import androidx.compose.foundation.layout.PaddingValues
@@ -109,7 +110,7 @@ private val PROSE_BOOK_MODULES = listOf(
     // 卡名四书：sishu 类实收 大学/中庸/孟子 16 篇（原"孟子"卡混收大学中庸，D-028 改名对齐；论语另卡）
     BookModule("四书", "sishu", "大学 · 中庸 · 孟子七篇", 1, part = "经"),
     BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等九种", 2, part = "经"),
-    BookModule("史记", "shiji", "纪传之祖 · 名段选", 3, part = "史"),
+    BookModule("史记", "shiji", "纪传之祖 · 名段 + 百三十卷", 3, part = "史"),
     BookModule("经史名段", "guwen_sources", "左传战国策国语 · 观止本选段", 4, part = "史"),
     BookModule("老子", "laozi", "道德五千言 · 全 81 章", 5, part = "子"),
     BookModule("庄子", "zhuangzi", "内篇七全 · 外篇名篇", 6, part = "子"),
@@ -148,6 +149,7 @@ fun LibraryScreen(
     onOpenGenre: (String) -> Unit,
     onOpenChapter: (String) -> Unit,
     onOpen: (Int) -> Unit,
+    onOpenHighlight: ((Int, String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val poetry = section == LibrarySection.POETRY
@@ -157,6 +159,9 @@ fun LibraryScreen(
     var eraCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
+    // 搜索三路命中（D-043 R1）：作者卡置顶 → 名句 → 诗文
+    var resAuthors by remember { mutableStateOf<List<PoemsDb.Author>>(emptyList()) }
+    var resFamous by remember { mutableStateOf<List<PoemsDb.FamousLine>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -167,8 +172,14 @@ fun LibraryScreen(
         }
     }
     LaunchedEffect(query) {
-        if (query.isBlank()) results = emptyList()
-        else withContext(Dispatchers.IO) { results = PoemsDb.get(context).search(query) }
+        if (query.isBlank()) {
+            results = emptyList(); resAuthors = emptyList(); resFamous = emptyList()
+        } else withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            resAuthors = db.searchAuthors(query)
+            resFamous = db.searchFamousLines(query)
+            results = db.search(query)
+        }
     }
 
     Column(
@@ -182,7 +193,7 @@ fun LibraryScreen(
             value = query,
             onValueChange = { query = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("搜诗句、题目、作者（如：月落乌啼）") },
+            placeholder = { Text("搜诗句、作者、名句、篇名（如：柳永 / 月落乌啼）") },
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
         )
@@ -207,6 +218,31 @@ fun LibraryScreen(
 
         if (query.isNotBlank()) {
             LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
+                if (resAuthors.isNotEmpty()) {
+                    item {
+                        SearchGroupHeader("作者")
+                    }
+                    items(resAuthors.size, key = { "a_${resAuthors[it].id}" }) { index ->
+                        AuthorResultCard(resAuthors[index], onClick = { onOpenAuthor(resAuthors[index].id) })
+                    }
+                }
+                if (resFamous.isNotEmpty()) {
+                    item {
+                        SearchGroupHeader("名句")
+                    }
+                    items(resFamous.size, key = { "f_${resFamous[it].poemId}_${resFamous[it].line.hashCode()}" }) { index ->
+                        val fl = resFamous[index]
+                        FamousResultRow(fl, onClick = {
+                            // 名句 → 原诗全文并高亮该句（D-043 R1）
+                            onOpenHighlight?.invoke(fl.poemId, fl.line) ?: onOpen(fl.poemId)
+                        })
+                    }
+                }
+                if (resAuthors.isNotEmpty() || resFamous.isNotEmpty()) {
+                    item {
+                        SearchGroupHeader("诗文")
+                    }
+                }
                 items(results.size, key = { results[it].id }) { index ->
                     PoemRow(
                         results[index],
@@ -215,7 +251,7 @@ fun LibraryScreen(
                         onClick = { onOpen(results[index].id) },
                     )
                 }
-                if (results.isEmpty()) {
+                if (results.isEmpty() && resAuthors.isEmpty() && resFamous.isEmpty()) {
                     item {
                         Text(
                             text = "无结果",
@@ -236,6 +272,86 @@ fun LibraryScreen(
             3 -> AuthorFlatContent(poetry, onOpenAuthor)
             4 -> EraDimContent(eraCounts, onOpenEra)
         }
+    }
+}
+
+/** 搜索结果分组头（D-043 R1：作者/名句/诗文 三段） */
+@Composable
+private fun SearchGroupHeader(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 14.dp, bottom = 6.dp),
+    )
+}
+
+/** 作者命中卡（搜"柳永"置顶出人，点击进诗人主页） */
+@Composable
+private fun AuthorResultCard(a: PoemsDb.Author, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 2.dp),
+    ) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    a.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    listOfNotNull(
+                        a.dynasty.takeIf { it.isNotBlank() },
+                        "${a.workCount} 首",
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (a.brief.isNotBlank()) {
+                Text(
+                    a.brief,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/** 名句命中行（点击 → 原诗全文并高亮该句） */
+@Composable
+private fun FamousResultRow(fl: PoemsDb.FamousLine, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+    ) {
+        Text(
+            fl.line,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            fl.signature + "《" + fl.title + "》",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 

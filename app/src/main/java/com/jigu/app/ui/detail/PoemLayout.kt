@@ -12,6 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,15 +93,31 @@ fun poemFontSize(screenWidthDp: Float, maxLineLen: Int, lineCount: Int, longForm
     return size.coerceAtLeast(18)
 }
 
+/** 高亮匹配（D-043 R1 名句直达）：忽略句读差异比较；命中行整行标记 */
+private fun normForHighlight(s: String): String =
+    s.filter { it !in "，。！？；：、·''\"\"「」『』（）()《》〈〉—…–" }
+
+private fun lineMatches(line: String, highlight: String): Boolean {
+    if (highlight.isBlank()) return false
+    val n = normForHighlight(line)
+    val h = normForHighlight(highlight)
+    return h.isNotEmpty() && n.contains(h)
+}
+
 @Composable
-fun PoemBody(paragraphs: List<String>, category: String, modifier: Modifier = Modifier) {
+fun PoemBody(
+    paragraphs: List<String>,
+    category: String,
+    highlight: String = "",
+    modifier: Modifier = Modifier,
+) {
     if (category in PROSE_CATEGORIES) {
         // 段距 20dp（D-032）：论语/孟子语录体每则 1-3 句独立成段——刻本"每则另起"的呼吸感，
         // 原 12dp 使短段连成一片（用户真机反馈"句子紧挨着"）
         Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(20.dp)) {
             paragraphs.forEach { para ->
                 Text(
-                    text = INDENT + para,
+                    text = highlightText(INDENT + para, highlight),
                     style = PoemTextStyle.copy(lineHeight = 43.sp),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.fillMaxWidth(),
@@ -128,7 +147,7 @@ fun PoemBody(paragraphs: List<String>, category: String, modifier: Modifier = Mo
                         // 小序/长段：小一档、缩进两字的左对齐块（P排-3），不打碎
                         val proseSize = (size - 4).coerceAtLeast(16)
                         Text(
-                            text = INDENT + paragraphs[index],
+                            text = highlightText(INDENT + paragraphs[index], highlight),
                             style = PoemTextStyle.copy(
                                 fontSize = proseSize.sp,
                                 lineHeight = (proseSize * 1.7).sp,
@@ -137,7 +156,7 @@ fun PoemBody(paragraphs: List<String>, category: String, modifier: Modifier = Mo
                             modifier = Modifier.fillMaxWidth(),
                         )
                     } else {
-                        lines.forEach { line -> PoemLine(line, size) }
+                        lines.forEach { line -> PoemLine(line, size, highlight) }
                     }
                 }
             }
@@ -145,14 +164,43 @@ fun PoemBody(paragraphs: List<String>, category: String, modifier: Modifier = Mo
     }
 }
 
-/** 居中诗行（P排-2）：行尾句读的墨迹占字面左半，右半空格把视觉重心拖偏——整行右移 1/4 字回正，
- * 与居中标题/署名的墨迹中轴对齐；非悬挂做法（clreq：中文出版界主流不悬挂） */
+/** 命中段整段标记（prose/小序分支用） */
 @Composable
-private fun PoemLine(line: String, size: Int) {
+private fun highlightText(text: String, highlight: String): AnnotatedString {
+    val base = buildAnnotatedString { append(text) }
+    if (!lineMatches(text, highlight)) return base
+    return buildAnnotatedString {
+        append(text)
+        addStyle(
+            SpanStyle(background = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            0,
+            text.length,
+        )
+    }
+}
+
+/** 居中诗行（P排-2）：行尾句读的墨迹占字面左半，右半空格把视觉重心拖偏——整行右移 1/4 字回正，
+ * 与居中标题/署名的墨迹中轴对齐；非悬挂做法（clreq：中文出版界主流不悬挂）。
+ * highlight（D-043 R1）：名句直达时命中行整行淡朱底标记 */
+@Composable
+private fun PoemLine(line: String, size: Int, highlight: String = "") {
     val tail = line.lastOrNull()
     val shift = with(LocalDensity.current) { (size / 4).sp.toDp() }
+    val matched = lineMatches(line, highlight)
+    val text = if (matched) {
+        buildAnnotatedString {
+            append(line)
+            addStyle(
+                SpanStyle(background = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                0,
+                line.length,
+            )
+        }
+    } else {
+        AnnotatedString(line)
+    }
     Text(
-        text = line,
+        text = text,
         style = PoemTextStyle.copy(
             fontSize = size.sp,
             lineHeight = (size * 1.8).sp,
