@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:32px 44px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:repeat(6, 150px); gap:22px; }
+  .tile { background:#fff; border-radius:10px; padding:12px 8px 8px; text-align:center;
+          box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .imgbox { width:124px; height:124px; display:flex; align-items:center; justify-content:center; }
+  .imgbox img { max-width:124px; max-height:124px; }
+  .cap { font-size:12px; color:#333; margin-top:6px; }
+  .cat { font-size:10px; color:#999; margin-top:1px; }
+</style>
+</head>
+<body>
+<h1>真实图标扫描页 — 17 张（无一为本次新设计）</h1>
+<div class="sub">扫一遍，挑出你觉得"对味"的（编号+一个直觉词），不喜欢的不用解释。图片来自各产品官网/favicon。</div>
+<div class="grid" id="g"></div>
+<script>
+const icons = [
+  ["craft","png","Craft","写作工具·国际"],
+  ["figma","ico","Figma","设计工具·国际"],
+  ["obsidian","png","Obsidian","笔记·国际"],
+  ["calm","ico","Calm","冥想·国际"],
+  ["headspace","png","Headspace","冥想·国际"],
+  ["muji","ico","无印良品","零售·日本"],
+  ["weread","ico","微信读书","阅读·国内"],
+  ["du163","ico","蜗牛读书","阅读·国内"],
+  ["gushiwen","ico","古诗文网","诗词·国内"],
+  ["zdic","png","汉典","辞书·国内"],
+  ["souyun","ico","搜韵","诗词工具·国内"],
+  ["shici52","png","诗词吾爱","诗词·国内"],
+  ["vistopia","ico","看理想","文化·国内"],
+  ["dpm","ico","故宫博物院","博物馆·国内"],
+  ["douban","ico","豆瓣","社区·国内"],
+  ["zhihu","ico","知乎","社区·国内"],
+  ["wps","ico","WPS","办公·国内"],
+];
+document.getElementById("g").innerHTML = icons.map((v,i) =>
+  `<div class="tile"><div class="imgbox"><img src="refs/${v[0]}.${v[1]}"></div>
+   <div class="cap">${i+1}. ${v[2]}</div><div class="cat">${v[3]}</div></div>`).join("");
+</script>
+</body>
+</html>

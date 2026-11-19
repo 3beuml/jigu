@@ -1000,7 +1000,13 @@ private fun searchPreviewAnnotated(p: PoemsDb.Poem, query: String, sourceLabel: 
 }
 
 @Composable
-internal fun PoemRow(p: PoemsDb.Poem, onClick: () -> Unit, sourceLabel: String? = null, query: String? = null) {
+internal fun PoemRow(
+    p: PoemsDb.Poem,
+    onClick: () -> Unit,
+    sourceLabel: String? = null,
+    query: String? = null,
+    hideAuthor: Boolean = false,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1012,13 +1018,20 @@ internal fun PoemRow(p: PoemsDb.Poem, onClick: () -> Unit, sourceLabel: String? 
             style = PoemTitleStyle,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Text(
-            text = if (query != null) searchPreviewAnnotated(p, query, sourceLabel) else AnnotatedString(
+        val meta: AnnotatedString = if (hideAuthor) {
+            // 诗人主页内：作者与本页同名，前缀冗余——只留体裁/出处 + 正文预览（D-043 骨干重排）
+            val prefix = sourceLabel?.takeIf { it.isNotBlank() } ?: p.type.takeIf { it.isNotBlank() } ?: ""
+            AnnotatedString(if (prefix.isBlank()) ellipsize(p.body, 30) else "$prefix ｜ " + ellipsize(p.body, 30))
+        } else {
+            AnnotatedString(
                 listOfNotNull(
                     sourceLabel?.takeIf { it.isNotBlank() },
                     p.author.ifBlank { "佚名" },
                 ).joinToString(" ｜ ") + " ｜ " + ellipsize(p.body, 30)
-            ),
+            )
+        }
+        Text(
+            text = if (query != null) searchPreviewAnnotated(p, query, sourceLabel) else meta,
             style = PoemBodySmallStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

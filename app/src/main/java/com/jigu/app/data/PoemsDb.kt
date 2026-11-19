@@ -975,11 +975,12 @@ class PoemsDb private constructor(context: Context) {
         return queryPoems("$POEM_SELECT WHERE $where ORDER BY p.id LIMIT ? OFFSET ?", args.toTypedArray())
     }
 
-    /** 诗人主页名篇置顶（D-043 R2）：有名句或有人气者，按名气序取头部。 */
+    /** 诗人主页名篇置顶（D-043 R2）：名句命中优先（雨霖铃级），名气次之。 */
     fun poemsByAuthorTop(authorId: Int, limit: Int = 6): List<Poem> = queryPoems(
         "$POEM_SELECT WHERE p.author_id = ? AND (p.popularity > 0 " +
             "OR EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id)) " +
-            "ORDER BY p.popularity DESC LIMIT ?",
+            "ORDER BY EXISTS (SELECT 1 FROM famous_lines f WHERE f.poem_id = p.id) DESC, " +
+            "p.popularity DESC LIMIT ?",
         arrayOf(authorId.toString(), limit.toString()),
     )
 

@@ -83,11 +83,16 @@ private fun rememberPagedPoems(key: Any?, loader: (page: Int) -> List<PoemsDb.Po
 }
 
 @Composable
-private fun PagedPoemList(pager: Pager, onOpen: (Int) -> Unit, header: (@Composable () -> Unit)? = null) {
+private fun PagedPoemList(
+    pager: Pager,
+    onOpen: (Int) -> Unit,
+    header: (@Composable () -> Unit)? = null,
+    hideAuthor: Boolean = false,
+) {
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
         header?.let { item { it() } }
         items(pager.items.size, key = { pager.items[it].id }) { index ->
-            PoemRow(pager.items[index], onClick = { onOpen(pager.items[index].id) })
+            PoemRow(pager.items[index], onClick = { onOpen(pager.items[index].id) }, hideAuthor = hideAuthor)
         }
         if (pager.hasMore && pager.items.isNotEmpty()) {
             item {
@@ -242,7 +247,8 @@ fun AuthorIndexScreen(onBack: () -> Unit, onOpenAuthor: (Int) -> Unit) {
     }
 }
 
-/** 作者主页（D-043 R2 四件套）：关注 + 小传 + 名篇置顶 + 全部作品（体裁筛选） */
+/** 作者主页（D-043 R2 + 骨干重排）：身份区（关注+统计）→ 小传（折叠）→ 名篇 → 全部作品（体裁筛选）。
+ *  四区以发丝线分隔；页内行隐藏作者前缀（同名冗余）；名篇行与全库列表行同款式。 */
 @Composable
 fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
@@ -251,6 +257,7 @@ fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     var topPoems by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
     var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var selectedType by remember { mutableStateOf<String?>(null) }
+    var bioExpanded by remember(authorId) { mutableStateOf(false) }
 
     LaunchedEffect(authorId) {
         withContext(Dispatchers.IO) {
@@ -289,74 +296,87 @@ fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                 modifier = Modifier.padding(20.dp),
             )
         } else {
-            PagedPoemList(pager, onOpen) {
-                Column(Modifier.padding(horizontal = 20.dp)) {
-                    // 关注（独立列表页入口在「我的」，今日诗适度加权）
-                    FollowToggle(following) {
-                        following = !following
-                        Thread {
-                            val db = PoemsDb.get(context)
-                            if (following) db.followAuthor(authorId, a.name, a.dynasty)
-                            else db.unfollowAuthor(authorId)
-                        }.start()
-                    }
-                    if (a.brief.isNotBlank()) {
+            PagedPoemList(pager, onOpen, hideAuthor = true, header = {
+                Column(Modifier.fillMaxWidth()) {
+                    // —— 身份区：关注 + 作品统计 ——
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        FollowToggle(following) {
+                            following = !following
+                            Thread {
+                                val db = PoemsDb.get(context)
+                                if (following) db.followAuthor(authorId, a.name, a.dynasty)
+                                else db.unfollowAuthor(authorId)
+                            }.start()
+                        }
+                        Spacer(Modifier.weight(1f))
                         Text(
-                            "小传",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 6.dp),
-                        )
-                        Text(
-                            a.brief,
-                            style = MaterialTheme.typography.bodyMedium,
+                            "${typeCounts.values.sum()} 首",
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    // 名篇置顶（有名句/人气者，按名气序）
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+
+                    // —— 小传区（超长折叠）——
+                    if (a.brief.isNotBlank()) {
+                        Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                            Text(
+                                "小传",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                a.brief,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = if (bioExpanded) Int.MAX_VALUE else 6,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 6.dp),
+                            )
+                            if (a.brief.length > 120) {
+                                TextButton(onClick = { bioExpanded = !bioExpanded }) {
+                                    Text(if (bioExpanded) "收起" else "展开全文")
+                                }
+                            }
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                    }
+
+                    // —— 名篇区（与列表行同款式）——
                     if (topPoems.isNotEmpty()) {
                         Text(
                             "名篇",
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(start = 20.dp, top = 12.dp),
                         )
                         topPoems.forEach { p ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onOpen(p.id) }
-                                    .padding(vertical = 6.dp),
-                            ) {
-                                Text(
-                                    p.title,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                                if (p.famousLine.isNotBlank()) {
-                                    Text(
-                                        p.famousLine,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
+                            PoemRow(p, onClick = { onOpen(p.id) }, hideAuthor = true)
                         }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
                     }
-                    // 体裁筛选 chips（全部 + 各体裁按作品量）
+
+                    // —— 作品区：体裁筛选 chips ——
                     if (typeCounts.size > 1) {
                         Text(
                             "全部作品",
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(start = 20.dp, top = 12.dp),
                         )
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             val all = listOf("全部" to typeCounts.values.sum()) +
@@ -370,26 +390,30 @@ fun AuthorScreen(authorId: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                                 }
                             }
                         }
-                        Spacer(Modifier.height(4.dp))
                     }
                 }
-            }
+            })
         }
     }
 }
 
-/** 关注开关（墨字极简：选中朱点前缀，呼应 D-004 零彩色秩序） */
+/** 关注开关：胶囊 chip 形制（选中淡朱底，呼应 D-004 零彩色秩序） */
 @Composable
 private fun FollowToggle(following: Boolean, onToggle: () -> Unit) {
-    Text(
-        text = if (following) "● 已关注（点按取消）" else "○ 关注这位诗人",
-        style = MaterialTheme.typography.titleSmall,
-        color = if (following) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .clickable(onClick = onToggle)
-            .padding(vertical = 6.dp),
-    )
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = if (following) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.clickable(onClick = onToggle),
+    ) {
+        Text(
+            text = if (following) "● 已关注" else "＋ 关注",
+            style = MaterialTheme.typography.titleSmall,
+            color = if (following) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
 }
 
 /** 体裁筛选 chip（与书库维度 chips 同款形制） */
