@@ -9,7 +9,8 @@
 定位：**一天一首诗，跟着节气过日子；把诗送进生活，而不是把用户拉进 App**。
 无社区、无账号、无信息流、全离线。GitHub: 3beuml/jigu，Apache-2.0。
 
-**全部产品决策见 `docs/DECISIONS.md`（D-001~D-038）**——动手前必读；`docs/REFERENCES.md` 含开源语料库与同类 App 数据源地图（D-036 调查专项）。
+**全部产品决策见 `docs/DECISIONS.md`（D-001~D-042）**——动手前必读；`docs/REFERENCES.md` 含开源语料库与同类 App 数据源地图（D-036 调查专项）。
+**产品需求事实源：`docs/REQUIREMENTS-2026-11-19-需求分析与路线图.md`**（用户访谈定稿：搜索=灵魂功能，四形态模型，几枝式首页，数据优先路线）。
 **参考资料与参照 App 研究状态见 `docs/REFERENCES.md`**。
 
 ## 硬约束（违反即返工）
