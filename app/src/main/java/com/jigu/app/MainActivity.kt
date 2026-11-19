@@ -357,7 +357,8 @@ fun JiguApp() {
         // 常驻签条反而占底部、碍返回视线；全屏体验页同理不显示。
         // 出入场动效：进子页滑出、返回滑入——"书签回来"而非"突然在"（D-025 终版）
         androidx.compose.animation.AnimatedVisibility(
-            visible = route in setOf("today", "poetry", "guwen", "mine"),
+            // D-046：dock 常驻——仅在沉浸式分享卡预览退场；子页内容以 DOCK_CLEARANCE 避让
+            visible = route != "card/{id}",
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) +
                 androidx.compose.animation.fadeIn(),
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) +

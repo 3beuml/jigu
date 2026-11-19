@@ -1,6 +1,8 @@
 package com.jigu.app.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
 import androidx.compose.foundation.layout.PaddingValues
 import com.jigu.app.DOCK_CLEARANCE
@@ -390,6 +393,13 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var tagCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var popularCount by remember { mutableIntStateOf(0) }
+    // R9 书架自选置顶：长按卡片置顶；置顶卡（按置顶序）排架首
+    var pinned by remember { mutableStateOf(JiguSettings.pinnedModules(context)) }
+    fun togglePin(route: String) {
+        val next = if (route in pinned) pinned - route else pinned + route
+        pinned = next
+        JiguSettings.setPinnedModules(context, next)
+    }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
@@ -405,7 +415,12 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
             else -> counts[book.route] ?: 0
         }
     }
-    val books = if (section == LibrarySection.POETRY) POETRY_BOOK_MODULES else PROSE_BOOK_MODULES
+    val base = if (section == LibrarySection.POETRY) POETRY_BOOK_MODULES else PROSE_BOOK_MODULES
+    val pinnedSet = pinned.toSet()
+    val books = base.sortedWith(
+        compareByDescending<BookModule> { if (it.route in pinnedSet) 1 else 0 }
+            .thenBy { pinned.indexOf(it.route).let { i -> if (i >= 0) i else Int.MAX_VALUE } },
+    )
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
@@ -414,8 +429,27 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
         contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
     ) {
         if (section == LibrarySection.PROSE) {
+            // R9：置顶卡先出（占整行头），再按四库法分组（置顶卡不重复出现）
+            val pinnedBooks = books.filter { it.route in pinnedSet }
+            if (pinnedBooks.isNotEmpty()) {
+                item(key = "part_pinned", span = { GridItemSpan(2) }) {
+                    Text(
+                        text = "置顶",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 14.dp, bottom = 0.dp),
+                    )
+                }
+                items(pinnedBooks, key = { it.route }) { book ->
+                    ModuleCard(book.title, book.brief, countOf(book), pinned = true, onTogglePin = { togglePin(book.route) }) {
+                        onOpenModule(book.route)
+                    }
+                }
+            }
             // 四库法头占整行（D-030/D-032）：经/史/子/说部/集 分组呈现
             listOf("经", "史", "子", "说部", "集").forEach { part ->
+                val inPart = books.filter { it.part == part && it.route !in pinnedSet }
+                if (inPart.isEmpty()) return@forEach
                 item(key = "part_$part", span = { GridItemSpan(2) }) {
                     Text(
                         text = part,
@@ -424,13 +458,17 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
                         modifier = Modifier.padding(top = 14.dp, bottom = 0.dp),
                     )
                 }
-                items(books.filter { it.part == part }, key = { it.route }) { book ->
-                    ModuleCard(title = book.title, brief = book.brief, count = countOf(book)) { onOpenModule(book.route) }
+                items(inPart, key = { it.route }) { book ->
+                    ModuleCard(book.title, book.brief, countOf(book), pinned = false, onTogglePin = { togglePin(book.route) }) {
+                        onOpenModule(book.route)
+                    }
                 }
             }
         } else {
             items(books, key = { it.route }) { book ->
-                ModuleCard(title = book.title, brief = book.brief, count = countOf(book)) { onOpenModule(book.route) }
+                ModuleCard(book.title, book.brief, countOf(book), pinned = book.route in pinnedSet, onTogglePin = { togglePin(book.route) }) {
+                    onOpenModule(book.route)
+                }
             }
         }
     }
@@ -758,18 +796,29 @@ private fun AuthorFlatContent(poetry: Boolean, onOpenAuthor: (Int) -> Unit) {
 }
 
 @Composable
-private fun ModuleCard(title: String, brief: String, count: Int, onClick: () -> Unit) {
+@OptIn(ExperimentalFoundationApi::class)
+private fun ModuleCard(
+    title: String,
+    brief: String,
+    count: Int,
+    pinned: Boolean = false,
+    onTogglePin: () -> Unit = {},
+    onClick: () -> Unit,
+) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
         modifier = Modifier
             .fillMaxWidth()
             .height(96.dp)
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onTogglePin,  // R9：长按置顶/取消置顶
+            ),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = title,
+                text = if (pinned) "● $title" else title,
                 style = PoemTitleStyle,
                 color = MaterialTheme.colorScheme.onBackground,
             )

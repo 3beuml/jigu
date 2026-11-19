@@ -1,6 +1,9 @@
 package com.jigu.app.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -671,59 +676,142 @@ private fun BrowseScaffold(
 }
 
 /** 名句/名段浏览（批1 书库"名句"卡；D-011 名句制的浏览兑现）：今日页同源数据，按名气序分页 */
+/** 名句体系（R5/D-046）：分组筛选（全部/经典/诗词/古文/已收藏）+ 行内收藏心形。
+ *  名句收藏 = 收藏其原诗（favorites 复用）；数据源 famous_lines（400 条种子+热度补种）。 */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FamousLinesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val context = LocalContext.current
     var lines by remember { mutableStateOf<List<PoemsDb.FamousLine>>(emptyList()) }
     var hasMore by remember { mutableStateOf(true) }
     var page by remember { mutableIntStateOf(0) }
+    var filter by remember { mutableStateOf("全部") }
+    var favIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
     val pageN = 100
+
+    val CLASSIC = setOf("lunyu", "sishu", "shijing")
+    val POETRY = setOf(
+        "tang_poem", "song_poem", "qianjiashi", "shijing", "chuci", "han_wei", "gushi19",
+        "gushiyuan", "yuan_shi", "qing_shi", "ci", "wudai_ci", "qing_ci", "yuan_qu",
+        "jinyuan_ci", "jinsanbai_ci", "tang_ci", "yuefu",
+    )
+    val WEN = setOf(
+        "guwen", "laozi", "zhuangzi", "shishuo", "shiji", "youmengying", "mengxue",
+        "zuozhuan", "guoyu", "mozi", "xunzi", "hanfeizi", "liezi", "sunzi", "huainanzi",
+        "lvshi", "guanzi", "yanzi", "shangjunshu",
+    )
 
     LaunchedEffect(page) {
         withContext(Dispatchers.IO) {
-            val batch = PoemsDb.get(context).famousLines(pageN, page * pageN)
+            val db = PoemsDb.get(context)
+            val batch = db.famousLines(pageN, page * pageN)
             lines = if (page == 0) batch else lines + batch
             hasMore = batch.size == pageN
+            favIds = db.favoriteIds().toSet()
         }
     }
 
-    BrowseScaffold(title = "名句", subtitle = "名段 · 今日页与名句表同源", onBack = onBack) {
-        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
-            items(lines.size, key = { lines[it].poemId * 1000 + it }) { index ->
-                val f = lines[index]
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpen(f.poemId) }
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                ) {
-                    Text(
-                        text = f.line,
-                        style = PoemTitleStyle,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = "${f.signature}《${f.title}》",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+    fun toggleFav(poemId: Int) {
+        PoemsDb.get(context).toggleFavorite(poemId)
+        favIds = PoemsDb.get(context).favoriteIds().toSet()
+    }
+
+    val filtered = when (filter) {
+        "经典" -> lines.filter { it.category in CLASSIC }
+        "诗词" -> lines.filter { it.category in POETRY && it.category !in CLASSIC }
+        "古文" -> lines.filter { it.category in WEN && it.category !in CLASSIC }
+        "已收藏" -> lines.filter { it.poemId in favIds }
+        else -> lines
+    }
+
+    BrowseScaffold(title = "名句", subtitle = "${filtered.size} 条 · 点句读全诗", onBack = onBack) {
+        Column(Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf("全部", "经典", "诗词", "古文", "已收藏").forEach { label ->
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = if (filter == label) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        onClick = { filter = label },
+                    ) {
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (filter == label) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                        )
+                    }
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             }
-            if (hasMore && lines.isNotEmpty()) {
-                item {
-                    TextButton(
-                        onClick = { page += 1 },
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
+            ) {
+                items(filtered.size, key = { filtered[it].poemId * 1000 + it }) { index ->
+                    val f = filtered[index]
+                    val fav = f.poemId in favIds
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                    ) { Text("加载更多") }
+                            .clickable { onOpen(f.poemId) }
+                            .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = f.line,
+                                style = PoemTitleStyle,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                            Text(
+                                text = "${f.signature}《${f.title}》",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(onClick = { toggleFav(f.poemId) }) {
+                            Icon(
+                                if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (fav) "取消收藏" else "收藏名句",
+                                tint = if (fav) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                }
+                if (hasMore && filter == "全部" && lines.isNotEmpty()) {
+                    item {
+                        TextButton(
+                            onClick = { page += 1 },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                        ) { Text("加载更多") }
+                    }
+                }
+                if (filtered.isEmpty()) {
+                    item {
+                        Text(
+                            if (filter == "已收藏") "还没有收藏名句——点心形即可收藏" else "无",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(20.dp),
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 
 /** 文体 -> 作品列表（批7 题材·文体维：古文 13 类，范围=guwen/老子/庄子/史记） */
 @Composable

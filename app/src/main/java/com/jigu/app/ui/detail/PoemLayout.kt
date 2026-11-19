@@ -34,7 +34,7 @@ import com.jigu.app.ui.theme.Wenkai
  * 标题与署名由调用方居中。
  */
 
-private val PROSE_CATEGORIES = setOf(
+internal val PROSE_CATEGORIES = setOf(
     "guwen", "laozi", "zhuangzi", "shishuo", "shiji", "lunyu", "sishu", "mengxue", "youmengying",
     // 批11（D-033）经史子扩容：左传/国语/战国策 + 诸子九流
     "zuozhuan", "guoyu", "zhanguoce",
@@ -46,7 +46,7 @@ private val TERM = setOf('，', '。', '！', '？', '；', '：', '、', ',', '
     '"', '\u201d', '\u2019', '）', '》', '」', '』', '）', '］', '】')
 
 /** 段首缩进用两枚全角空格：离线只读，复制带缩进可接受（P排-3 实现备案） */
-private const val INDENT = "　　"
+internal const val INDENT = "　　"
 
 private fun String.plainLen(): Int = count { it !in TERM && !it.isWhitespace() }
 
@@ -203,7 +203,7 @@ private fun PoemLine(line: String, size: Int, highlight: String = "") {
         text = text,
         style = PoemTextStyle.copy(
             fontSize = size.sp,
-            lineHeight = (size * 1.8).sp,
+            lineHeight = (size * 1.9).sp,  // R7：行距 1.8→1.9（用户批"太密/机械"）
         ),
         color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center,

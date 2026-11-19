@@ -248,13 +248,15 @@ class PoemsDb private constructor(context: Context) {
         val workCount: Int,
     )
 
-    /** 名句条目（书库"名句"卡，批1）：名句行 + 出处（今日页同源数据，D-011） */
+    /** 名句条目（书库"名句"卡，批1）：名句行 + 出处（今日页同源数据，D-011）；
+     *  category（R5 名句体系）：来源卡分类，供 经典/诗词/古文 分组筛选用。 */
     data class FamousLine(
         val poemId: Int,
         val line: String,
         val title: String,
         val dynasty: String,
         val author: String,
+        val category: String = "",
     ) {
         /** 「朝代 · 作者《题》」（D-012 出口之外的第二处拼接近亲——名句模块数据非 Poem 对象） */
         val signature: String =
@@ -508,7 +510,7 @@ class PoemsDb private constructor(context: Context) {
     /** 名句分页流（种子序即名气序，1 章 = 300 条天然按诗分组；批1 书库"名句"卡） */
     fun famousLines(limit: Int, offset: Int): List<FamousLine> =
         rdb().rawQuery(
-            "SELECT f.poem_id, f.line, p.title, IFNULL(a.dynasty,''), IFNULL(a.name,'') " +
+            "SELECT f.poem_id, f.line, p.title, IFNULL(a.dynasty,''), IFNULL(a.name,''), p.category " +
                 "FROM famous_lines f JOIN poems p ON p.id = f.poem_id " +
                 "LEFT JOIN authors a ON a.id = p.author_id ORDER BY f.id LIMIT ? OFFSET ?",
             arrayOf(limit.toString(), offset.toString()),
@@ -520,6 +522,7 @@ class PoemsDb private constructor(context: Context) {
                 title = c.getString(2) ?: "",
                 dynasty = c.getString(3) ?: "",
                 author = c.getString(4) ?: "",
+                category = c.getString(5) ?: "",
             )
             out
         }

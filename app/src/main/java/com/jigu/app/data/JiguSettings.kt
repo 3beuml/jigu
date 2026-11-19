@@ -71,6 +71,18 @@ object JiguSettings {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(KEY_CITY, value.trim()).apply()
     }
+
+    // ---------- R9 书架自选置顶（D-046）：长按卡片置顶，置顶卡排架首 ----------
+    private const val KEY_PINNED = "pinned_modules"
+
+    fun pinnedModules(context: Context): List<String> =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_PINNED, "")?.split(',')?.filter { it.isNotBlank() }.orEmpty()
+
+    fun setPinnedModules(context: Context, mods: List<String>) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putString(KEY_PINNED, mods.joinToString(",")).apply()
+    }
 }
 
 /** 情境映射（D-045）：心情/状态/天气 → 题材池（题材词表 30 类内取交集） */
