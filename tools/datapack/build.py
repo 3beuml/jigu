@@ -37,7 +37,8 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 28  # +1: 作者名异文归一（韩竑→韩翃/杜小山→杜耒/赵匡胤→宋太祖·宋）——同诗跨卡同作者；归一同文同卡条目被 UNIQUE(category,hash) 吞并
+DATA_VERSION = 29  # +1: 治理批（2026-11-19）——元诗选作者归属重写（339 通行姓名）、去重指纹改归一
+#                    口径（同卡同文异标点/异体自动吞并）、异文覆盖前置入 hash、作者名异文归一扩表
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -194,6 +195,31 @@ MANUAL_VARIANTS = {
     "蠧": "蠹", "鬭": "斗", "竒": "奇", "碬": "碫", "阨": "厄", "愼": "慎",
     "歴": "历", "畧": "略", "廻": "回", "灋": "法", "髙": "高",
 }
+
+# 去重指纹归一表（与 tools/nightshift/20261117/dedup_scan.py 同源——VAR+NORM_MAP 合并；
+# 只参与 hash 计算，不改展示文本。同文异标点/异体/繁简两版在同一 category 内由
+# UNIQUE(category,hash) 吞并，治理批 2026-11-19）
+HASH_VARIANTS = {
+    "凢": "凡", "蠧": "蠹", "搆": "构", "蜯": "蚌", "鑚": "钻", "兎": "兔", "逺": "远",
+    "舎": "舍", "髄": "髓", "讐": "仇", "徳": "德", "鼈": "鳖", "衞": "卫", "歎": "叹",
+    "脩": "修", "戲": "戏", "鬭": "斗", "竒": "奇", "碬": "碫", "阨": "厄", "愼": "慎",
+    "歴": "历", "畧": "略", "廻": "回", "灋": "法", "髙": "高",
+    "茍": "苟", "於": "于", "遊": "游", "甯": "宁", "鹹": "咸", "卻": "却", "囘": "回",
+    "羣": "群", "歸": "归", "徧": "遍", "彊": "强", "饑": "饥", "衆": "众", "裏": "里",
+    "爲": "为", "發": "发", "覩": "睹", "悅": "悦", "說": "说", "爾": "尔", "曏": "向",
+    "嚮": "向", "鄉": "向", "黨": "倘", "蚤": "早", "倍": "背", "畔": "叛", "錯": "措",
+    "寘": "置", "田": "畋", "辟": "避",
+}
+_JAZHU_RE = re.compile(r"【[^】]*】")
+
+
+def norm_key(text: str) -> str:
+    """去重指纹归一：剥【夹注】+ 繁转简 + 异体归并 + 仅留基本区 CJK（去标点空白）。"""
+    t = _JAZHU_RE.sub("", text)
+    t = T2S.convert(t)
+    t = "".join(HASH_VARIANTS.get(c, c) for c in t)
+    return "".join(ch for ch in t if 0x4E00 <= ord(ch) <= 0x9FFF)
+
 
 
 # 字形门闩状态（main 里加载）
@@ -374,6 +400,32 @@ AUTHOR_FIX = {
     "韩竑": ("韩翃", None),      # 千家诗底本讹形（《寒食》与全唐诗韩翃条同文）
     "杜小山": ("杜耒", None),    # 千家诗以字行（杜耒字小山，全宋诗作杜耒）
     "赵匡胤": ("宋太祖", "宋"),  # 全唐诗补编署名与全宋诗统一；此人属宋，时代一并归宋
+    # 治理批 2026-11-19（DATA 29）：跨卡同诗两署名逐组定性——僧人全宋诗带"释"姓，
+    # 全唐诗补编作本名；贾岛初为僧名无本；全唐诗自注"一作佖"；形讹/异姓/泛称各归通行。
+    "延寿": ("释延寿", None),      # 永明延寿（《闲居》）
+    "可勋": ("释可勋", None),      # 《偈》
+    "本先": ("释本先", None),      # 《非风幡动仁者心动颂》
+    "干康": ("释干康", None),      # 《赋残雪》
+    "尚能": ("释尚能", None),      # 《中秋旅怀》
+    "赞宁": ("释赞宁", None),      # 《夜吟》（宋僧赞宁）
+    "释无本": ("贾岛", None),      # 贾岛初为僧名无本（《行次汉上》）
+    "韩王从善": ("李从善", None),  # 南唐李从善，补编署封号
+    "张泌": ("张佖", None),        # 全唐诗自注"一作佖"，与全宋诗并归 张佖
+    "朱贞白": ("李贞白", None),    # 《谒贵公子不礼书格子屏风》同文异姓，从全唐诗 李贞白
+    "江景防": ("江景房", None),    # 《保安寺》同文形讹（防/房）
+    "贺公": ("贺亢", None),        # 《句》泛称 → 贺亢
+    # 二波（同卡同诗署名两写，归一口径已能吞并——归名后 hash 相同）
+    "朱庆余": ("朱庆馀", None),    # 《宫词》余/馀异体（通行 朱庆馀）
+    "赵令": ("赵令畤", None),      # 《蝶恋花》底本名脱字（通行 赵令畤）
+    "裴元": ("裴次元", None),      # 《律中应钟》脱字
+    "张元正": ("张正元", None),    # 《临川羡鱼》字序倒
+    "高华": ("高道华", None),      # 《章华台碑》脱字
+    "林逋叟": ("林逋", None),      # 《华阳洞》以号行
+    "陈良": ("陈良孙", None),      # 《自紫极观过天柱》脱字
+    "刘弼": ("刘公弼", None),      # 《句》以字行
+    "宝祐时人": ("宝祐士人", None),  # 《句》同位佚名两写
+    "李南寿": ("季南寿", None),    # 《句》姓讹（季/李）
+    "后主衍": ("王衍", None),      # 《醉妆词》前蜀后主，归本名（作者表按朝代分行不撞晋王衍）
 }
 
 
@@ -425,12 +477,19 @@ class Db:
         paras = [s(p) for p in rec["paragraphs"] if isinstance(p, str) and p.strip()]
         if not paras:
             return False
-        body = "\n".join(paras)
         title = clean_placeholder_title(norm_title(s(rec.get("title") or "无题")))
         title = next((new for old, new in TITLE_FIXES if title == old), title)
+        # 异文覆盖前置到入库——hash 必须见最终文本（治理批：枫桥夜泊类同卡漏网根因）。
+        # db 层 apply_text_overrides 保留兜底（幂等）。
+        for t, old, new in TEXT_OVERRIDES:
+            if title == t:
+                paras = [p.replace(old, new) for p in paras]
+        body = "\n".join(paras)
         # 作者名先归一再算 hash——归一的同文同卡条目由 UNIQUE(category,hash) 自动去重
         aname, adyn = fix_author(rec.get("author", ""), rec.get("dynasty", ""))
-        h = hashlib.md5(f"{title}|{aname}|{body}".encode()).hexdigest()
+        # 指纹用归一口径（同文异标点/异体/繁简不拆重复）——原文指纹只差标点的补编×正编
+        # 条目曾全部漏网（治理批 2026-11-19，与 dedup_scan.py 同源）
+        h = hashlib.md5(f"{norm_key(title)}|{aname}|{norm_key(body)}".encode()).hexdigest()
         cat = rec["category"]
         era = ERA_MAP.get(adyn, adyn)
         typ = rec.get("type") or classify_type(cat, title, s(rec.get("rhythmic", "")), paras)
