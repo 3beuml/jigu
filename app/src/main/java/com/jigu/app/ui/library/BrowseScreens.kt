@@ -189,13 +189,13 @@ fun AuthorIndexScreen(onBack: () -> Unit, onOpenAuthor: (Int) -> Unit) {
 
     LaunchedEffect(page) {
         withContext(Dispatchers.IO) {
-            val batch = PoemsDb.get(context).authorIndex("all", PAGE, page * PAGE)
+            val batch = PoemsDb.get(context).authorIndex("poetry", PAGE, page * PAGE)
             authors = if (page == 0) batch else authors + batch
             hasMore = batch.size == PAGE
         }
     }
 
-    BrowseScaffold(title = "诗人", subtitle = "按作品量排序", onBack = onBack) {
+    BrowseScaffold(title = "诗人", subtitle = "朝代时序 · 域内作品量", onBack = onBack) {
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
             items(authors.size, key = { authors[it].id }) { index ->
                 val a = authors[index]

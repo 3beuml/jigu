@@ -50,6 +50,35 @@ class PoemsDb private constructor(context: Context) {
         private const val AUTHOR_COLUMNS =
             "a.id, a.name, a.dynasty, a.brief, a.birth_year, a.death_year, count(p.id) AS cnt"
 
+        // 作者域清单（D-043 逻辑修正）：kind 决定作者索引的作品域
+        private val POEM_CATS =
+            "('tang_poem','song_poem','qianjiashi','shijing','chuci','han_wei','gushi19','gushiyuan','yuan_shi','qing_shi','yuefu')"
+        private val CI_CATS =
+            "('ci','wudai_ci','qing_ci','yuan_qu','jinyuan_ci','jinsanbai_ci','tang_ci')"
+        private val WEN_CATS =
+            "('guwen','laozi','zhuangzi','shishuo','shiji','lunyu','sishu','mengxue','youmengying'," +
+                "'zuozhuan','guoyu','zhanguoce','mozi','xunzi','hanfeizi','liezi','sunzi'," +
+                "'huainanzi','lvshi','guanzi','yanzi','shangjunshu')"
+        private val POETRY_ALL_CATS =
+            "('tang_poem','song_poem','ci','qing_ci','wudai_ci','qianjiashi','shijing','chuci','han_wei'," +
+                "'gushi19','gushiyuan','yuan_qu','yuan_shi','qing_shi','tang_ci','jinyuan_ci','jinsanbai_ci','yuefu')"
+
+        /** 朝代时序（D-043）：作者索引排序用——先秦→汉→魏晋→南北朝→隋→唐→五代→宋→金元→元→明→清 */
+        private val ERA_RANK_SQL = """CASE a.dynasty
+            WHEN '先秦' THEN 0 WHEN '春秋' THEN 0 WHEN '楚' THEN 0 WHEN '战国' THEN 0
+            WHEN '西汉' THEN 1 WHEN '汉' THEN 1 WHEN '后汉' THEN 1
+            WHEN '魏' THEN 2 WHEN '魏晋' THEN 2 WHEN '晋' THEN 2
+            WHEN '南北朝' THEN 3 WHEN '梁' THEN 3 WHEN '陈' THEN 3 WHEN '齐' THEN 3 WHEN '北周' THEN 3 WHEN '北齐' THEN 3
+            WHEN '隋' THEN 4
+            WHEN '唐' THEN 5 WHEN '唐五代' THEN 5
+            WHEN '五代' THEN 6
+            WHEN '宋' THEN 7
+            WHEN '金元' THEN 8
+            WHEN '元' THEN 9
+            WHEN '明' THEN 10
+            WHEN '清' THEN 11
+            ELSE 12 END"""
+
         @Volatile
         private var instance: PoemsDb? = null
 
@@ -336,10 +365,7 @@ class PoemsDb private constructor(context: Context) {
     fun eraCounts(poetry: Boolean): Map<String, Int> {
         awaitData()
         (if (poetry) cachedEraPoetry else cachedEraProse)?.let { return it }
-        val poetryCats = "('tang_poem','song_poem','ci','qing_ci','wudai_ci','qianjiashi'," +
-            "'shijing','chuci','han_wei','gushi19','gushiyuan','yuan_qu'," +
-            // 批12/13 补全（D-035/D-037）与批15 乐府（D-042）：此前漏入清单会被当"古文"计数
-            "'yuan_shi','qing_shi','tang_ci','jinyuan_ci','jinsanbai_ci','yuefu')"
+        val poetryCats = POETRY_ALL_CATS  // D-044：与作者索引同一份诗词域清单
         val where = if (poetry) "p.category IN $poetryCats" else "p.category NOT IN $poetryCats"
         val out = rdb().rawQuery(
             "SELECT a.dynasty, count(*) FROM poems p " +
@@ -940,23 +966,23 @@ class PoemsDb private constructor(context: Context) {
      *  入"词曲"组，分组名同步）。
      *  体裁 tab 排除无名氏/佚名/空名防霸榜（全宋词无名氏 1568 首会压过辛弃疾）；"全部"保留。 */
     fun authorIndex(kind: String, limit: Int, offset: Int): List<Author> {
-        val poemCats = "('tang_poem','song_poem','qianjiashi','shijing','chuci','han_wei','gushi19','gushiyuan','yuan_shi','qing_shi','yuefu')"
-        val wenCats = "('guwen','laozi','zhuangzi','shishuo','shiji','lunyu','sishu','mengxue','youmengying'," +
-            // 批11（D-033）经史子扩容：左丘明/墨翟/孙武等入"文家"组
-            "'zuozhuan','guoyu','zhanguoce','mozi','xunzi','hanfeizi','liezi','sunzi'," +
-            "'huainanzi','lvshi','guanzi','yanzi','shangjunshu')"
-        val ciCats = "('ci','wudai_ci','qing_ci','yuan_qu','jinyuan_ci','jinsanbai_ci','tang_ci')"
-        val kindSum = when (kind) {
-            "poet" -> "SUM(CASE WHEN p.category IN $poemCats THEN 1 ELSE 0 END)"
-            "ci" -> "SUM(CASE WHEN p.category IN $ciCats THEN 1 ELSE 0 END)"
-            "wen" -> "SUM(CASE WHEN p.category IN $wenCats THEN 1 ELSE 0 END)"
-            else -> "COUNT(*)"
+        // D-043 逻辑修正（用户批"古文栏出现诗歌作者/作者顺序乱没逻辑"）：
+        // ① kind 决定作品域——计数/过滤/展示全用域内口径（分栏后"全部"不再跨域）；
+        // ② 排序改朝代时序（先秦→清）+ 域内作品量，替代混朝代的纯作品量序。
+        val sumExpr = when (kind) {
+            "poet" -> "SUM(CASE WHEN p.category IN $POEM_CATS THEN 1 ELSE 0 END)"
+            "ci" -> "SUM(CASE WHEN p.category IN $CI_CATS THEN 1 ELSE 0 END)"
+            "wen" -> "SUM(CASE WHEN p.category IN $WEN_CATS THEN 1 ELSE 0 END)"
+            "poetry" -> "SUM(CASE WHEN p.category IN $POETRY_ALL_CATS THEN 1 ELSE 0 END)"
+            else -> "COUNT(p.id)"  // "any"：全分类（朝代页等场景）
         }
-        val having = if (kind == "all") "" else
-            "HAVING $kindSum > 0 AND a.name NOT IN ('', '无名氏', '佚名')"
+        val having = if (kind == "any") ""
+        else "HAVING cnt > 0 AND a.name NOT IN ('', '无名氏', '佚名')"
         return rdb().rawQuery(
-            "SELECT $AUTHOR_COLUMNS FROM authors a LEFT JOIN poems p ON p.author_id = a.id " +
-                "GROUP BY a.id $having ORDER BY $kindSum DESC, a.name ASC LIMIT ? OFFSET ?",
+            "SELECT a.id, a.name, a.dynasty, a.brief, a.birth_year, a.death_year, $sumExpr AS cnt " +
+                "FROM authors a LEFT JOIN poems p ON p.author_id = a.id " +
+                "GROUP BY a.id $having " +
+                "ORDER BY $ERA_RANK_SQL ASC, cnt DESC, a.name ASC LIMIT ? OFFSET ?",
             arrayOf(limit.toString(), offset.toString()),
         ).use { c ->
             val out = mutableListOf<Author>()

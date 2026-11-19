@@ -679,7 +679,7 @@ private fun TypeFlatContent(
 @Composable
 private fun AuthorFlatContent(poetry: Boolean, onOpenAuthor: (Int) -> Unit) {
     val context = LocalContext.current
-    var kind by rememberSaveable { mutableStateOf("all") }
+    var kind by rememberSaveable { mutableStateOf(if (poetry) "poetry" else "wen") }
     var authors by remember(kind) { mutableStateOf<List<PoemsDb.Author>>(emptyList()) }
     var hasMore by remember(kind) { mutableStateOf(true) }
     var page by remember(kind) { mutableIntStateOf(0) }
@@ -700,8 +700,9 @@ private fun AuthorFlatContent(poetry: Boolean, onOpenAuthor: (Int) -> Unit) {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            (if (poetry) listOf("all" to "全部", "poet" to "诗人", "ci" to "词曲")
-            else listOf("all" to "全部", "wen" to "文家"))
+            // D-043 域修正：诗词栏 全部=诗词域/诗人/词曲；古文栏 全部=古文域（不再混入诗歌作者）
+            (if (poetry) listOf("poetry" to "全部", "poet" to "诗人", "ci" to "词曲")
+            else listOf("wen" to "全部"))
                 .forEach { (k, label) ->
                     DimensionChip(label = label, selected = kind == k) { kind = k }
                 }

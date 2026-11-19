@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:32px 44px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:repeat(2, 300px); gap:26px; }
+  .tile { background:#fff; border-radius:10px; padding:14px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .tilebox { width:270px; height:270px; border-radius:24%; background:#F7F3EA;
+             display:flex; align-items:center; justify-content:center; }
+  .tilebox svg { width:250px; height:250px; }
+  .name { font-size:14px; font-weight:bold; color:#30343A; margin:10px 0 3px; }
+  .desc { font-size:11.5px; color:#6f6a5e; line-height:1.55; }
+</style>
+</head>
+<body>
+<h1>扫描页 5 — 名字叙事 · 多元素场景四候选</h1>
+<div class="sub">主题：汲古得修绠——从古井里汲起今日一物。元素 4~7 个，朱只给"今天汲上的东西"。报编号+直觉词。</div>
+<div class="grid" id="g"></div>
+<script>
+const PAPER="#F7F3EA", INK="#30343A", ZHU="#9E2F26", DAI="#3F5B72";
+
+// H1 辘轳井：A架+滑轮+垂绳+朱桶+水波
+const H1 = `
+  <line x1="32" y1="78" x2="50" y2="36" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
+  <line x1="76" y1="78" x2="58" y2="36" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="54" cy="34" r="7" fill="${INK}"/>
+  <circle cx="54" cy="34" r="2.4" fill="${PAPER}"/>
+  <line x1="54" y1="40" x2="54" y2="56" stroke="${INK}" stroke-width="2.8"/>
+  <rect x="46.5" y="56" width="15" height="13" rx="3" fill="${ZHU}"/>
+  <line x1="36" y1="80" x2="72" y2="80" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/>
+  <line x1="43" y1="86.5" x2="65" y2="86.5" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/>`;
+
+// H2 方井俯瞰：方井口+墨水+斜绳+朱桶
+const H2 = `
+  <rect x="28" y="28" width="52" height="52" rx="5" fill="none" stroke="${INK}" stroke-width="7"/>
+  <rect x="40" y="40" width="28" height="28" rx="3" fill="${INK}"/>
+  <line x1="70" y1="28" x2="52" y2="52" stroke="${INK}" stroke-width="2.8"/>
+  <rect x="46" y="46" width="12" height="12" rx="2.5" fill="${ZHU}"/>`;
+
+// H3 疏影入窗：窗框+窗棂+斜枝+朱梅两点
+const H3 = `
+  <rect x="30" y="30" width="48" height="48" rx="2" fill="none" stroke="${INK}" stroke-width="6"/>
+  <line x1="54" y1="30" x2="54" y2="78" stroke="${INK}" stroke-width="3.2"/>
+  <line x1="30" y1="54" x2="78" y2="54" stroke="${INK}" stroke-width="3.2"/>
+  <path d="M27,67 C38,62 50,54 68,40" fill="none" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="47.5" cy="55.5" r="4" fill="${ZHU}"/>
+  <circle cx="60" cy="45.5" r="3.2" fill="${ZHU}"/>`;
+
+// H4 书与朱带：墨书块+纸页行+垂出的朱书签带
+const H4 = `
+  <rect x="32" y="32" width="44" height="42" rx="5" fill="${INK}"/>
+  <line x1="39" y1="43" x2="69" y2="43" stroke="${PAPER}" stroke-width="3.6" stroke-linecap="round"/>
+  <line x1="39" y1="51.5" x2="69" y2="51.5" stroke="${PAPER}" stroke-width="3.6" stroke-linecap="round"/>
+  <line x1="39" y1="60" x2="62" y2="60" stroke="${PAPER}" stroke-width="3.6" stroke-linecap="round"/>
+  <rect x="58" y="70" width="6" height="14" rx="3" fill="${ZHU}"/>`;
+
+const cs = [
+  ["H1","辘轳汲水","A形井架+滑轮+垂绳+朱桶+水波：故事最完整的汲水——朱桶就是今天汲上来的那一首。"],
+  ["H2","方井俯瞰","方井口+墨水+斜绳+朱桶入水：老图标的世界补上绳与桶，方主形破圆局。"],
+  ["H3","疏影入窗","窗棂方格+斜枝入窗+两点朱梅：气质侧选项——书窗夜读，疏影横斜。"],
+  ["H4","书与朱带","墨书块+纸页行+垂出的朱丝带：读到今天这一页。最贴阅读器本体。"],
+];
+document.getElementById("g").innerHTML = cs.map(v =>
+  `<div class="tile"><div class="tilebox"><svg viewBox="0 0 108 108">${
+    {H1,H2,H3,H4}[v[0]]}</svg></div>
+   <div class="name">${v[0]} · ${v[1]}</div><div class="desc">${v[2]}</div></div>`).join("");
+</script>
+</body>
+</html>

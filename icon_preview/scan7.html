@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:32px 44px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:repeat(4, 245px); gap:22px; }
+  .tile { background:#fff; border-radius:10px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .tilebox { width:220px; height:220px; border-radius:24%; background:#F7F3EA;
+             display:flex; align-items:center; justify-content:center; }
+  .tilebox svg { width:204px; height:204px; }
+  .name { font-size:13.5px; font-weight:bold; color:#30343A; margin:9px 0 3px; }
+  .desc { font-size:11px; color:#6f6a5e; line-height:1.5; }
+</style>
+</head>
+<body>
+<h1>扫描页 7 — 抽象构成四候选（无叙事）</h1>
+<div class="sub">图案不讲故事：单元 2~3 个，色 ≤3（墨 30343A / 朱 9E2F26 / 黛 3F5B72），朱只占一处。报编号+直觉词。</div>
+<div class="grid" id="g"></div>
+<script>
+const PAPER="#F7F3EA", INK="#30343A", ZHU="#9E2F26", DAI="#3F5B72";
+
+// L1 叠相：两枚等径圆盘斜向相叠，朱上墨下——月相掩映的抽象化
+const L1 = `<circle cx="46" cy="57" r="17" fill="${INK}"/>
+  <circle cx="62.5" cy="49" r="17" fill="${ZHU}"/>`;
+
+// L2 回相：两枚回纹角（一墨一黛）对角相望，心上一枚朱点
+function corner(color, transform) {
+  return `<path d="M30,30 h32 a4,4 0 0 1 4,4 v10 h-24 v24 h-10 a4,4 0 0 1 -4,-4 Z"
+    fill="${color}" transform="${transform}"/>`;
+}
+const L2 = corner(INK, "") + corner(DAI, "rotate(180 54 54)")
+  + `<circle cx="54" cy="54" r="5.5" fill="${ZHU}"/>`;
+
+// L3 转方：三方块绕心 120° 旋转位（风车方阵），朱占其一
+function sq(color, ang, dist) {
+  const cx = 54 + dist*Math.cos(ang*Math.PI/180), cy = 54 + dist*Math.sin(ang*Math.PI/180);
+  return `<rect x="-10" y="-10" width="20" height="20" rx="4" fill="${color}"
+    transform="translate(${cx.toFixed(2)},${cy.toFixed(2)}) rotate(${ang+45})"/>`;
+}
+const L3 = sq(INK,-90,17) + sq(DAI,30,17) + sq(ZHU,150,17);
+
+// L4 弦点：墨盘为地，纸色内弧为弦，弦端一枚朱点
+const L4 = `<circle cx="54" cy="54" r="29" fill="${INK}"/>
+  <path d="M36.8,66.05 A21,21 0 0 1 41.95,36.8" fill="none" stroke="${PAPER}"
+    stroke-width="3.6" stroke-linecap="round"/>
+  <circle cx="49.5" cy="36.5" r="5.5" fill="${ZHU}"/>`;
+
+const cs = [
+  ["L1","叠相","两枚等径圆盘斜向相叠，朱上墨下：掩映即月相，无井无水无故事。"],
+  ["L2","回相","两枚回纹角对角相望+心上一枚朱点：纹样祖先回纹的极简引用，框未合而意已足。"],
+  ["L3","转方","三方块绕心 120° 旋转位：Figma 式单元语法，方为骨，朱占其一。"],
+  ["L4","弦点","墨盘为地、纸色内弧为弦、弦端朱点：盘弦点三层递进，最沉稳的一版。"],
+];
+document.getElementById("g").innerHTML = cs.map(v =>
+  `<div class="tile"><div class="tilebox"><svg viewBox="0 0 108 108">${
+    {L1,L2,L3,L4}[v[0]]}</svg></div>
+   <div class="name">${v[0]} · ${v[1]}</div><div class="desc">${v[2]}</div></div>`).join("");
+</script>
+</body>
+</html>
