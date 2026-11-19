@@ -93,9 +93,11 @@ private val POETRY_BOOK_MODULES = listOf(
     // 清诗/唐五代词/近三百年词（批13，D-037）：殆知阁整理本，补明清近代断层
     BookModule("清诗", "qing_shi", "晚晴簃诗汇 · 五千八百家", 17),
     BookModule("唐五代词", "tang_ci", "敦煌曲子 · 花间尊前", 18),
-    BookModule("近三百年词", "jinsanbai_ci", "龙榆生选 · 词学中兴", 19),
+    // 乐府诗集（批15，D-042）：郭茂倩百卷十二类，补汉魏六朝乐府（古诗源之外整本总集）
+    BookModule("乐府诗集", "yuefu", "郭茂倩百卷 · 十二类", 19),
+    BookModule("近三百年词", "jinsanbai_ci", "龙榆生选 · 词学中兴", 20),
     // 名篇榜（D-031）：跨书热度榜，非"书"卡——类似名句卡挂书架尾
-    BookModule("名篇榜", "popular", "千古名篇 · 热度序", 20),
+    BookModule("名篇榜", "popular", "千古名篇 · 热度序", 21),
 )
 
 /** 古文书架 10 卡（D-032 重排）：四库法序——
@@ -121,7 +123,7 @@ private val PROSE_BOOK_MODULES = listOf(
     BookModule("墨子", "mozi", "兼爱非攻 · 选", 13, part = "子"),
     BookModule("荀子", "xunzi", "劝学 · 名篇选", 14, part = "子"),
     BookModule("韩非子", "hanfeizi", "刑名法术 · 名篇选", 15, part = "子"),
-    BookModule("列子", "liezi", "冲虚寓言 · 名篇选", 16, part = "子"),
+    BookModule("列子", "liezi", "冲虚至德 · 八篇全本", 16, part = "子"),
     BookModule("孙子", "sunzi", "兵学圣典 · 十三篇", 17, part = "子"),
     BookModule("淮南子", "huainanzi", "杂家鸿篇 · 名篇选", 18, part = "子"),
     BookModule("吕氏春秋", "lvshi", "一字千金 · 名篇选", 19, part = "子"),
@@ -685,6 +687,8 @@ private val CATEGORY_LABELS = mapOf(
     "jinyuan_ci" to "全金元词", "yuan_shi" to "元诗选",
     // 批13（D-037）
     "qing_shi" to "晚晴簃诗汇", "tang_ci" to "全唐五代词", "jinsanbai_ci" to "近三百年名家词选",
+    // 批15（D-042）
+    "yuefu" to "乐府诗集",
 )
 internal fun sourceLabelOf(p: PoemsDb.Poem): String = when {
     p.tags.contains("唐诗三百首") -> "唐诗三百首"
@@ -800,6 +804,8 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                     key in setOf(
                         "zuozhuan", "guoyu", "zhanguoce", "mozi", "xunzi", "hanfeizi",
                         "liezi", "sunzi", "huainanzi", "lvshi", "guanzi", "yanzi", "shangjunshu",
+                        // 批15（D-042）乐府按十二类分组；列子整本按八篇
+                        "yuefu",
                     ) -> { p -> p.chapter.ifBlank { null } }
                 key == "yuan_qu" -> { p ->
                     // 「诈妮子调风月・混江龙」→ 节 = 剧名；无分隔的单牌曲无节；

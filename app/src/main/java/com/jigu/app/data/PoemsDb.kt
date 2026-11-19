@@ -297,7 +297,9 @@ class PoemsDb private constructor(context: Context) {
         awaitData()
         (if (poetry) cachedEraPoetry else cachedEraProse)?.let { return it }
         val poetryCats = "('tang_poem','song_poem','ci','qing_ci','wudai_ci','qianjiashi'," +
-            "'shijing','chuci','han_wei','gushi19','gushiyuan','yuan_qu')"
+            "'shijing','chuci','han_wei','gushi19','gushiyuan','yuan_qu'," +
+            // 批12/13 补全（D-035/D-037）与批15 乐府（D-042）：此前漏入清单会被当"古文"计数
+            "'yuan_shi','qing_shi','tang_ci','jinyuan_ci','jinsanbai_ci','yuefu')"
         val where = if (poetry) "p.category IN $poetryCats" else "p.category NOT IN $poetryCats"
         val out = rdb().rawQuery(
             "SELECT a.dynasty, count(*) FROM poems p " +
@@ -828,7 +830,7 @@ class PoemsDb private constructor(context: Context) {
      *  入"词曲"组，分组名同步）。
      *  体裁 tab 排除无名氏/佚名/空名防霸榜（全宋词无名氏 1568 首会压过辛弃疾）；"全部"保留。 */
     fun authorIndex(kind: String, limit: Int, offset: Int): List<Author> {
-        val poemCats = "('tang_poem','song_poem','qianjiashi','shijing','chuci','han_wei','gushi19','gushiyuan','yuan_shi','qing_shi')"
+        val poemCats = "('tang_poem','song_poem','qianjiashi','shijing','chuci','han_wei','gushi19','gushiyuan','yuan_shi','qing_shi','yuefu')"
         val wenCats = "('guwen','laozi','zhuangzi','shishuo','shiji','lunyu','sishu','mengxue','youmengying'," +
             // 批11（D-033）经史子扩容：左丘明/墨翟/孙武等入"文家"组
             "'zuozhuan','guoyu','zhanguoce','mozi','xunzi','hanfeizi','liezi','sunzi'," +

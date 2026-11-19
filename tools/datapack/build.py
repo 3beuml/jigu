@@ -37,8 +37,8 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 29  # +1: 治理批（2026-11-19）——元诗选作者归属重写（339 通行姓名）、去重指纹改归一
-#                    口径（同卡同文异标点/异体自动吞并）、异文覆盖前置入 hash、作者名异文归一扩表
+DATA_VERSION = 30  # +1: 批15（2026-11-19）——列子整本 8 篇（道藏白文+双见证校验）、乐府诗集 3,336 首
+#                    （曲题锚+乐章作者继承）、近三百年词评点转 notes、敦煌曲子词尾标剥除
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -484,6 +484,22 @@ class Db:
         for t, old, new in TEXT_OVERRIDES:
             if title == t:
                 paras = [p.replace(old, new) for p in paras]
+        # 夹注/评点处理（批15 D-042，点名分类勿全局）：
+        #   近三百年词选 段尾"【评】编者曰…"→ notes 保留（P排 不混入正文）
+        #   敦煌曲子词 尾标"【阿曹婆词】"等源标 → 剥
+        if rec.get("category") == "jinsanbai_ci":
+            fixed = []
+            for p in paras:
+                m = re.search(r"【(?:集评|评)】(.*)$", p)
+                if m:
+                    rec.setdefault("notes", []).append("评：" + m.group(1).strip())
+                    p = p[: m.start()].rstrip()
+                if p:
+                    fixed.append(p)
+            paras = fixed
+        elif rec.get("category") == "tang_ci":
+            paras = [re.sub(r"【[^】]*】", "", p).strip() for p in paras]
+            paras = [p for p in paras if p]
         body = "\n".join(paras)
         # 作者名先归一再算 hash——归一的同文同卡条目由 UNIQUE(category,hash) 自动去重
         aname, adyn = fix_author(rec.get("author", ""), rec.get("dynasty", ""))
@@ -1702,6 +1718,15 @@ def it_jingzi11(dataset: Path):
         }
     s12 = load_json(REPO / "tools/datapack/corpus/shici12.json")
     for a in s12["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    # 批15 乐府诗集（D-042）：郭茂倩百卷十二类，yuefu14.py v1 否决后 yuefu15.py 重析
+    s14 = load_json(REPO / "tools/datapack/corpus/shici14.json")
+    for a in s14["pieces"]:
         yield {
             "category": a["category"], "title": a["title"], "author": a.get("author", ""),
             "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
