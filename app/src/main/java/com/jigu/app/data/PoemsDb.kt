@@ -549,6 +549,18 @@ class PoemsDb private constructor(context: Context) {
 
     fun curatedThemeCount(themes: List<String>): Int = curatedThemeOrder(themes).size
 
+    /** 关注诗人精选池（D-043 R3 轻加权）：关注作者 ∩ 精选条件，名气序取头部。 */
+    fun curatedByFollowed(authorIds: Set<Int>): List<Poem> {
+        if (authorIds.isEmpty()) return emptyList()
+        awaitData()
+        val marks = authorIds.joinToString(",") { "?" }
+        return queryPoems(
+            "$POEM_SELECT WHERE p.author_id IN ($marks) AND ($CURATED_WHERE) " +
+                "ORDER BY p.popularity DESC LIMIT 200",
+            authorIds.map { it.toString() }.toTypedArray(),
+        )
+    }
+
     fun curatedThemeAtOffset(offset: Int, themes: List<String>): Poem? {
         val order = curatedThemeOrder(themes)
         if (order.isEmpty()) return null

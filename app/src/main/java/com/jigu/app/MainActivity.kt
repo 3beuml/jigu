@@ -86,6 +86,7 @@ import com.jigu.app.ui.library.TypeScreen
 import com.jigu.app.ui.mine.MineScreen
 import com.jigu.app.ui.share.CardPreviewScreen
 import com.jigu.app.ui.theme.JiguTheme
+import com.jigu.app.ui.today.PoemLogScreen
 import com.jigu.app.ui.today.TodayScreen
 import com.jigu.app.ui.detail.DetailScreen
 
@@ -153,11 +154,22 @@ fun JiguApp() {
                 TodayScreen(
                     onOpen = openDetail,
                     onCard = { id -> nav.navigate("card/$id") },
+                    // R3 几枝化：搜索前置（诗词栏自动聚焦输入框）+ 每日一句诗历
+                    onOpenSearch = { nav.navigate("poetry?focus=1") },
+                    onOpenLog = { nav.navigate("poemlog") },
+                )
+            }
+            // 每日一句·诗历（R3 几枝化）：按天回看推送过的句子
+            composable("poemlog") {
+                PoemLogScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
                 )
             }
             // 诗词 / 古文分栏（D-030）：原"书库"拆两个顶层 tab，各有专属维度
-            composable("poetry") {
+            composable("poetry?focus={focus}") { back ->
                 LibraryScreen(
+                    autoFocusSearch = back.arguments?.getString("focus") == "1",
                     section = LibrarySection.POETRY,
                     onOpenModule = { key ->
                         if (key == "famous") nav.navigate("famous")
@@ -180,6 +192,7 @@ fun JiguApp() {
             }
             composable("guwen") {
                 LibraryScreen(
+                    autoFocusSearch = false,
                     section = LibrarySection.PROSE,
                     onOpenModule = { key ->
                         when (key) {

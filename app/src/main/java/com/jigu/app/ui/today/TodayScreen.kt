@@ -16,8 +16,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,7 +58,12 @@ import java.time.format.DateTimeFormatter
  * 角隅画（D-019）：淡墨融合 + 羽化入纸 + 竖排小字注，点击进全屏鉴赏页。
  */
 @Composable
-fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit) {
+fun TodayScreen(
+    onOpen: (Int) -> Unit,
+    onCard: (Int) -> Unit,
+    onOpenSearch: () -> Unit = {},
+    onOpenLog: () -> Unit = {},
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<PoemOfDay.Result?>(null) }
@@ -119,6 +127,24 @@ fun TodayScreen(onOpen: (Int) -> Unit, onCard: (Int) -> Unit) {
                             MaterialTheme.shapes.small,
                         )
                         .padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            // R3 搜索前置 + 诗历入口：右上角两枚安静的小图标，不破几枝式留白
+            IconButton(onClick = onOpenSearch, modifier = Modifier.size(34.dp)) {
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription = "搜索",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            IconButton(onClick = onOpenLog, modifier = Modifier.size(34.dp)) {
+                Icon(
+                    Icons.Filled.DateRange,
+                    contentDescription = "每日一句诗历",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }

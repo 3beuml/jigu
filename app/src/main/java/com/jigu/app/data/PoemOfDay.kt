@@ -12,12 +12,26 @@ import java.time.LocalDate
  * 池内取诗用 epochDay 做确定性偏移：同一天任何时候打开都是同一首。
  * 「换一首」偏移（P0-6 修复）：swap_$day 持久化计数 >0 时，当日一切读取都落到
  * 精选池的偏移位——此前偏移只写不读（死代码），换一首在切页/重开后回退。
+ * R3 几枝化（D-044）：pick 统一记"每日一句"日志（诗历时间线数据源）；
+ * 关注诗人轻加权——每 5 天 1 天优先关注作者的名气作，主体仍是全库池。
  */
 object PoemOfDay {
 
     data class Result(val poem: PoemsDb.Poem, val badge: String?)
 
+    /** 每日一句日志条目（诗历时间线） */
+    data class LogEntry(val date: LocalDate, val poemId: Int, val badge: String?)
+
+    private const val LOG_KEY = "daily_log"
+    private const val LOG_CAP = 730
+
     fun pick(context: Context, db: PoemsDb, today: LocalDate): Result? {
+        val r = computePick(context, db, today)
+        r?.let { logShown(context, today, it) }
+        return r
+    }
+
+    private fun computePick(context: Context, db: PoemsDb, today: LocalDate): Result? {
         val swap = context.getSharedPreferences("jigu_prefs", android.content.Context.MODE_PRIVATE)
             .getInt("swap_${today.toEpochDay()}", 0)
         // 今日诗偏好（D-030）：偏好题材非空时，精选池换成"偏好题材内"的同构池
@@ -57,6 +71,13 @@ object PoemOfDay {
             db.calendarPoemIds("solar_term", curTerm).takeIf { it.isNotEmpty() }
                 ?.let { ids -> db.poemById(ids[absIndex(today, ids.size)])?.let { return Result(it, curTerm) } }
         }
+        // 关注诗人轻加权（D-043 R3，用户定案"适度加权，不要太大"）：每 5 天 1 天优先
+        // 关注作者的名气作（精选池内），其余日子仍是全库——主体不被关注人挤占。
+        val followed = db.followedAuthorIds()
+        if (followed.isNotEmpty() && Math.floorMod(today.toEpochDay(), 5L) == 2L) {
+            db.curatedByFollowed(followed).takeIf { it.isNotEmpty() }
+                ?.let { list -> return Result(list[absIndex(today, list.size)], curTerm) }
+        }
         val poem = atOffset(absIndex(today, n)) ?: return null
         // 角标仍展示当前所在节气，让普通日子也有时序感
         return Result(poem, curTerm)
@@ -64,4 +85,39 @@ object PoemOfDay {
 
     private fun absIndex(date: LocalDate, size: Int): Int =
         ((date.toEpochDay() % size + size) % size).toInt()
+
+    /** 每日一句日志（诗历）：prefs JSON {epochDay: {id, badge}}，保留 730 天。
+     *  每次覆盖当日条目（换一首后记最后展示的一句）。 */
+    fun logShown(context: Context, today: LocalDate, r: Result) {
+        runCatching {
+            val prefs = context.getSharedPreferences("jigu_prefs", android.content.Context.MODE_PRIVATE)
+            val obj = org.json.JSONObject(prefs.getString(LOG_KEY, "{}") ?: "{}")
+            val entry = org.json.JSONObject().put("id", r.poem.id)
+            r.badge?.let { entry.put("badge", it) }
+            obj.put(today.toEpochDay().toString(), entry)
+            while (obj.length() > LOG_CAP) {
+                val oldest = obj.keys().asSequence().minByOrNull { it.toLongOrNull() ?: 0L } ?: break
+                obj.remove(oldest)
+            }
+            prefs.edit().putString(LOG_KEY, obj.toString()).apply()
+        }
+    }
+
+    /** 诗历时间线：按天倒序；poem_id 跨版本漂移时该条目自然失联（读取时跳过）。 */
+    fun history(context: Context): List<LogEntry> {
+        return runCatching {
+            val prefs = context.getSharedPreferences("jigu_prefs", android.content.Context.MODE_PRIVATE)
+            val obj = org.json.JSONObject(prefs.getString(LOG_KEY, "{}") ?: "{}")
+            obj.keys().asSequence()
+                .mapNotNull { key ->
+                    val day = key.toLongOrNull() ?: return@mapNotNull null
+                    val e = obj.optJSONObject(key) ?: return@mapNotNull null
+                    val id = e.optInt("id", -1)
+                    if (id < 0) return@mapNotNull null
+                    LogEntry(LocalDate.ofEpochDay(day), id, e.optString("badge").ifBlank { null })
+                }
+                .sortedByDescending { it.date.toEpochDay() }
+                .toList()
+        }.getOrDefault(emptyList())
+    }
 }

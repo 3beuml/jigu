@@ -41,6 +41,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -140,6 +142,7 @@ private val BOOK_MODULES = POETRY_BOOK_MODULES + PROSE_BOOK_MODULES
  *  诗词栏：书架 / 题材 / 体裁 / 作者 / 朝代；古文栏：书架 / 文体 / 体裁 / 作者 / 朝代 */
 @Composable
 fun LibraryScreen(
+    autoFocusSearch: Boolean = false,
     section: LibrarySection,
     onOpenModule: (String) -> Unit,
     onOpenEra: (String) -> Unit,
@@ -153,6 +156,7 @@ fun LibraryScreen(
 ) {
     val context = LocalContext.current
     val poetry = section == LibrarySection.POETRY
+    val searchFocus = remember { FocusRequester() }
     var query by remember { mutableStateOf("") }
     var dim by rememberSaveable(section) { mutableIntStateOf(0) }
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
@@ -170,6 +174,10 @@ fun LibraryScreen(
             eraCounts = db.eraCounts(poetry)
             typeCounts = db.typeCounts()
         }
+    }
+    LaunchedEffect(autoFocusSearch) {
+        // R3 搜索前置：今日页放大镜进来即聚焦输入框（随键盘弹出直接可搜）
+        if (autoFocusSearch) searchFocus.requestFocus()
     }
     LaunchedEffect(query) {
         if (query.isBlank()) {
@@ -192,7 +200,9 @@ fun LibraryScreen(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(searchFocus),
             placeholder = { Text("搜诗句、作者、名句、篇名（如：柳永 / 月落乌啼）") },
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
