@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:32px 44px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:repeat(4, 245px); gap:22px; }
+  .tile { background:#fff; border-radius:10px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .tilebox { width:220px; height:220px; border-radius:24%; background:#16324F;
+             display:flex; align-items:center; justify-content:center; }
+  .tilebox svg { width:204px; height:204px; }
+  .name { font-size:13.5px; font-weight:bold; color:#30343A; margin:9px 0 3px; }
+  .desc { font-size:11px; color:#6f6a5e; line-height:1.5; }
+</style>
+</head>
+<body>
+<h1>扫描页 9 — 蓝图制图 · 理工抽象四候选</h1>
+<div class="sub">配色翻转：蓝图底 #16324F / 纸白线 F7F3EA / 朱点 9E2F26。语法定点：定位标、刻度、坐标格、等轴测。报编号+直觉词。</div>
+<div class="grid" id="g"></div>
+<script>
+const BLUE="#16324F", BLUE2="#2A5A8C", LINE="#F7F3EA", ZHU="#9E2F26";
+
+// T1 定位十字：白细十字+白环，环上一点朱——取景/校准的抽象
+const T1 = `<line x1="54" y1="32" x2="54" y2="76" stroke="${LINE}" stroke-width="2.6" stroke-linecap="round"/>
+  <line x1="32" y1="54" x2="76" y2="54" stroke="${LINE}" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="54" cy="54" r="12" fill="none" stroke="${LINE}" stroke-width="2.6"/>
+  <circle cx="62.5" cy="45.5" r="5" fill="${ZHU}"/>`;
+
+// T2 刻度环：白环+8 刻度，一刻位换朱珠——仪表面盘的抽象
+let ticks = "";
+for (let i = 0; i < 8; i++) {
+  const a = (i * 45 - 90) * Math.PI / 180;
+  ticks += `<line x1="${(54+20*Math.cos(a)).toFixed(2)}" y1="${(54+20*Math.sin(a)).toFixed(2)}"
+    x2="${(54+26*Math.cos(a)).toFixed(2)}" y2="${(54+26*Math.sin(a)).toFixed(2)}"
+    stroke="${LINE}" stroke-width="3" stroke-linecap="round"/>`;
+}
+const T2 = `<circle cx="54" cy="54" r="20" fill="none" stroke="${LINE}" stroke-width="3.2"/>`
+  + ticks
+  + `<circle cx="${(54+26*Math.cos(-30*Math.PI/180)).toFixed(2)}" cy="${(54+26*Math.sin(-30*Math.PI/180)).toFixed(2)}" r="5.5" fill="${ZHU}"/>`;
+
+// T3 坐标格：白细网格 3×3，一格朱块点亮——CAD 网格的抽象
+const T3 = (() => {
+  const g = [];
+  for (const p of [47.33, 60.67]) {
+    g.push(`<line x1="${p}" y1="34" x2="${p}" y2="74" stroke="${LINE}" stroke-width="2.6"/>`);
+    g.push(`<line x1="34" y1="${p}" x2="74" y2="${p}" stroke="${LINE}" stroke-width="2.6"/>`);
+  }
+  g.push(`<rect x="60.67" y="34" width="13.33" height="13.33" fill="${ZHU}"/>`);
+  return g.join("");
+})();
+
+// T4 等轴立方：白棱等轴测立方，顶面填朱——工程制图 3D 的抽象
+const T4 = `<path d="M54,36 L70,45 L70,63 L54,72 L38,63 L38,45 Z" fill="none" stroke="${LINE}"
+    stroke-width="3" stroke-linejoin="round"/>
+  <path d="M54,36 L70,45 L54,54 L38,45 Z" fill="${ZHU}"/>
+  <path d="M54,54 L70,45 L70,63 L54,72 Z" fill="${BLUE2}"/>
+  <path d="M54,54 L38,45 L38,63 L54,72 Z" fill="${BLUE2}"/>
+  <path d="M54,36 L54,54 M38,45 L54,54 M70,45 L54,54" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>`;
+
+const cs = [
+  ["T1","定位十字","十字+环+环上朱点：取景校准的抽象——精度即装饰。"],
+  ["T2","刻度环","白环 8 刻度+朱珠点亮一刻：仪表面盘，唯一活动件是今天。"],
+  ["T3","坐标格","3×3 细网格+一格朱块：CAD 坐标纸，点亮的那格是今日。"],
+  ["T4","等轴立方","白棱等轴立方+朱顶面：工程制图的三维感，面上唯一暖色。"],
+];
+document.getElementById("g").innerHTML = cs.map(v =>
+  `<div class="tile"><div class="tilebox"><svg viewBox="0 0 108 108">${
+    {T1,T2,T3,T4}[v[0]]}</svg></div>
+   <div class="name">${v[0]} · ${v[1]}</div><div class="desc">${v[2]}</div></div>`).join("");
+</script>
+</body>
+</html>

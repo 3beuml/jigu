@@ -64,6 +64,7 @@ import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
+import com.jigu.app.data.WeatherService
 import com.jigu.app.data.PrepState
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
@@ -134,6 +135,7 @@ fun JiguApp() {
     LaunchedEffect(Unit) {
         JiguCalendar.load(context)
         PoemsDb.get(context) // 触发首启拷库
+        WeatherService.refreshAsync(context) // R4：天气城市已配置才联网（否则零请求）
     }
 
     val nav = rememberNavController()

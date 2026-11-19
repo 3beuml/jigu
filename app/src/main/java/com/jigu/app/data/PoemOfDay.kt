@@ -34,9 +34,14 @@ object PoemOfDay {
     private fun computePick(context: Context, db: PoemsDb, today: LocalDate): Result? {
         val swap = context.getSharedPreferences("jigu_prefs", android.content.Context.MODE_PRIVATE)
             .getInt("swap_${today.toEpochDay()}", 0)
-        // 今日诗偏好（D-030）：偏好题材非空时，精选池换成"偏好题材内"的同构池
-        // （洗牌顺位/指针机制不变，池空自然回退全池）；节日/节气配诗池不受偏好影响——时序感优先。
-        val themes = JiguSettings.preferredThemes(context)
+        // 今日诗偏好（D-030）+ R4 情境（D-045）：题材 = 偏好 ∪ 心情 ∪ 最近状态，
+        // 并集后走同一同构池（洗牌顺位/指针机制不变，池空自然回退全池）；
+        // 节日/节气配诗池不受偏好影响——时序感优先。
+        val themes = (
+            JiguSettings.preferredThemes(context) +
+                JiguSettings.moodTags(context) +
+                (MoodProfiles.STATUS.find { it.first == JiguSettings.lifeStatus(context) }?.second ?: emptyList())
+            ).distinct()
         val count = {
             if (themes.isEmpty()) db.curatedCount()
             else db.curatedThemeCount(themes).takeIf { it > 0 } ?: db.curatedCount()
@@ -73,6 +78,18 @@ object PoemOfDay {
         }
         // 关注诗人轻加权（D-043 R3，用户定案"适度加权，不要太大"）：每 5 天 1 天优先
         // 关注作者的名气作（精选池内），其余日子仍是全库——主体不被关注人挤占。
+        // 天气情境槽（R4/D-045，可选联网）：城市已配置且当日天气在手 → 每 3 天里 1 天走天气题材池；
+        // 角标沿用节气，无节气时用天气（今日·雨/晴/雪）。
+        val weather = WeatherService.weatherToday(context)
+        val weatherThemes = weather?.let { MoodProfiles.weatherThemes(it.code) }.orEmpty()
+        if (weather != null && weatherThemes.isNotEmpty() && Math.floorMod(today.toEpochDay(), 3L) == 1L) {
+            db.curatedThemeOrder(weatherThemes).takeIf { it.isNotEmpty() }
+                ?.let { ids ->
+                    db.poemById(ids[absIndex(today, ids.size)])?.let {
+                        return Result(it, curTerm ?: MoodProfiles.weatherLabel(weather.code))
+                    }
+                }
+        }
         val followed = db.followedAuthorIds()
         if (followed.isNotEmpty() && Math.floorMod(today.toEpochDay(), 5L) == 2L) {
             db.curatedByFollowed(followed).takeIf { it.isNotEmpty() }

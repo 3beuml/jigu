@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:28px 40px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:20px; line-height:1.6; }
+  .globals { background:#fff; border-radius:10px; padding:12px 16px; box-shadow:0 1px 3px rgba(0,0,0,.07);
+             display:flex; gap:24px; align-items:center; margin-bottom:22px; flex-wrap:wrap; }
+  .globals label { font-size:13px; color:#333; }
+  .globals select { font-size:13px; padding:3px 6px; }
+  .grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:24px; }
+  .vcard { background:#fff; border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .vhead { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .vname { font-size:14px; font-weight:bold; color:#30343A; }
+  .copybtn { font-size:12px; padding:4px 10px; border:1px solid #bbb; background:#f5f5f2;
+             border-radius:6px; cursor:pointer; }
+  .copybtn:hover { background:#e8e8e2; }
+  .stage { display:flex; gap:16px; align-items:center; }
+  .tilebox { width:180px; height:180px; border-radius:24%; flex:none;
+             display:flex; align-items:center; justify-content:center; transition:background .15s; }
+  .tilebox svg { width:168px; height:168px; }
+  .mini { width:48px; height:48px; border-radius:24%; flex:none;
+          display:flex; align-items:center; justify-content:center; transition:background .15s; }
+  .mini svg { width:44px; height:44px; }
+  .minicap { font-size:10px; color:#999; text-align:center; margin-top:3px; }
+  .sliders { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; }
+  .sl { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .sl b { width:76px; font-weight:normal; flex:none; }
+  .sl input[type=range] { width:120px; }
+  .sl .v { width:34px; text-align:right; color:#30343A; font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<h1>图标试驾场 — 你拖滑杆，我出终稿</h1>
+<div class="sub">四个基底都可调参。拖到满意的那一刻，点右上「复制参数」把数值粘给 ZCode。
+底色/主色/强调色全局联动，左下角是 48px 真实桌面尺寸预览。</div>
+<div class="globals">
+  <label>底色 <select id="g_bg">
+    <option value="#F7F3EA">宣纸 F7F3EA</option>
+    <option value="#30343A">墨 30343A</option>
+    <option value="#FFFFFF">纯白 FFFFFF</option>
+    <option value="#16324F">蓝图 16324F</option>
+  </select></label>
+  <label>主色 <select id="g_main">
+    <option value="#30343A">墨 30343A</option>
+    <option value="#3F5B72">黛 3F5B72</option>
+    <option value="#565D66">深灰 565D66</option>
+    <option value="#F7F3EA">纸白 F7F3EA</option>
+  </select></label>
+  <label>强调色 <select id="g_ac">
+    <option value="#9E2F26">朱 9E2F26</option>
+    <option value="#B07D3F">赭金 B07D3F</option>
+    <option value="#3ECF8E">荧光青 3ECF8E</option>
+    <option value="#F7F3EA">纸白 F7F3EA</option>
+  </select></label>
+</div>
+<div class="grid" id="grid"></div>
+<script>
+const S = {
+  bg:  document.getElementById("g_bg").value,
+  main:document.getElementById("g_main").value,
+  ac:  document.getElementById("g_ac").value,
+};
+const P = (r,a) => [54+r*Math.cos(a*Math.PI/180), 54+r*Math.sin(a*Math.PI/180)];
+const f = n => (Math.round(n*100)/100).toString();
+
+// ---------- 四个绘制器 ----------
+function drawRing(el, p) { // 断环：缺口角度/环宽/珠径/整体旋转
+  const gc = -45 + p.rot;                       // 缺口中心角
+  const a0 = gc + p.gap/2, a1 = gc - p.gap/2 + 360;
+  const [x0,y0] = P(22,a0), [x1,y1] = P(22,a1);
+  const [dx,dy] = P(22,gc);
+  el.innerHTML = `<path d="M${f(x0)},${f(y0)} A22,22 0 1 1 ${f(x1)},${f(y1)}"
+    fill="none" stroke="${S.main}" stroke-width="${p.w}" stroke-linecap="round"
+    transform="rotate(0 54 54)"/>
+    <circle cx="${f(dx)}" cy="${f(dy)}" r="${p.dot}" fill="${S.ac}"/>`;
+}
+function drawBite(el, p) { // 巨月咬合：大盘径/咬深/方位角/尺寸比
+  const r2 = p.big * p.ratio, d = p.big + r2*0.45 - p.deep;
+  const cx = 54 + d*Math.cos(p.ang*Math.PI/180), cy = 54 + d*Math.sin(p.ang*Math.PI/180);
+  el.innerHTML = `<circle cx="54" cy="54" r="${p.big}" fill="${S.main}"/>
+    <circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r2)}" fill="${S.ac}"/>`;
+}
+function drawLine(el, p) { // 珠走线：线角度/线宽/珠径/珠沿线位置
+  const a = p.ang*Math.PI/180, L = 31;
+  const x0 = 54 - L*Math.cos(a), y0 = 54 - L*Math.sin(a);
+  const x1 = 54 + L*Math.cos(a), y1 = 54 + L*Math.sin(a);
+  const t = p.t, px = 54 + (t*2-1)*L*Math.cos(a), py = 54 + (t*2-1)*L*Math.sin(a);
+  el.innerHTML = `<line x1="${f(x0)}" y1="${f(y0)}" x2="${f(x1)}" y2="${f(y1)}"
+    stroke="${S.main}" stroke-width="${p.w}" stroke-linecap="round"/>
+    <circle cx="${f(px)}" cy="${f(py)}" r="${p.dot}" fill="${S.ac}"/>`;
+}
+function drawChain(el, p) { // 错链：链方向/间距/尺寸梯度
+  const a = p.ang*Math.PI/180, out = [];
+  const cols = [S.main, mix(S.main, S.ac), S.ac];
+  const r0 = 11;
+  for (let i = 0; i < 3; i++) {
+    const r = r0 * Math.pow(p.grow, i);
+    const cx = 54 + (i-1)*p.sp*Math.cos(a), cy = 54 + (i-1)*p.sp*Math.sin(a);
+    out.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}" fill="${cols[i]}"/>`);
+  }
+  el.innerHTML = out.join("");
+}
+function mix(a, b) { // 主色与强调色的中间色（简单取黛）
+  return S.main === "#30343A" ? "#3F5B72" : S.main;
+}
+
+// ---------- 基底与滑杆定义 ----------
+const V = [
+  { name:"断环", draw:drawRing,
+    p:{ gap:110, w:16, dot:8, rot:0 },
+    def:[
+      ["gap","缺口角度",40,150,1,"°"], ["w","环宽",10,18,1,""],
+      ["dot","珠径",4,11,0.5,""], ["rot","整体旋转",-90,90,5,"°"] ] },
+  { name:"巨月咬合", draw:drawBite,
+    p:{ big:28, ratio:0.46, ang:-45, deep:0 },
+    def:[
+      ["big","大盘径",22,31,1,""], ["ratio","尺寸比",0.3,0.7,0.02,""],
+      ["ang","方位角",-180,180,15,"°"], ["deep","咬合深度",0,10,1,""] ] },
+  { name:"珠走线", draw:drawLine,
+    p:{ ang:-45, w:11, dot:12.5, t:0.62 },
+    def:[
+      ["ang","线角度",-90,90,5,"°"], ["w","线宽",6,14,1,""],
+      ["dot","珠径",7,16,0.5,""], ["t","珠沿线位置",0.1,0.9,0.02,""] ] },
+  { name:"错链", draw:drawChain,
+    p:{ ang:-40, sp:14, grow:1.18 },
+    def:[
+      ["ang","链方向",-90,90,5,"°"], ["sp","间距",7,18,1,""],
+      ["grow","尺寸梯度",1,1.4,0.02,"×"] ] },
+];
+
+// ---------- 渲染 ----------
+const grid = document.getElementById("grid");
+grid.innerHTML = V.map((v,i) => `
+  <div class="vcard" id="v${i}">
+    <div class="vhead"><div class="vname">${i+1}. ${v.name}</div>
+      <button class="copybtn" onclick="copyParams(${i})">复制参数</button></div>
+    <div class="stage">
+      <div><div class="tilebox"><svg viewBox="0 0 108 108" id="big${i}"></svg></div></div>
+      <div><div class="mini"><svg viewBox="0 0 108 108" id="mini${i}"></svg></div>
+        <div class="minicap">48px</div></div>
+    </div>
+    <div class="sliders">${v.def.map(d => `
+      <div class="sl"><b>${d[1]}</b>
+        <input type="range" min="${d[2]}" max="${d[3]}" step="${d[4]}" value="${v.p[d[0]]}"
+          id="r${i}_${d[0]}">
+        <span class="v" id="val${i}_${d[0]}"></span></div>`).join("")}
+    </div>
+  </div>`).join("");
+
+function apply(i) {
+  const v = V[i];
+  v.def.forEach(d => { v.p[d[0]] = parseFloat(document.getElementById(`r${i}_${d[0]}`).value); });
+  const svg = document.getElementById(`big${i}`);
+  v.draw(svg, v.p);
+  document.getElementById(`mini${i}`).innerHTML = svg.innerHTML;
+  document.getElementById(`v${i}`).querySelectorAll(".tilebox,.mini").forEach(el => el.style.background = S.bg);
+  v.def.forEach(d => { document.getElementById(`val${i}_${d[0]}`).textContent = v.p[d[0]] + d[5]; });
+}
+V.forEach((v,i) => {
+  v.def.forEach(d => document.getElementById(`r${i}_${d[0]}`)
+    .addEventListener("input", () => apply(i)));
+  apply(i);
+});
+function applyGlobal() {
+  S.bg = document.getElementById("g_bg").value;
+  S.main = document.getElementById("g_main").value;
+  S.ac = document.getElementById("g_ac").value;
+  V.forEach((v,i) => apply(i));
+}
+["g_bg","g_main","g_ac"].forEach(id => document.getElementById(id)
+  .addEventListener("change", applyGlobal));
+
+function copyParams(i) {
+  const v = V[i];
+  const txt = `${v.name}: ` + v.def.map(d => `${d[0]}=${v.p[d[0]]}`).join(" ")
+    + ` | 底=${S.bg} 主=${S.main} 强调=${S.ac}`;
+  navigator.clipboard.writeText(txt).then(
+    () => { const b = event.target; b.textContent = "已复制"; setTimeout(()=>b.textContent="复制参数",1200); });
+}
+</script>
+</body>
+</html>
