@@ -159,26 +159,112 @@ class PoemsDb private constructor(context: Context) {
         }
     }
 
-    private fun readFavoritesRaw(dbFile: File): List<Pair<Int, Long>> = runCatching {
+    /** 收藏跨版本迁移（D-047）：favorites 表只存 poem_id，重建库后 id 会漂移（旧隐患）。
+     *  读旧库时连同 题名/作者/分类/内容哈希 快照一起带出，新库按内容重解析；
+     *  老库结构异常读不到快照时退化为仅 id（旧行为），宁可少迁也不指错诗。 */
+    private data class FavoriteSnapshot(
+        val id: Int,
+        val title: String,
+        val author: String,
+        val category: String,
+        val hash: String,
+        val createdAt: Long,
+    )
+
+    private fun readFavoritesRaw(dbFile: File): List<FavoriteSnapshot> = runCatching {
         SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
-            val out = mutableListOf<Pair<Int, Long>>()
+            val out = mutableListOf<FavoriteSnapshot>()
+            db.rawQuery(
+                "SELECT f.poem_id, IFNULL(p.title,''), IFNULL(a.name,'佚名'), IFNULL(p.category,''), " +
+                    "IFNULL(p.hash,''), f.created_at " +
+                    "FROM favorites f JOIN poems p ON p.id = f.poem_id " +
+                    "LEFT JOIN authors a ON a.id = p.author_id",
+                null,
+            ).use { c ->
+                while (c.moveToNext()) {
+                    out += FavoriteSnapshot(
+                        c.getInt(0), c.getString(1), c.getString(2), c.getString(3), c.getString(4), c.getLong(5),
+                    )
+                }
+            }
+            out
+        }
+    }.recoverCatching {
+        // 结构兜底：只要得到 id 与时间（快照为空 → restore 走 id 相容性检查）
+        SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            val out = mutableListOf<FavoriteSnapshot>()
             db.rawQuery("SELECT poem_id, created_at FROM favorites", null).use { c ->
-                while (c.moveToNext()) out += c.getInt(0) to c.getLong(1)
+                while (c.moveToNext()) {
+                    out += FavoriteSnapshot(c.getInt(0), "", "", "", "", c.getLong(1))
+                }
             }
             out
         }
     }.getOrDefault(emptyList())
 
-    private fun restoreFavorites(dbFile: File, rows: List<Pair<Int, Long>>) {
+    private fun restoreFavorites(dbFile: File, rows: List<FavoriteSnapshot>) {
         runCatching {
             SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
                 db.execSQL("DELETE FROM favorites")
-                rows.forEach { (id, ts) ->
-                    db.execSQL("INSERT INTO favorites(poem_id, created_at) VALUES (?,?)", arrayOf(id, ts))
+                var dropped = 0
+                rows.forEach { f ->
+                    val id = resolvePoemId(db, f)
+                    if (id == null) {
+                        dropped++
+                    } else {
+                        db.execSQL(
+                            "INSERT OR IGNORE INTO favorites(poem_id, created_at) VALUES (?,?)",
+                            arrayOf(id, f.createdAt),
+                        )
+                    }
+                }
+                if (dropped > 0) {
+                    android.util.Log.w("PoemsDb", "收藏迁移：${rows.size} 条中 $dropped 条在新库无对应诗文（已跳过）")
                 }
             }
         }
     }
+
+    /** 旧收藏 → 新库 poem_id（D-047）。依次：内容哈希（题名+作者+正文 md5，最稳）→
+     *  题名+作者+分类（须唯一）→ 题名+作者（须唯一）→ 旧 id 相容性（无快照老库）。
+     *  都对不上返回 null——宁可丢一条收藏，也不把收藏挂到别人的诗上。 */
+    private fun resolvePoemId(db: SQLiteDatabase, f: FavoriteSnapshot): Int? {
+        if (f.hash.isNotBlank()) {
+            db.rawQuery("SELECT p.id FROM poems p WHERE p.hash = ? ORDER BY p.id LIMIT 1", arrayOf(f.hash))
+                .use { if (it.moveToFirst()) return it.getInt(0) }
+        }
+        if (f.title.isNotBlank()) {
+            uniquePoemId(
+                db,
+                "FROM poems p LEFT JOIN authors a ON a.id = p.author_id " +
+                    "WHERE p.title = ? AND IFNULL(a.name,'佚名') = ? AND p.category = ?",
+                arrayOf(f.title, f.author, f.category),
+            )?.let { return it }
+            uniquePoemId(
+                db,
+                "FROM poems p LEFT JOIN authors a ON a.id = p.author_id " +
+                    "WHERE p.title = ? AND IFNULL(a.name,'佚名') = ?",
+                arrayOf(f.title, f.author),
+            )?.let { return it }
+        }
+        db.rawQuery(
+            "SELECT p.title, IFNULL(a.name,'佚名') FROM poems p LEFT JOIN authors a ON a.id = p.author_id WHERE p.id = ?",
+            arrayOf(f.id.toString()),
+        ).use { c ->
+            if (!c.moveToFirst()) return null
+            if (f.title.isBlank()) return f.id
+            val same = c.getString(0) == f.title && c.getString(1) == f.author
+            return if (same) f.id else null
+        }
+    }
+
+    /** 唯一命中才返回 id：同条件多行（如同题同人的"失调名"）视为歧义，交给下一级重解析。 */
+    private fun uniquePoemId(db: SQLiteDatabase, where: String, args: Array<String>): Int? =
+        db.rawQuery("SELECT p.id $where LIMIT 2", args).use { c ->
+            if (!c.moveToFirst()) return null
+            val first = c.getInt(0)
+            if (c.moveToNext()) null else first
+        }
 
     /** 关注诗人跨版本迁移（D-043 R2）：follows 表自带 name/dynasty 快照，
      *  新库按 姓名+朝代 重解析 author_id（版本重建后 id 会漂移，id 直迁会指错人）。 */
@@ -1122,6 +1208,7 @@ class PoemsDb private constructor(context: Context) {
         val title: String,
         val author: String,
         val category: String,
+        val hash: String,
         val createdAt: Long,
     )
 
@@ -1130,19 +1217,22 @@ class PoemsDb private constructor(context: Context) {
     fun favoriteRows(): List<FavoriteRow> {
         awaitData()
         return rdb().rawQuery(
-            "SELECT p.id, p.title, IFNULL(a.name,'佚名'), p.category, f.created_at " +
+            "SELECT p.id, p.title, IFNULL(a.name,'佚名'), p.category, IFNULL(p.hash,''), f.created_at " +
                 "FROM favorites f JOIN poems p ON p.id = f.poem_id " +
                 "LEFT JOIN authors a ON a.id = p.author_id ORDER BY f.created_at DESC", null,
         ).use { c ->
             val out = mutableListOf<FavoriteRow>()
             while (c.moveToNext()) {
-                out += FavoriteRow(c.getInt(0), c.getString(1), c.getString(2), c.getString(3), c.getLong(4))
+                out += FavoriteRow(
+                    c.getInt(0), c.getString(1), c.getString(2), c.getString(3), c.getString(4), c.getLong(5),
+                )
             }
             out
         }
     }
 
-    /** 收藏导出 JSON（format=1）：title/author/category 供人读，导回仅用 id（库版本变更后防串 id 可人工核对） */
+    /** 收藏导出 JSON（format=2）：title/author/category/hash 是跨版本重解析的身份锚，
+     *  导回时优先按内容哈希重解析，id 只作兜底（D-047）。 */
     fun exportFavoritesJson(): String {
         val rows = favoriteRows()
         val items = JSONArray()
@@ -1152,13 +1242,14 @@ class PoemsDb private constructor(context: Context) {
                 put("title", r.title)
                 put("author", r.author)
                 put("category", r.category)
+                put("hash", r.hash)
                 put("created_at", r.createdAt)
             })
         }
         return JSONObject().apply {
             put("app", "jigu")
             put("type", "favorites")
-            put("format", 1)
+            put("format", 2)
             put("data_version", meta("data_version")?.toIntOrNull() ?: 0)
             put("exported_at", java.text.SimpleDateFormat(
                 "yyyy-MM-dd'T'HH:mm:ssZ", java.util.Locale.US,
@@ -1168,18 +1259,34 @@ class PoemsDb private constructor(context: Context) {
         }.toString(2)
     }
 
-    /** 导入收藏：只补不删；不存在的 id 跳过，已收藏计入 existed。容错纯数组 [1,2,3] 格式。 */
+    /** 导入收藏：只补不删；按 内容哈希 → 题名+作者(+分类) 重解析（换库/换签名重装后 id 会漂移），
+     *  id 仅兜底；解析不到的跳过。容错纯数组 [1,2,3] 格式（只有 id，无法重解析）。 */
     fun importFavoritesJson(text: String): ImportResult {
-        val ids = runCatching {
+        val items = runCatching {
             val arr = JSONObject(text).optJSONArray("items") ?: JSONArray()
-            (0 until arr.length()).mapNotNull { i -> arr.optJSONObject(i)?.optInt("id", 0)?.takeIf { it > 0 } }
+            (0 until arr.length()).mapNotNull { i ->
+                val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                val id = o.optInt("id", 0)
+                val title = o.optString("title", "")
+                if (id <= 0 && title.isBlank()) null
+                else FavoriteSnapshot(
+                    id = id,
+                    title = title,
+                    author = o.optString("author", "佚名"),
+                    category = o.optString("category", ""),
+                    hash = o.optString("hash", ""),
+                    createdAt = o.optLong("created_at", 0L),
+                )
+            }
         }.getOrElse {
             runCatching {
                 val arr = JSONArray(text)
-                (0 until arr.length()).mapNotNull { i -> arr.optInt(i, 0).takeIf { it > 0 } }
+                (0 until arr.length()).mapNotNull { i ->
+                    arr.optInt(i, 0).takeIf { it > 0 }?.let { FavoriteSnapshot(it, "", "", "", "", 0L) }
+                }
             }.getOrElse { emptyList() }
         }
-        require(ids.isNotEmpty()) { "文件里没有可识别的收藏条目" }
+        require(items.isNotEmpty()) { "文件里没有可识别的收藏条目" }
         val db = wdb()
         var added = 0
         var existed = 0
@@ -1187,18 +1294,17 @@ class PoemsDb private constructor(context: Context) {
         val now = System.currentTimeMillis()
         db.beginTransaction()
         try {
-            ids.distinct().forEachIndexed { index, id ->
-                val poemExists = db.rawQuery(
-                    "SELECT 1 FROM poems WHERE id = ?", arrayOf(id.toString()),
-                ).use { it.moveToFirst() }
-                if (!poemExists) { skipped++; return@forEachIndexed }
+            items.forEachIndexed { index, f ->
+                val id = resolvePoemId(db, f)
+                if (id == null) { skipped++; return@forEachIndexed }
                 val favExists = db.rawQuery(
                     "SELECT 1 FROM favorites WHERE poem_id = ?", arrayOf(id.toString()),
                 ).use { it.moveToFirst() }
                 if (favExists) { existed++; return@forEachIndexed }
                 db.insert("favorites", null, ContentValues().apply {
                     put("poem_id", id)
-                    put("created_at", now - index) // 保持导出顺序（首条最新）
+                    // 保留导出时的收藏时间；老格式（无时间戳）退化为按顺序递增，首条最新
+                    put("created_at", if (f.createdAt > 0) f.createdAt else now - index)
                 })
                 added++
             }
