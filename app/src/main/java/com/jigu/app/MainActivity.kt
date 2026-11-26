@@ -31,12 +31,14 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,10 +64,13 @@ import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguCalendar
 import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
+import com.jigu.app.data.WeatherService
+import com.jigu.app.data.PrepState
 import com.jigu.app.ui.library.AuthorIndexScreen
 import com.jigu.app.ui.library.AuthorScreen
 import com.jigu.app.ui.library.ChapterScreen
 import com.jigu.app.ui.library.EraAuthorsScreen
+import com.jigu.app.ui.library.FollowsScreen
 import com.jigu.app.ui.library.FamousLinesScreen
 import com.jigu.app.ui.library.GuwenSourceScreen
 import com.jigu.app.ui.library.GuwenSourcesScreen
@@ -82,6 +87,7 @@ import com.jigu.app.ui.library.TypeScreen
 import com.jigu.app.ui.mine.MineScreen
 import com.jigu.app.ui.share.CardPreviewScreen
 import com.jigu.app.ui.theme.JiguTheme
+import com.jigu.app.ui.today.PoemLogScreen
 import com.jigu.app.ui.today.TodayScreen
 import com.jigu.app.ui.detail.DetailScreen
 
@@ -129,10 +135,15 @@ fun JiguApp() {
     LaunchedEffect(Unit) {
         JiguCalendar.load(context)
         PoemsDb.get(context) // 触发首启拷库
+        WeatherService.refreshAsync(context) // R4：天气城市已配置才联网（否则零请求）
     }
 
     val nav = rememberNavController()
     val openDetail: (Int) -> Unit = { id -> nav.navigate("detail/$id") }
+    // 名句直达（D-043 R1）：带高亮句进详情——hl 经 URL 编码走 query 参数
+    val openDetailHighlight: (Int, String) -> Unit = { id, hl ->
+        nav.navigate("detail/$id?hl=${android.net.Uri.encode(hl)}")
+    }
     // D-038 修复：currentBackStackEntry 直读不具备组合可观察性（route 启动后定格，
     // dock 永显/今日恒选中）——改用 currentBackStackEntryAsState() 订阅导航状态
     val route = nav.currentBackStackEntryAsState().value?.destination?.route
@@ -145,11 +156,22 @@ fun JiguApp() {
                 TodayScreen(
                     onOpen = openDetail,
                     onCard = { id -> nav.navigate("card/$id") },
+                    // R3 几枝化：搜索前置（诗词栏自动聚焦输入框）+ 每日一句诗历
+                    onOpenSearch = { nav.navigate("poetry?focus=1") },
+                    onOpenLog = { nav.navigate("poemlog") },
+                )
+            }
+            // 每日一句·诗历（R3 几枝化）：按天回看推送过的句子
+            composable("poemlog") {
+                PoemLogScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpen = openDetail,
                 )
             }
             // 诗词 / 古文分栏（D-030）：原"书库"拆两个顶层 tab，各有专属维度
-            composable("poetry") {
+            composable("poetry?focus={focus}") { back ->
                 LibraryScreen(
+                    autoFocusSearch = back.arguments?.getString("focus") == "1",
                     section = LibrarySection.POETRY,
                     onOpenModule = { key ->
                         if (key == "famous") nav.navigate("famous")
@@ -167,10 +189,12 @@ fun JiguApp() {
                     onOpenTheme = { name -> nav.navigate("theme/$name") },
                     onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
                     onOpen = openDetail,
+                    onOpenHighlight = openDetailHighlight,
                 )
             }
             composable("guwen") {
                 LibraryScreen(
+                    autoFocusSearch = false,
                     section = LibrarySection.PROSE,
                     onOpenModule = { key ->
                         when (key) {
@@ -190,6 +214,7 @@ fun JiguApp() {
                     onOpenTheme = { name -> nav.navigate("theme/$name") },
                     onOpenChapter = { chapter -> nav.navigate("chapter/$chapter") },
                     onOpen = openDetail,
+                    onOpenHighlight = openDetailHighlight,
                 )
             }
             composable("guwen_sources") {
@@ -300,6 +325,14 @@ fun JiguApp() {
                 MineScreen(
                     onOpenFavorites = { nav.navigate("favorites") },
                     onOpenFamous = { nav.navigate("famous") },
+                    onOpenFollows = { nav.navigate("follows") },
+                )
+            }
+            // 关注诗人列表（D-043 R2）：独立页，作者名下直达诗人主页
+            composable("follows") {
+                FollowsScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenAuthor = { id -> nav.navigate("author/$id") },
                 )
             }
             composable("card/{id}") { back ->
@@ -308,9 +341,10 @@ fun JiguApp() {
                     onBack = { nav.popBackStack() },
                 )
             }
-            composable("detail/{id}") { back ->
+            composable("detail/{id}?hl={hl}") { back ->
                 DetailScreen(
                     id = back.arguments?.getString("id")?.toIntOrNull() ?: 0,
+                    highlight = back.arguments?.getString("hl") ?: "",
                     onBack = { nav.popBackStack() },
                     onOpen = openDetail,
                 )
@@ -323,7 +357,8 @@ fun JiguApp() {
         // 常驻签条反而占底部、碍返回视线；全屏体验页同理不显示。
         // 出入场动效：进子页滑出、返回滑入——"书签回来"而非"突然在"（D-025 终版）
         androidx.compose.animation.AnimatedVisibility(
-            visible = route in setOf("today", "poetry", "guwen", "mine"),
+            // D-046：dock 常驻——仅在沉浸式分享卡预览退场；子页内容以 DOCK_CLEARANCE 避让
+            visible = route != "card/{id}",
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) +
                 androidx.compose.animation.fadeIn(),
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) +
@@ -337,6 +372,73 @@ fun JiguApp() {
             onGuwen = { nav.navigate("guwen") { launchSingleTop = true } },
             onMine = { nav.navigate("mine") { launchSingleTop = true } },
         )
+        }
+
+        // 书库准备中/失败覆盖层（D-034"空入口"误判的结构性修复）：首启/升级解压约 700MB 期间
+        // 各页查询阻塞在 awaitData，列表会是空的——给明示而非空白。日常秒开（Checking→Ready
+        // 快于 400ms）不显示，避免闪一下。
+        val prep by PoemsDb.prepState.collectAsState()
+        var showPrep by remember { mutableStateOf(false) }
+        LaunchedEffect(prep) {
+            when (prep) {
+                PrepState.Copying -> {
+                    kotlinx.coroutines.delay(400)
+                    showPrep = true
+                }
+                PrepState.Failed -> showPrep = true
+                else -> showPrep = false
+            }
+        }
+        if (showPrep) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .pointerInput(Unit) { detectTapGestures { /* 准备期间吞掉全部点击 */ } },
+            ) {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "汲古",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    if (prep == PrepState.Failed) {
+                        Text(
+                            text = "书库准备失败",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "请重启应用；若仍失败，请卸载重装",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(26.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.height(18.dp))
+                        Text(
+                            text = "正在整理书库…",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "首次启动需解压约 700MB 书库，请稍候",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
     }
 }

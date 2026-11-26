@@ -1,6 +1,8 @@
 package com.jigu.app.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,12 +43,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jigu.app.data.JiguSettings
 import com.jigu.app.data.PoemsDb
 import androidx.compose.foundation.layout.PaddingValues
 import com.jigu.app.DOCK_CLEARANCE
@@ -93,9 +99,11 @@ private val POETRY_BOOK_MODULES = listOf(
     // 清诗/唐五代词/近三百年词（批13，D-037）：殆知阁整理本，补明清近代断层
     BookModule("清诗", "qing_shi", "晚晴簃诗汇 · 五千八百家", 17),
     BookModule("唐五代词", "tang_ci", "敦煌曲子 · 花间尊前", 18),
-    BookModule("近三百年词", "jinsanbai_ci", "龙榆生选 · 词学中兴", 19),
+    // 乐府诗集（批15，D-042）：郭茂倩百卷十二类，补汉魏六朝乐府（古诗源之外整本总集）
+    BookModule("乐府诗集", "yuefu", "郭茂倩百卷 · 十二类", 19),
+    BookModule("近三百年词", "jinsanbai_ci", "龙榆生选 · 词学中兴", 20),
     // 名篇榜（D-031）：跨书热度榜，非"书"卡——类似名句卡挂书架尾
-    BookModule("名篇榜", "popular", "千古名篇 · 热度序", 20),
+    BookModule("名篇榜", "popular", "千古名篇 · 热度序", 21),
 )
 
 /** 古文书架 10 卡（D-032 重排）：四库法序——
@@ -107,7 +115,7 @@ private val PROSE_BOOK_MODULES = listOf(
     // 卡名四书：sishu 类实收 大学/中庸/孟子 16 篇（原"孟子"卡混收大学中庸，D-028 改名对齐；论语另卡）
     BookModule("四书", "sishu", "大学 · 中庸 · 孟子七篇", 1, part = "经"),
     BookModule("蒙学", "mengxue", "声律启蒙 · 幼学琼林等九种", 2, part = "经"),
-    BookModule("史记", "shiji", "纪传之祖 · 名段选", 3, part = "史"),
+    BookModule("史记", "shiji", "纪传之祖 · 名段 + 百三十卷", 3, part = "史"),
     BookModule("经史名段", "guwen_sources", "左传战国策国语 · 观止本选段", 4, part = "史"),
     BookModule("老子", "laozi", "道德五千言 · 全 81 章", 5, part = "子"),
     BookModule("庄子", "zhuangzi", "内篇七全 · 外篇名篇", 6, part = "子"),
@@ -121,7 +129,7 @@ private val PROSE_BOOK_MODULES = listOf(
     BookModule("墨子", "mozi", "兼爱非攻 · 选", 13, part = "子"),
     BookModule("荀子", "xunzi", "劝学 · 名篇选", 14, part = "子"),
     BookModule("韩非子", "hanfeizi", "刑名法术 · 名篇选", 15, part = "子"),
-    BookModule("列子", "liezi", "冲虚寓言 · 名篇选", 16, part = "子"),
+    BookModule("列子", "liezi", "冲虚至德 · 八篇全本", 16, part = "子"),
     BookModule("孙子", "sunzi", "兵学圣典 · 十三篇", 17, part = "子"),
     BookModule("淮南子", "huainanzi", "杂家鸿篇 · 名篇选", 18, part = "子"),
     BookModule("吕氏春秋", "lvshi", "一字千金 · 名篇选", 19, part = "子"),
@@ -137,6 +145,7 @@ private val BOOK_MODULES = POETRY_BOOK_MODULES + PROSE_BOOK_MODULES
  *  诗词栏：书架 / 题材 / 体裁 / 作者 / 朝代；古文栏：书架 / 文体 / 体裁 / 作者 / 朝代 */
 @Composable
 fun LibraryScreen(
+    autoFocusSearch: Boolean = false,
     section: LibrarySection,
     onOpenModule: (String) -> Unit,
     onOpenEra: (String) -> Unit,
@@ -146,15 +155,20 @@ fun LibraryScreen(
     onOpenGenre: (String) -> Unit,
     onOpenChapter: (String) -> Unit,
     onOpen: (Int) -> Unit,
+    onOpenHighlight: ((Int, String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val poetry = section == LibrarySection.POETRY
+    val searchFocus = remember { FocusRequester() }
     var query by remember { mutableStateOf("") }
     var dim by rememberSaveable(section) { mutableIntStateOf(0) }
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var eraCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var typeCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var results by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
+    // 搜索三路命中（D-043 R1）：作者卡置顶 → 名句 → 诗文
+    var resAuthors by remember { mutableStateOf<List<PoemsDb.Author>>(emptyList()) }
+    var resFamous by remember { mutableStateOf<List<PoemsDb.FamousLine>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -164,9 +178,19 @@ fun LibraryScreen(
             typeCounts = db.typeCounts()
         }
     }
+    LaunchedEffect(autoFocusSearch) {
+        // R3 搜索前置：今日页放大镜进来即聚焦输入框（随键盘弹出直接可搜）
+        if (autoFocusSearch) searchFocus.requestFocus()
+    }
     LaunchedEffect(query) {
-        if (query.isBlank()) results = emptyList()
-        else withContext(Dispatchers.IO) { results = PoemsDb.get(context).search(query) }
+        if (query.isBlank()) {
+            results = emptyList(); resAuthors = emptyList(); resFamous = emptyList()
+        } else withContext(Dispatchers.IO) {
+            val db = PoemsDb.get(context)
+            resAuthors = db.searchAuthors(query)
+            resFamous = db.searchFamousLines(query)
+            results = db.search(query)
+        }
     }
 
     Column(
@@ -179,8 +203,10 @@ fun LibraryScreen(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("搜诗句、题目、作者（如：月落乌啼）") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(searchFocus),
+            placeholder = { Text("搜诗句、作者、名句、篇名（如：柳永 / 月落乌啼）") },
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
         )
@@ -205,6 +231,31 @@ fun LibraryScreen(
 
         if (query.isNotBlank()) {
             LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DOCK_CLEARANCE)) {
+                if (resAuthors.isNotEmpty()) {
+                    item {
+                        SearchGroupHeader("作者")
+                    }
+                    items(resAuthors.size, key = { "a_${resAuthors[it].id}" }) { index ->
+                        AuthorResultCard(resAuthors[index], onClick = { onOpenAuthor(resAuthors[index].id) })
+                    }
+                }
+                if (resFamous.isNotEmpty()) {
+                    item {
+                        SearchGroupHeader("名句")
+                    }
+                    items(resFamous.size, key = { "f_${resFamous[it].poemId}_${resFamous[it].line.hashCode()}" }) { index ->
+                        val fl = resFamous[index]
+                        FamousResultRow(fl, onClick = {
+                            // 名句 → 原诗全文并高亮该句（D-043 R1）
+                            onOpenHighlight?.invoke(fl.poemId, fl.line) ?: onOpen(fl.poemId)
+                        })
+                    }
+                }
+                if (resAuthors.isNotEmpty() || resFamous.isNotEmpty()) {
+                    item {
+                        SearchGroupHeader("诗文")
+                    }
+                }
                 items(results.size, key = { results[it].id }) { index ->
                     PoemRow(
                         results[index],
@@ -213,7 +264,7 @@ fun LibraryScreen(
                         onClick = { onOpen(results[index].id) },
                     )
                 }
-                if (results.isEmpty()) {
+                if (results.isEmpty() && resAuthors.isEmpty() && resFamous.isEmpty()) {
                     item {
                         Text(
                             text = "无结果",
@@ -234,6 +285,86 @@ fun LibraryScreen(
             3 -> AuthorFlatContent(poetry, onOpenAuthor)
             4 -> EraDimContent(eraCounts, onOpenEra)
         }
+    }
+}
+
+/** 搜索结果分组头（D-043 R1：作者/名句/诗文 三段） */
+@Composable
+private fun SearchGroupHeader(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 14.dp, bottom = 6.dp),
+    )
+}
+
+/** 作者命中卡（搜"柳永"置顶出人，点击进诗人主页） */
+@Composable
+private fun AuthorResultCard(a: PoemsDb.Author, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 2.dp),
+    ) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    a.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    listOfNotNull(
+                        a.dynasty.takeIf { it.isNotBlank() },
+                        "${a.workCount} 首",
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (a.brief.isNotBlank()) {
+                Text(
+                    a.brief,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/** 名句命中行（点击 → 原诗全文并高亮该句） */
+@Composable
+private fun FamousResultRow(fl: PoemsDb.FamousLine, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+    ) {
+        Text(
+            fl.line,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            fl.signature + "《" + fl.title + "》",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 
@@ -262,6 +393,13 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var tagCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var popularCount by remember { mutableIntStateOf(0) }
+    // R9 书架自选置顶：长按卡片置顶；置顶卡（按置顶序）排架首
+    var pinned by remember { mutableStateOf(JiguSettings.pinnedModules(context)) }
+    fun togglePin(route: String) {
+        val next = if (route in pinned) pinned - route else pinned + route
+        pinned = next
+        JiguSettings.setPinnedModules(context, next)
+    }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
@@ -277,7 +415,12 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
             else -> counts[book.route] ?: 0
         }
     }
-    val books = if (section == LibrarySection.POETRY) POETRY_BOOK_MODULES else PROSE_BOOK_MODULES
+    val base = if (section == LibrarySection.POETRY) POETRY_BOOK_MODULES else PROSE_BOOK_MODULES
+    val pinnedSet = pinned.toSet()
+    val books = base.sortedWith(
+        compareByDescending<BookModule> { if (it.route in pinnedSet) 1 else 0 }
+            .thenBy { pinned.indexOf(it.route).let { i -> if (i >= 0) i else Int.MAX_VALUE } },
+    )
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
@@ -286,8 +429,27 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
         contentPadding = PaddingValues(bottom = DOCK_CLEARANCE),
     ) {
         if (section == LibrarySection.PROSE) {
+            // R9：置顶卡先出（占整行头），再按四库法分组（置顶卡不重复出现）
+            val pinnedBooks = books.filter { it.route in pinnedSet }
+            if (pinnedBooks.isNotEmpty()) {
+                item(key = "part_pinned", span = { GridItemSpan(2) }) {
+                    Text(
+                        text = "置顶",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 14.dp, bottom = 0.dp),
+                    )
+                }
+                items(pinnedBooks, key = { it.route }) { book ->
+                    ModuleCard(book.title, book.brief, countOf(book), pinned = true, onTogglePin = { togglePin(book.route) }) {
+                        onOpenModule(book.route)
+                    }
+                }
+            }
             // 四库法头占整行（D-030/D-032）：经/史/子/说部/集 分组呈现
             listOf("经", "史", "子", "说部", "集").forEach { part ->
+                val inPart = books.filter { it.part == part && it.route !in pinnedSet }
+                if (inPart.isEmpty()) return@forEach
                 item(key = "part_$part", span = { GridItemSpan(2) }) {
                     Text(
                         text = part,
@@ -296,13 +458,17 @@ private fun ShelfGrid(section: LibrarySection, onOpenModule: (String) -> Unit) {
                         modifier = Modifier.padding(top = 14.dp, bottom = 0.dp),
                     )
                 }
-                items(books.filter { it.part == part }, key = { it.route }) { book ->
-                    ModuleCard(title = book.title, brief = book.brief, count = countOf(book)) { onOpenModule(book.route) }
+                items(inPart, key = { it.route }) { book ->
+                    ModuleCard(book.title, book.brief, countOf(book), pinned = false, onTogglePin = { togglePin(book.route) }) {
+                        onOpenModule(book.route)
+                    }
                 }
             }
         } else {
             items(books, key = { it.route }) { book ->
-                ModuleCard(title = book.title, brief = book.brief, count = countOf(book)) { onOpenModule(book.route) }
+                ModuleCard(book.title, book.brief, countOf(book), pinned = book.route in pinnedSet, onTogglePin = { togglePin(book.route) }) {
+                    onOpenModule(book.route)
+                }
             }
         }
     }
@@ -551,7 +717,7 @@ private fun TypeFlatContent(
 @Composable
 private fun AuthorFlatContent(poetry: Boolean, onOpenAuthor: (Int) -> Unit) {
     val context = LocalContext.current
-    var kind by rememberSaveable { mutableStateOf("all") }
+    var kind by rememberSaveable { mutableStateOf(if (poetry) "poetry" else "wen") }
     var authors by remember(kind) { mutableStateOf<List<PoemsDb.Author>>(emptyList()) }
     var hasMore by remember(kind) { mutableStateOf(true) }
     var page by remember(kind) { mutableIntStateOf(0) }
@@ -572,8 +738,9 @@ private fun AuthorFlatContent(poetry: Boolean, onOpenAuthor: (Int) -> Unit) {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            (if (poetry) listOf("all" to "全部", "poet" to "诗人", "ci" to "词曲")
-            else listOf("all" to "全部", "wen" to "文家"))
+            // D-043 域修正：诗词栏 全部=诗词域/诗人/词曲；古文栏 全部=古文域（不再混入诗歌作者）
+            (if (poetry) listOf("poetry" to "全部", "poet" to "诗人", "ci" to "词曲")
+            else listOf("wen" to "全部"))
                 .forEach { (k, label) ->
                     DimensionChip(label = label, selected = kind == k) { kind = k }
                 }
@@ -629,18 +796,29 @@ private fun AuthorFlatContent(poetry: Boolean, onOpenAuthor: (Int) -> Unit) {
 }
 
 @Composable
-private fun ModuleCard(title: String, brief: String, count: Int, onClick: () -> Unit) {
+@OptIn(ExperimentalFoundationApi::class)
+private fun ModuleCard(
+    title: String,
+    brief: String,
+    count: Int,
+    pinned: Boolean = false,
+    onTogglePin: () -> Unit = {},
+    onClick: () -> Unit,
+) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
         modifier = Modifier
             .fillMaxWidth()
             .height(96.dp)
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onTogglePin,  // R9：长按置顶/取消置顶
+            ),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = title,
+                text = if (pinned) "● $title" else title,
                 style = PoemTitleStyle,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -685,6 +863,8 @@ private val CATEGORY_LABELS = mapOf(
     "jinyuan_ci" to "全金元词", "yuan_shi" to "元诗选",
     // 批13（D-037）
     "qing_shi" to "晚晴簃诗汇", "tang_ci" to "全唐五代词", "jinsanbai_ci" to "近三百年名家词选",
+    // 批15（D-042）
+    "yuefu" to "乐府诗集",
 )
 internal fun sourceLabelOf(p: PoemsDb.Poem): String = when {
     p.tags.contains("唐诗三百首") -> "唐诗三百首"
@@ -800,6 +980,8 @@ fun ModuleScreen(key: String, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                     key in setOf(
                         "zuozhuan", "guoyu", "zhanguoce", "mozi", "xunzi", "hanfeizi",
                         "liezi", "sunzi", "huainanzi", "lvshi", "guanzi", "yanzi", "shangjunshu",
+                        // 批15（D-042）乐府按十二类分组；列子整本按八篇
+                        "yuefu",
                     ) -> { p -> p.chapter.ifBlank { null } }
                 key == "yuan_qu" -> { p ->
                     // 「诈妮子调风月・混江龙」→ 节 = 剧名；无分隔的单牌曲无节；
@@ -878,7 +1060,13 @@ private fun searchPreviewAnnotated(p: PoemsDb.Poem, query: String, sourceLabel: 
 }
 
 @Composable
-internal fun PoemRow(p: PoemsDb.Poem, onClick: () -> Unit, sourceLabel: String? = null, query: String? = null) {
+internal fun PoemRow(
+    p: PoemsDb.Poem,
+    onClick: () -> Unit,
+    sourceLabel: String? = null,
+    query: String? = null,
+    hideAuthor: Boolean = false,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -890,13 +1078,20 @@ internal fun PoemRow(p: PoemsDb.Poem, onClick: () -> Unit, sourceLabel: String? 
             style = PoemTitleStyle,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Text(
-            text = if (query != null) searchPreviewAnnotated(p, query, sourceLabel) else AnnotatedString(
+        val meta: AnnotatedString = if (hideAuthor) {
+            // 诗人主页内：作者与本页同名，前缀冗余——只留体裁/出处 + 正文预览（D-043 骨干重排）
+            val prefix = sourceLabel?.takeIf { it.isNotBlank() } ?: p.type.takeIf { it.isNotBlank() } ?: ""
+            AnnotatedString(if (prefix.isBlank()) ellipsize(p.body, 30) else "$prefix ｜ " + ellipsize(p.body, 30))
+        } else {
+            AnnotatedString(
                 listOfNotNull(
                     sourceLabel?.takeIf { it.isNotBlank() },
                     p.author.ifBlank { "佚名" },
                 ).joinToString(" ｜ ") + " ｜ " + ellipsize(p.body, 30)
-            ),
+            )
+        }
+        Text(
+            text = if (query != null) searchPreviewAnnotated(p, query, sourceLabel) else meta,
             style = PoemBodySmallStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

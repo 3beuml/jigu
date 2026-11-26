@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:32px 44px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:repeat(3, 300px); gap:26px; }
+  .tile { background:#fff; border-radius:10px; padding:14px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .tilebox { width:270px; height:270px; border-radius:24%; background:#F7F3EA;
+             display:flex; align-items:center; justify-content:center; }
+  .tilebox svg { width:250px; height:250px; }
+  .name { font-size:14px; font-weight:bold; color:#30343A; margin:10px 0 3px; }
+  .desc { font-size:11.5px; color:#6f6a5e; line-height:1.55; }
+</style>
+</head>
+<body>
+<h1>扫描页 3 — 极简单形三候选</h1>
+<div class="sub">单形·纸墨朱·母题取自你 Q5 亲选的意象（朱点落款/纸与字）。报编号+直觉词。</div>
+<div class="grid" id="g"></div>
+<script>
+const PAPER="#F7F3EA", INK="#30343A", ZHU="#9E2F26";
+
+// M1 一行一落款：一根墨竖行 + 一枚朱点
+const M1 = `<rect x="47.5" y="26" width="13" height="48" rx="6.5" fill="${INK}"/>
+  <circle cx="68.5" cy="67.5" r="4.5" fill="${ZHU}"/>`;
+
+// M2 一页折角：一张墨页 + 纸色折角
+const M2 = `<rect x="26" y="26" width="56" height="56" rx="8" fill="${INK}"/>
+  <path d="M64,26 L82,44 L64,44 Z" fill="${PAPER}"/>`;
+
+// M3 一圭：礼器符信的最简几何——一枚尖首长方
+const M3 = `<path d="M54,24 L64,46 L64,78 L44,78 L44,46 Z" fill="${INK}"/>`;
+
+const cs = [
+  ["M1","一行一落款","纸与字的极限减法：一根竖行（诗行）+ 一枚朱点（落款）。两元素，全产品原生。"],
+  ["M2","一页折角","一页纸的最简抽象：墨页 + 折角。母题就是你选的纸与字——不写字，只留纸。"],
+  ["M3","一圭","玉圭符信：尖首长方一块，古人持圭为信——极简几何与古意合一，无任何装饰。"],
+];
+document.getElementById("g").innerHTML = cs.map(v =>
+  `<div class="tile"><div class="tilebox"><svg viewBox="0 0 108 108">${
+    {M1,M2,M3}[v[0]]}</svg></div>
+   <div class="name">${v[0]} · ${v[1]}</div><div class="desc">${v[2]}</div></div>`).join("");
+</script>
+</body>
+</html>

@@ -36,8 +36,9 @@ T2S = OpenCC("t2s")
 
 REPO = Path(__file__).resolve().parents[2]
 
-SCHEMA_VERSION = 7  # +1: 瘦身——poems.body 删列（正文=paragraphs 拼接冗余存储；FTS 外部内容表改挂 paragraphs）
-DATA_VERSION = 27  # +1: 批13 诗词补全（D-037）——晚晴簃诗汇（清诗全本）22914 首 5840 家 198 卷新分类 qing_shi（清诗卡）；近三百年名家词选 441 首 jinsanbai_ci（近三百年词卡）；全唐五代词 877 首 tang_ci（唐五代词卡，与前五代词首 12 字去重）；底本=殆知阁 诗藏 有标点整理本（qingshi13/cib13 状态机解析）
+SCHEMA_VERSION = 8  # +1: follows 关注诗人表（D-043 R2）
+DATA_VERSION = 31  # +1: 批16——史记整本 125 卷 + follows 关注诗人表（SCHEMA 8）+ R1/R2 无数据面变更
+#                    （曲题锚+乐章作者继承）、近三百年词评点转 notes、敦煌曲子词尾标剥除
 
 SCHEMA = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -146,6 +147,14 @@ CREATE TABLE favorites(
   poem_id    INTEGER PRIMARY KEY REFERENCES poems(id),
   created_at INTEGER NOT NULL
 );
+
+-- 关注诗人（D-043 R2）：用户数据表（与 favorites 同为随版本迁移保留；restore 按姓名重解析 id）
+CREATE TABLE follows(
+  author_id  INTEGER PRIMARY KEY REFERENCES authors(id),
+  name       TEXT NOT NULL DEFAULT '',   -- 快照姓名：跨版本 id 漂移时按 name+dynasty 重解析
+  dynasty    TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
 """
 
 
@@ -194,6 +203,31 @@ MANUAL_VARIANTS = {
     "蠧": "蠹", "鬭": "斗", "竒": "奇", "碬": "碫", "阨": "厄", "愼": "慎",
     "歴": "历", "畧": "略", "廻": "回", "灋": "法", "髙": "高",
 }
+
+# 去重指纹归一表（与 tools/nightshift/20261117/dedup_scan.py 同源——VAR+NORM_MAP 合并；
+# 只参与 hash 计算，不改展示文本。同文异标点/异体/繁简两版在同一 category 内由
+# UNIQUE(category,hash) 吞并，治理批 2026-11-19）
+HASH_VARIANTS = {
+    "凢": "凡", "蠧": "蠹", "搆": "构", "蜯": "蚌", "鑚": "钻", "兎": "兔", "逺": "远",
+    "舎": "舍", "髄": "髓", "讐": "仇", "徳": "德", "鼈": "鳖", "衞": "卫", "歎": "叹",
+    "脩": "修", "戲": "戏", "鬭": "斗", "竒": "奇", "碬": "碫", "阨": "厄", "愼": "慎",
+    "歴": "历", "畧": "略", "廻": "回", "灋": "法", "髙": "高",
+    "茍": "苟", "於": "于", "遊": "游", "甯": "宁", "鹹": "咸", "卻": "却", "囘": "回",
+    "羣": "群", "歸": "归", "徧": "遍", "彊": "强", "饑": "饥", "衆": "众", "裏": "里",
+    "爲": "为", "發": "发", "覩": "睹", "悅": "悦", "說": "说", "爾": "尔", "曏": "向",
+    "嚮": "向", "鄉": "向", "黨": "倘", "蚤": "早", "倍": "背", "畔": "叛", "錯": "措",
+    "寘": "置", "田": "畋", "辟": "避",
+}
+_JAZHU_RE = re.compile(r"【[^】]*】")
+
+
+def norm_key(text: str) -> str:
+    """去重指纹归一：剥【夹注】+ 繁转简 + 异体归并 + 仅留基本区 CJK（去标点空白）。"""
+    t = _JAZHU_RE.sub("", text)
+    t = T2S.convert(t)
+    t = "".join(HASH_VARIANTS.get(c, c) for c in t)
+    return "".join(ch for ch in t if 0x4E00 <= ord(ch) <= 0x9FFF)
+
 
 
 # 字形门闩状态（main 里加载）
@@ -368,6 +402,51 @@ def j(obj) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
 
+# 作者名异文归一（夜班查重发现：同诗跨卡显示两作者名）
+#   name -> (规范名, 强制朝代或 None)
+AUTHOR_FIX = {
+    "韩竑": ("韩翃", None),      # 千家诗底本讹形（《寒食》与全唐诗韩翃条同文）
+    "杜小山": ("杜耒", None),    # 千家诗以字行（杜耒字小山，全宋诗作杜耒）
+    "赵匡胤": ("宋太祖", "宋"),  # 全唐诗补编署名与全宋诗统一；此人属宋，时代一并归宋
+    # 治理批 2026-11-19（DATA 29）：跨卡同诗两署名逐组定性——僧人全宋诗带"释"姓，
+    # 全唐诗补编作本名；贾岛初为僧名无本；全唐诗自注"一作佖"；形讹/异姓/泛称各归通行。
+    "延寿": ("释延寿", None),      # 永明延寿（《闲居》）
+    "可勋": ("释可勋", None),      # 《偈》
+    "本先": ("释本先", None),      # 《非风幡动仁者心动颂》
+    "干康": ("释干康", None),      # 《赋残雪》
+    "尚能": ("释尚能", None),      # 《中秋旅怀》
+    "赞宁": ("释赞宁", None),      # 《夜吟》（宋僧赞宁）
+    "释无本": ("贾岛", None),      # 贾岛初为僧名无本（《行次汉上》）
+    "韩王从善": ("李从善", None),  # 南唐李从善，补编署封号
+    "张泌": ("张佖", None),        # 全唐诗自注"一作佖"，与全宋诗并归 张佖
+    "朱贞白": ("李贞白", None),    # 《谒贵公子不礼书格子屏风》同文异姓，从全唐诗 李贞白
+    "江景防": ("江景房", None),    # 《保安寺》同文形讹（防/房）
+    "贺公": ("贺亢", None),        # 《句》泛称 → 贺亢
+    # 二波（同卡同诗署名两写，归一口径已能吞并——归名后 hash 相同）
+    "朱庆余": ("朱庆馀", None),    # 《宫词》余/馀异体（通行 朱庆馀）
+    "赵令": ("赵令畤", None),      # 《蝶恋花》底本名脱字（通行 赵令畤）
+    "裴元": ("裴次元", None),      # 《律中应钟》脱字
+    "张元正": ("张正元", None),    # 《临川羡鱼》字序倒
+    "高华": ("高道华", None),      # 《章华台碑》脱字
+    "林逋叟": ("林逋", None),      # 《华阳洞》以号行
+    "陈良": ("陈良孙", None),      # 《自紫极观过天柱》脱字
+    "刘弼": ("刘公弼", None),      # 《句》以字行
+    "宝祐时人": ("宝祐士人", None),  # 《句》同位佚名两写
+    "李南寿": ("季南寿", None),    # 《句》姓讹（季/李）
+    "后主衍": ("王衍", None),      # 《醉妆词》前蜀后主，归本名（作者表按朝代分行不撞晋王衍）
+}
+
+
+def fix_author(name: str, dynasty: str) -> tuple[str, str]:
+    name = s(name)
+    fixed = AUTHOR_FIX.get(name)
+    if fixed:
+        name = fixed[0]
+        if fixed[1]:
+            dynasty = fixed[1]
+    return name, s(dynasty)
+
+
 class Db:
     def __init__(self, path: Path):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -381,6 +460,7 @@ class Db:
         self.dups: dict[str, int] = {}
 
     def author(self, name: str, dynasty: str, brief: str = "") -> int:
+        name, dynasty = fix_author(name, dynasty)
         name, brief = s(name), clean_brief(s(brief))
         dynasty = s(dynasty)
         dynasty = ERA_MAP.get(dynasty, dynasty)
@@ -405,12 +485,37 @@ class Db:
         paras = [s(p) for p in rec["paragraphs"] if isinstance(p, str) and p.strip()]
         if not paras:
             return False
-        body = "\n".join(paras)
         title = clean_placeholder_title(norm_title(s(rec.get("title") or "无题")))
         title = next((new for old, new in TITLE_FIXES if title == old), title)
-        h = hashlib.md5(f"{title}|{s(rec.get('author',''))}|{body}".encode()).hexdigest()
+        # 异文覆盖前置到入库——hash 必须见最终文本（治理批：枫桥夜泊类同卡漏网根因）。
+        # db 层 apply_text_overrides 保留兜底（幂等）。
+        for t, old, new in TEXT_OVERRIDES:
+            if title == t:
+                paras = [p.replace(old, new) for p in paras]
+        # 夹注/评点处理（批15 D-042，点名分类勿全局）：
+        #   近三百年词选 段尾"【评】编者曰…"→ notes 保留（P排 不混入正文）
+        #   敦煌曲子词 尾标"【阿曹婆词】"等源标 → 剥
+        if rec.get("category") == "jinsanbai_ci":
+            fixed = []
+            for p in paras:
+                m = re.search(r"【(?:集评|评)】(.*)$", p)
+                if m:
+                    rec.setdefault("notes", []).append("评：" + m.group(1).strip())
+                    p = p[: m.start()].rstrip()
+                if p:
+                    fixed.append(p)
+            paras = fixed
+        elif rec.get("category") == "tang_ci":
+            paras = [re.sub(r"【[^】]*】", "", p).strip() for p in paras]
+            paras = [p for p in paras if p]
+        body = "\n".join(paras)
+        # 作者名先归一再算 hash——归一的同文同卡条目由 UNIQUE(category,hash) 自动去重
+        aname, adyn = fix_author(rec.get("author", ""), rec.get("dynasty", ""))
+        # 指纹用归一口径（同文异标点/异体/繁简不拆重复）——原文指纹只差标点的补编×正编
+        # 条目曾全部漏网（治理批 2026-11-19，与 dedup_scan.py 同源）
+        h = hashlib.md5(f"{norm_key(title)}|{aname}|{norm_key(body)}".encode()).hexdigest()
         cat = rec["category"]
-        era = ERA_MAP.get(s(rec.get("dynasty", "")), s(rec.get("dynasty", "")))
+        era = ERA_MAP.get(adyn, adyn)
         typ = rec.get("type") or classify_type(cat, title, s(rec.get("rhythmic", "")), paras)
         try:
             cur = self.conn.execute(
@@ -418,7 +523,7 @@ class Db:
                 "paragraphs,tags,notes,hash,source_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     cat, typ, era, title,
-                    self.author(rec.get("author", ""), rec.get("dynasty", ""), rec.get("brief", "")),
+                    self.author(aname, adyn, rec.get("brief", "")),
                     s(rec.get("rhythmic", "")), s(rec.get("chapter", "")), s(rec.get("section", "")),
                     j(paras), j(rec.get("tags", [])), j(rec.get("notes", [])),
                     h, rec.get("source_id", ""),
@@ -1621,6 +1726,25 @@ def it_jingzi11(dataset: Path):
         }
     s12 = load_json(REPO / "tools/datapack/corpus/shici12.json")
     for a in s12["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    # 批15 乐府诗集（D-042）：郭茂倩百卷十二类，yuefu14.py v1 否决后 yuefu15.py 重析
+    s14 = load_json(REPO / "tools/datapack/corpus/shici14.json")
+    for a in s14["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    # 批16 史记整本（D-043 R10）：130 卷有标点整理本（卷头锚+目录对齐+首句锚定补切 14 缺头卷；
+    # 底本整卷缺：孝武本纪/赵世家/魏世家/陈涉世家，记档 D-043）
+    sjf = load_json(REPO / "tools/datapack/corpus/shiji_full.json")
+    for a in sjf["pieces"]:
         yield {
             "category": a["category"], "title": a["title"], "author": a.get("author", ""),
             "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],

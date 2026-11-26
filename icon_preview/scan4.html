@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:32px 44px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:repeat(3, 300px); gap:26px; }
+  .tile { background:#fff; border-radius:10px; padding:14px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .tilebox { width:270px; height:270px; border-radius:24%; background:#F7F3EA;
+             display:flex; align-items:center; justify-content:center; }
+  .tilebox svg { width:250px; height:250px; }
+  .name { font-size:14px; font-weight:bold; color:#30343A; margin:10px 0 3px; }
+  .desc { font-size:11.5px; color:#6f6a5e; line-height:1.55; }
+</style>
+</head>
+<body>
+<h1>扫描页 4 — MG 相位语言 · 块面版三候选</h1>
+<div class="sub">MG 运动暗示（相位/旋转/翻动）× 块面填充 × 纸墨朱。约束来自 Q10 诊断。报编号+直觉词。</div>
+<div class="grid" id="g"></div>
+<script>
+const PAPER="#F7F3EA", INK="#30343A", ZHU="#9E2F26", DAI="#3F5B72";
+
+// G1 节气环：粗环留 70° 缺口，朱点嵌在缺口=今日在年轮上的位置
+const G1 = `<path d="M76.65,50.01 A23,23 0 1 1 57.99,31.35" fill="none"
+  stroke="${INK}" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="70.26" cy="37.74" r="5.5" fill="${ZHU}"/>`;
+
+// G2 晷影：一块斜置扇影 + 心尖朱点（影子在动的一帧）
+const G2 = `<path d="M54,54 L63.23,28.63 A27,27 0 0 1 80.58,49.31 Z"
+  fill="${INK}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="54" cy="54" r="5.5" fill="${ZHU}"/>`;
+
+// G3 两页错相：后页黛前页墨，斜错一帧=翻动的瞬间
+const G3 = `<rect x="34" y="30" width="40" height="50" rx="7" fill="${DAI}"
+  transform="rotate(10 54 55)"/>
+  <rect x="40" y="28" width="40" height="52" rx="7" fill="${INK}"/>`;
+
+const cs = [
+  ["G1","节气环","粗环留一缺口，朱点嵌在缺口处——年是环，今天是点。MG 相位语言最纯正的一版。"],
+  ["G2","晷影","斜置扇影+心尖一点：影子随日移动的一帧。古意（晷）与运动暗示同体。"],
+  ["G3","两页错相","后页黛前页墨，斜错几度=翻页瞬间。最素，但意象最贴阅读器。"],
+];
+document.getElementById("g").innerHTML = cs.map(v =>
+  `<div class="tile"><div class="tilebox"><svg viewBox="0 0 108 108">${
+    {G1,G2,G3}[v[0]]}</svg></div>
+   <div class="name">${v[0]} · ${v[1]}</div><div class="desc">${v[2]}</div></div>`).join("");
+</script>
+</body>
+</html>

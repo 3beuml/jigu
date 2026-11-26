@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin:0; padding:32px 44px; background:#e9e6df; font-family:"Microsoft YaHei",sans-serif; }
+  h1 { font-size:19px; color:#2b2b2b; margin:0 0 4px; }
+  .sub { font-size:13px; color:#777; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:repeat(4, 245px); gap:22px; }
+  .tile { background:#fff; border-radius:10px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .tilebox { width:220px; height:220px; border-radius:24%; background:#F7F3EA;
+             display:flex; align-items:center; justify-content:center; }
+  .tilebox svg { width:204px; height:204px; }
+  .name { font-size:13.5px; font-weight:bold; color:#30343A; margin:9px 0 3px; }
+  .desc { font-size:11px; color:#6f6a5e; line-height:1.5; }
+</style>
+</head>
+<body>
+<h1>扫描页 8 — 抽象+抓人：四个张力杠杆</h1>
+<div class="sub">在 L 批语法上拉满：体量对比 / 色块占比 / 边缘出血（图形触及安全区 r33）/ 硬重叠。报编号+直觉词。</div>
+<div class="grid" id="g"></div>
+<script>
+const PAPER="#F7F3EA", INK="#30343A", ZHU="#9E2F26", DAI="#3F5B72";
+
+// P1 珠走线：一根全幅斜墨线（触安全区两端）+ 朱珠压线错位
+const P1 = `<line x1="76.5" y1="31.5" x2="31.5" y2="76.5" stroke="${INK}"
+    stroke-width="11" stroke-linecap="round"/>
+  <circle cx="61" cy="47" r="12.5" fill="${ZHU}"/>`;
+
+// P2 错链：三珠硬重叠斜升，尺寸递增，墨黛朱接力
+const P2 = `<circle cx="43" cy="63" r="12" fill="${INK}"/>
+  <circle cx="57" cy="54" r="13.5" fill="${DAI}"/>
+  <circle cx="70" cy="43" r="15" fill="${ZHU}"/>`;
+
+// P3 巨月咬合：巨墨盘+小朱盘咬边，体量对比 2:1 以上
+const P3 = `<circle cx="51" cy="58" r="28" fill="${INK}"/>
+  <circle cx="66.5" cy="41" r="13" fill="${ZHU}"/>`;
+
+// P4 断环大力：G1 加粗——环宽16、缺口110°、朱珠放大入缺口
+const P4 = `<path d="M75.67,57.82 A22,22 0 1 1 50.18,32.33" fill="none"
+  stroke="${INK}" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="69.56" cy="38.43" r="8" fill="${ZHU}"/>`;
+
+const cs = [
+  ["P1","珠走线","全幅斜线触安全区两端+朱珠压线错位：一线一珠，张力来自错位。"],
+  ["P2","错链","三珠硬重叠斜升递增，墨黛朱接力：运动残影+色温爬升，最像 MG 帧。"],
+  ["P3","巨月咬合","巨墨盘+小朱盘咬边：体量对比拉到极限，朱月咬在墨月肩上。"],
+  ["P4","断环大力","G1 加粗重制：环宽 16、缺口 110°、朱珠入缺口放大——最沉稳结构的加强版。"],
+];
+document.getElementById("g").innerHTML = cs.map(v =>
+  `<div class="tile"><div class="tilebox"><svg viewBox="0 0 108 108">${
+    {P1,P2,P3,P4}[v[0]]}</svg></div>
+   <div class="name">${v[0]} · ${v[1]}</div><div class="desc">${v[2]}</div></div>`).join("");
+</script>
+</body>
+</html>

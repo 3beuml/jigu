@@ -1,5 +1,11 @@
 package com.jigu.app.ui.detail
 
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -18,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,15 +50,17 @@ import com.jigu.app.data.PoemsDb
 import com.jigu.app.ui.attributionSubtitle
 import com.jigu.app.ui.signatureOf
 import com.jigu.app.ui.theme.PoemBodySmallStyle
+import com.jigu.app.ui.theme.PoemTextStyle
 import com.jigu.app.ui.theme.PoemTitleStyle
 import com.jigu.app.ui.theme.Wenkai
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** 详情页：原文 / 诗人小传 / 意象与标签 / 相关诗词；横竖排切换（D-007 雅言取材）。
- *  批11：赏画体系整体拆除（用户定案美术搁置）——正文背景画、赏画行、鉴赏入口已移除。 */
+ *  批11：赏画体系整体拆除（用户定案美术搁置）——正文背景画、赏画行、鉴赏入口已移除。
+ *  highlight（D-043 R1）：名句搜索直达时高亮命中的句/段（竖排模式暂不标记）。 */
 @Composable
-fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
+fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit, highlight: String = "") {
     val context = LocalContext.current
     var poem by remember { mutableStateOf<PoemsDb.Poem?>(null) }
     var related by remember { mutableStateOf<List<PoemsDb.Poem>>(emptyList()) }
@@ -59,6 +68,13 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     val bodyScroll = rememberScrollState()
 
     var themes by remember { mutableStateOf<List<String>>(emptyList()) }
+    // R8 古文阅读器化：段落锚点目录 + 续读进度（散文类目专用）
+    var showParaSheet by remember { mutableStateOf(false) }
+    var paraYs by remember { mutableStateOf<Map<Int, Float>>(emptyMap()) }
+    var colRootY by remember { mutableStateOf(0f) }
+    var jumpPara by remember { mutableStateOf<Int?>(null) }
+    var restoredRead by remember { mutableStateOf(false) }
+    val readPrefs = context.getSharedPreferences("jigu_prefs", android.content.Context.MODE_PRIVATE)
     LaunchedEffect(id) {
         withContext(Dispatchers.IO) {
             val db = PoemsDb.get(context)
@@ -72,6 +88,35 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
     // 横竖互切时复位：旧滚动位跨排式残留会标题出画、首列被裁（P0-2）
     LaunchedEffect(vertical) {
         bodyScroll.scrollTo(0)
+    }
+    // R8 续读：散文类目——重开恢复上次滚动比（竖排不恢复）
+    LaunchedEffect(poem?.id, vertical) {
+        val cur = poem ?: return@LaunchedEffect
+        if (vertical || cur.category !in PROSE_CATEGORIES) return@LaunchedEffect
+        kotlinx.coroutines.delay(400)
+        if (!restoredRead && bodyScroll.maxValue > 0) {
+            val ratio = readPrefs.getFloat("read_$id", 0f)
+            if (ratio > 0.02f && ratio < 0.98f) {
+                bodyScroll.scrollTo((ratio * bodyScroll.maxValue).toInt())
+            }
+            restoredRead = true
+        }
+    }
+    DisposableEffect(poem?.id) {
+        onDispose {
+            val cur = poem
+            if (cur != null && cur.category in PROSE_CATEGORIES && bodyScroll.maxValue > 0) {
+                val ratio = (bodyScroll.value.toFloat() / bodyScroll.maxValue).coerceIn(0f, 1f)
+                readPrefs.edit().putFloat("read_$id", ratio).apply()
+            }
+        }
+    }
+    // R8 段落跳转
+    LaunchedEffect(jumpPara, paraYs.size) {
+        val target = jumpPara ?: return@LaunchedEffect
+        val y = paraYs[target] ?: return@LaunchedEffect
+        bodyScroll.animateScrollTo((y - colRootY - 90f).toInt().coerceAtLeast(0))
+        jumpPara = null
     }
 
     val p = poem
@@ -94,6 +139,10 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                 modifier = Modifier.weight(1f),
             )
             TextButton2(text = if (vertical) "横排" else "竖排") { vertical = !vertical }
+            val cur0 = poem
+            if (cur0 != null && !vertical && cur0.category in PROSE_CATEGORIES && cur0.paragraphs.size > 2) {
+                TextButton2(text = "段落") { showParaSheet = true }
+            }
         }
 
         if (p == null) {
@@ -107,7 +156,7 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(bodyScroll)
-                .padding(horizontal = 28.dp),
+                .padding(horizontal = 32.dp),  // R7：页边留白 28→32
         ) {
             Spacer(Modifier.height(16.dp))
             Text(
@@ -144,8 +193,28 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
 
             if (vertical) {
                 VerticalPoem(p.paragraphs)
+            } else if (p.category in PROSE_CATEGORIES) {
+                // R8 阅读器化：散文逐段渲染并捕获段锚（目录跳段/续读定位）
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { colRootY = it.positionInRoot().y },
+                ) {
+                    p.paragraphs.forEachIndexed { i, para ->
+                        Text(
+                            text = INDENT + para,
+                            style = PoemTextStyle.copy(lineHeight = 43.sp),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { c ->
+                                    paraYs = paraYs + (i to c.positionInRoot().y)
+                                },
+                        )
+                    }
+                }
             } else {
-                PoemBody(p.paragraphs, p.category)
+                PoemBody(p.paragraphs, p.category, highlight)
             }
             Spacer(Modifier.height(28.dp))
 
@@ -226,6 +295,59 @@ fun DetailScreen(id: Int, onBack: () -> Unit, onOpen: (Int) -> Unit) {
                 }
             }
             Spacer(Modifier.height(com.jigu.app.DOCK_CLEARANCE))
+        }
+    }
+
+    if (showParaSheet && p != null) {
+        ParaSheet(
+            paragraphs = p.paragraphs,
+            onDismiss = { showParaSheet = false },
+            onJump = { i ->
+                showParaSheet = false
+                jumpPara = i
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ParaSheet(
+    paragraphs: List<String>,
+    onDismiss: () -> Unit,
+    onJump: (Int) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Text(
+            "段落目录",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+        )
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(bottom = 32.dp),
+        ) {
+            items(paragraphs.size) { i ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onJump(i) }
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                ) {
+                    Text(
+                        "第${i + 1}段",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        paragraphs[i].take(24) + if (paragraphs[i].length > 24) "…" else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+            }
         }
     }
 }

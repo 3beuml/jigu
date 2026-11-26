@@ -9,7 +9,8 @@
 定位：**一天一首诗，跟着节气过日子；把诗送进生活，而不是把用户拉进 App**。
 无社区、无账号、无信息流、全离线。GitHub: 3beuml/jigu，Apache-2.0。
 
-**全部产品决策见 `docs/DECISIONS.md`（D-001~D-038）**——动手前必读；`docs/REFERENCES.md` 含开源语料库与同类 App 数据源地图（D-036 调查专项）。
+**全部产品决策见 `docs/DECISIONS.md`（D-001~D-047）**——动手前必读；`docs/REFERENCES.md` 含开源语料库与同类 App 数据源地图（D-036 调查专项）。
+**产品需求事实源：`docs/REQUIREMENTS-2026-11-19-需求分析与路线图.md`**（用户访谈定稿：搜索=灵魂功能，四形态模型，几枝式首页，数据优先路线）。
 **参考资料与参照 App 研究状态见 `docs/REFERENCES.md`**。
 
 ## 硬约束（违反即返工）
@@ -33,7 +34,6 @@ python tools/datapack/build_calendar.py                                   # 节�
 python tools/fonts/subset_font.py --font C:/Work/scratch/fonts/wenkai.ttf --supplement C:/Work/scratch/fonts  # 字体子集（--supplement 用 Jigmo 补 Ext-B+ 生僻字形）
 python tools/datapack/test_pipeline.py                                    # 单元测试（必跑）
 python tools/datapack/inspect_db.py --full -n 2                           # 抽查
-python tools/artwork/fetch_artworks.py --force                            # 节气配画（需外网）
 ```
 
 数据集克隆在 `C:\Work\scratch\chinese-poetry`；`assets/data/` 为构建产物已 gitignore。
@@ -85,10 +85,16 @@ git tag 对应 GitHub Release（draft，正文用户自写）。CI：`.github/wo
 
 ## 当前待办
 
-见 `docs/DECISIONS.md` 尾部（D-033~D-038 各条"遗留/延批"）。现状摘要（2026-11-15）：
-库=39.4 万条（DATA 27），古文 15 类（批11 整本：左传 255 年/国语/墨荀韩孙吕管晏商）+
-诗词断层补全（批12 阳春集/金元词/元诗/唐诗补编；批13 清诗全本 2.29 万/唐五代词/近三百年词）。
-**下批候选**：乐府诗集体例细析（解析器首版质检否决）、全唐诗补编二期（剩 ~5,700 首）、
-明诗综/全金诗选段（白文）、先秦汉魏晋南北朝诗（〖逯案〗剥除待细析）、列子/战国策底本、
-韩非/吕览/管子整本断句、宋诗平仄标注（strains）、文白对照（NiuTrans）、
-陈涉世家（候外网）。旧待办：纸纹质感、小传白话化三选一；TTS 已由 D-013 否决。
+**跨会话交接先读：**（一眼现状/提交时间线/待验收清单/挂账隐患/下一步）。
+见 docs/DECISIONS.md 尾部与 docs/REQUIREMENTS-2026-11-19-需求分析与路线图.md（产品需求事实源）。
+真机验收清单：`docs/ACCEPTANCE-2026-11-26.md`（D-044~D-047 九组，用户逐项打勾）。
+现状摘要（2026-11-20 夜班）：库=39.73 万条（DATA 31 / SCHEMA 8，v0.2.2 未发 Release）。
+已落地：D-043 R1/R2（搜索升级/诗人主页+关注）+ 批16 史记整本；D-044 R3 几枝化（诗历/搜索
+前置/关注轻加权）；D-044a 作者索引逻辑修正（分栏域化+朝代时序）；D-045 R4 情境推送（心情/
+状态/可选联网天气 open-meteo 城市制）；D-046 夜班批次（dock 全路由常驻仅卡片预览退场/R5 名句
+体系分组收藏/R7 排版行距页边/R8 古文段落目录+续读/R9 书架长按置顶）。**需求路线图 R1-R9
+全部交付**；美术终止（D-040）；吕览挂账；补编二期候专场。
+**遗留**：名句 auto 精修；宋诗平仄/文白对照/五经整本等候选挂账；真机验收 D-044~D-047
+（v0.2.2 已装 468QBGES222HV，2026-11-26 22:23 重装，含 D-047）。favorites 跨版本 id 漂移已修（D-047：
+读旧库快照 题名/作者/分类/内容哈希，新库按哈希重解析，导出 JSON format=2 带 hash）。
+旧待办：纸纹质感、小传白话化三选一；TTS 已否决（D-013）。

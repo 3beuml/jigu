@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -47,6 +48,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jigu.app.data.DailyPush
 import com.jigu.app.data.JiguSettings
+import com.jigu.app.data.MoodProfiles
+import com.jigu.app.data.WeatherService
 import com.jigu.app.data.PoemsDb
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -54,7 +57,11 @@ import kotlinx.coroutines.withContext
 /** 我的：收藏/名句入口、今日诗偏好、真实设置开关、数据信息、致谢与许可 */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MineScreen(onOpenFavorites: () -> Unit, onOpenFamous: () -> Unit) {
+fun MineScreen(
+    onOpenFavorites: () -> Unit,
+    onOpenFamous: () -> Unit,
+    onOpenFollows: () -> Unit = {},
+) {
     val context = LocalContext.current
     var dataInfo by remember { mutableStateOf("…") }
     var version by remember { mutableStateOf("…") }
@@ -66,6 +73,10 @@ fun MineScreen(onOpenFavorites: () -> Unit, onOpenFamous: () -> Unit) {
     // 今日诗偏好（D-030）：题材多选，pick 时优选偏好题材池
     var allThemes by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
     var preferred by remember { mutableStateOf(JiguSettings.preferredThemes(context)) }
+    var moods by remember { mutableStateOf(JiguSettings.moodTags(context)) }
+    var status by remember { mutableStateOf(JiguSettings.lifeStatus(context)) }
+    var city by remember { mutableStateOf(JiguSettings.weatherCity(context)) }
+    var weatherInfo by remember { mutableStateOf<String?>(null) }
 
     fun reloadPush() {
         if (pushOn) DailyPush.schedule(context, pushHour, pushMinute)
@@ -101,9 +112,10 @@ fun MineScreen(onOpenFavorites: () -> Unit, onOpenFamous: () -> Unit) {
         )
         Spacer(Modifier.height(20.dp))
 
-        // 收藏 / 名句入口（名句卡移自书架，D-030）
+        // 收藏 / 名句入口（名句卡移自书架，D-030）；关注诗人（D-043 R2）
         EntryRow("我的收藏", "$favCount 篇", onOpenFavorites)
         EntryRow("名句", "千古名句 · 四百条", onOpenFamous)
+        EntryRow("关注的诗人", "诗人主页点「关注」", onOpenFollows)
         Spacer(Modifier.height(20.dp))
 
         Info("数据", dataInfo)
@@ -183,15 +195,104 @@ fun MineScreen(onOpenFavorites: () -> Unit, onOpenFamous: () -> Unit) {
                 }
             }
         }
+        Spacer(Modifier.height(20.dp))
+
+        // R4 情境（D-045）：心情多选 + 最近状态单选
+        Text("心情 · 状态", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            "心情并入今日题材池；最近状态为持续偏向（可随时改回默认）",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            MoodProfiles.MOODS.forEach { (label, _) ->
+                val on = label in moods
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    onClick = {
+                        val next = if (on) moods - label else moods + label
+                        moods = next
+                        JiguSettings.setMoodTags(context, next)
+                    },
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            MoodProfiles.STATUS.forEach { (label, _) ->
+                val on = label == status
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    onClick = {
+                        status = label
+                        JiguSettings.setLifeStatus(context, label)
+                    },
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+
+        // R4 天气（可选联网例外）：城市留空 = 纯离线
+        Text("天气配诗（可选联网）", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            "填城市名后每日拉取当地天气，雨雪晴阴配不同诗；留空 = 纯离线、一次请求都不发",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = city,
+                onValueChange = { city = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("如：杭州（留空关闭）") },
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium,
+            )
+            Spacer(Modifier.width(10.dp))
+            TextButton(onClick = {
+                JiguSettings.setWeatherCity(context, city)
+                WeatherService.refreshAsync(context)
+                weatherInfo = if (city.isBlank()) "已关闭天气配诗" else "已保存，正在拉取天气…"
+            }) { Text("保存") }
+        }
+        weatherInfo?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Spacer(Modifier.height(24.dp))
 
-        Info("数据来源", "chinese-poetry（MIT）· cnlunar（MIT）· 霞鹜文楷（OFL）· 节气配画：克利夫兰艺术博物馆（CC0）")
+        Info("数据来源", "chinese-poetry（MIT）· cnlunar（MIT）· 霞鹜文楷（OFL）")
         Spacer(Modifier.height(8.dp))
         Info("字体", "霞鹜文楷子集（OFL）+ Jigmo 补生僻字（MIT）+ 系统衬线兜底")
         Spacer(Modifier.height(8.dp))
         Info("许可", "代码 Apache-2.0；各来源署名见上方与数据包 meta")
         Spacer(Modifier.height(8.dp))
-        Info("隐私", "全离线，不联网、不收集任何数据")
+        Info("隐私", "默认全离线不收集数据；唯一联网例外 = 你主动填写天气城市（只请求天气）")
         Spacer(Modifier.height(com.jigu.app.DOCK_CLEARANCE))
     }
 
