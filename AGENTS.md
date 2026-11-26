@@ -9,7 +9,7 @@
 定位：**一天一首诗，跟着节气过日子；把诗送进生活，而不是把用户拉进 App**。
 无社区、无账号、无信息流、全离线。GitHub: 3beuml/jigu，Apache-2.0。
 
-**全部产品决策见 `docs/DECISIONS.md`（D-001~D-047）**——动手前必读；`docs/REFERENCES.md` 含开源语料库与同类 App 数据源地图（D-036 调查专项）。
+**全部产品决策见 `docs/DECISIONS.md`（D-001~D-048）**——动手前必读；`docs/REFERENCES.md` 含开源语料库与同类 App 数据源地图（D-036 调查专项）。
 **产品需求事实源：`docs/REQUIREMENTS-2026-11-19-需求分析与路线图.md`**（用户访谈定稿：搜索=灵魂功能，四形态模型，几枝式首页，数据优先路线）。
 **参考资料与参照 App 研究状态见 `docs/REFERENCES.md`**。
 
@@ -50,7 +50,9 @@ python tools/datapack/inspect_db.py --full -n 2                           # 抽�
 8. **Git Bash 下 adb push 远端路径必须加 `MSYS_NO_PATHCONV=1` 前缀**：否则 `/data/...` 被 MSYS
    转成 Windows 路径，push 报"成功"但文件不在设备目标位置（pm install 报 Can't open file）。
 9. **真机签名互斥**：debug/release 两签名包不能互相覆盖安装（INSTALL_FAILED_UPDATE_INCOMPATIBLE）。
-   真机现装 debug 签名 v0.2.0（2026-11-06）；换 release 版须先卸载（收藏清空，favorites 无导出）。
+   真机现装 debug 签名 0.2.2（versionCode 202，2026-11-26 重装）；D-048 起公开发行线为 **v0.0.1（versionCode 1）**，
+   装 0.0.1 属**降级**（202→1），须先卸载（或 `pm install -d`）；换 release 签名同样须卸载，
+   卸载前务必先"收藏导出"（format=2 带 hash，可精确导回）。
    另：Flyme 禁 run-as（DEBUGGABLE 包也报 unknown package）；adb 偶发 protocol fault 掉线，
    kill-server 重启即恢复。
 10. **GitHub API**：匿名 60/hr 限额易尽（contents+search 同池）；`C:\Work\.jigu_token.txt` 是
@@ -88,7 +90,8 @@ git tag 对应 GitHub Release（draft，正文用户自写）。CI：`.github/wo
 **跨会话交接先读：**（一眼现状/提交时间线/待验收清单/挂账隐患/下一步）。
 见 docs/DECISIONS.md 尾部与 docs/REQUIREMENTS-2026-11-19-需求分析与路线图.md（产品需求事实源）。
 真机验收清单：`docs/ACCEPTANCE-2026-11-26.md`（D-044~D-047 九组，用户逐项打勾）。
-现状摘要（2026-11-20 夜班）：库=39.73 万条（DATA 31 / SCHEMA 8，v0.2.2 未发 Release）。
+现状摘要（2026-11-26）：库=39.73 万条（DATA 31 / SCHEMA 8）；公开发行线自 **v0.0.1** 起（D-048），
+尚未发版；真机测试包装的是 0.2.2（versionCode 202，D-039~D-047 全量）。
 已落地：D-043 R1/R2（搜索升级/诗人主页+关注）+ 批16 史记整本；D-044 R3 几枝化（诗历/搜索
 前置/关注轻加权）；D-044a 作者索引逻辑修正（分栏域化+朝代时序）；D-045 R4 情境推送（心情/
 状态/可选联网天气 open-meteo 城市制）；D-046 夜班批次（dock 全路由常驻仅卡片预览退场/R5 名句

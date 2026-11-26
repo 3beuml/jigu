@@ -22,8 +22,10 @@ android {
         minSdk = 26
         targetSdk = 36
         // 版本规则见 docs/DECISIONS.md D-009：versionCode = major×10000+minor×100+patch
-        versionCode = 202
-        versionName = "0.2.2"
+        // 版本线重置（D-048，2026-11-26）：首个公开发行 = v0.0.1 → versionCode 1。
+        // 注意：真机现装 0.2.2(202) 高于此值，换包属降级安装，须先卸载（或 pm install -d）。
+        versionCode = 1
+        versionName = "0.0.1"
     }
 
     signingConfigs {
