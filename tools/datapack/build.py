@@ -37,7 +37,7 @@ T2S = OpenCC("t2s")
 REPO = Path(__file__).resolve().parents[2]
 
 SCHEMA_VERSION = 8  # +1: follows 关注诗人表（D-043 R2）
-DATA_VERSION = 31  # +1: 批16——史记整本 125 卷 + follows 关注诗人表（SCHEMA 8）+ R1/R2 无数据面变更
+DATA_VERSION = 32  # +1: 批17 全唐诗补编 1,485 首（D-050）+ 批18 先秦汉魏晋南北朝诗 5,436 首（D-051）
 #                    （曲题锚+乐章作者继承）、近三百年词评点转 notes、敦煌曲子词尾标剥除
 
 SCHEMA = """
@@ -1745,6 +1745,28 @@ def it_jingzi11(dataset: Path):
     # 底本整卷缺：孝武本纪/赵世家/魏世家/陈涉世家，记档 D-043）
     sjf = load_json(REPO / "tools/datapack/corpus/shiji_full.json")
     for a in sjf["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    # 批17 全唐诗补编（D-050）：殆知阁 tangbubian.txt 五编合本，按编配置缩进层确定性切分。
+    # 1,485 首 / 13.9 万字 / 537 作者；与现库《全唐诗》正编查重后入库（补编性质=补缺，
+    # 底本混入的正编已收篇目在解析阶段已丢弃）。
+    tb = load_json(REPO / "tools/datapack/corpus/tangbubian_full.json")
+    for a in tb["pieces"]:
+        yield {
+            "category": a["category"], "title": a["title"], "author": a.get("author", ""),
+            "dynasty": a.get("dynasty", "唐"), "paragraphs": a["paragraphs"],
+            "section": a.get("section", ""), "chapter": a.get("chapter", ""),
+            "brief": a.get("brief", ""),
+        }
+    # 批18 先秦汉魏晋南北朝诗（D-051）：逯钦立辑校 135 卷，缩进树 + 括号形态切分。
+    # 5,436 首 / 54.3 万字 / 745 作者（原书称八百余人）；12 个朝代段（先秦→隋），
+    # category=han_wei 已在日推精选池白名单内。
+    xq = load_json(REPO / "tools/datapack/corpus/xianqin.json")
+    for a in xq["pieces"]:
         yield {
             "category": a["category"], "title": a["title"], "author": a.get("author", ""),
             "dynasty": a.get("dynasty", ""), "paragraphs": a["paragraphs"],
