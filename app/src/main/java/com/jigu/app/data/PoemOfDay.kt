@@ -17,10 +17,12 @@ import java.time.LocalDate
  */
 object PoemOfDay {
 
-    data class Result(val poem: PoemsDb.Poem, val badge: String?)
+    /** why = 「为什么是今天」（D-052，借鉴 Poem-a-Day/单向历的"今日注"）：
+     *  一行 ≤24 字，供今日页出处下方灰字展示，让日推从"随机感"变成"被编排的一天"。 */
+    data class Result(val poem: PoemsDb.Poem, val badge: String?, val why: String? = null)
 
     /** 每日一句日志条目（诗历时间线） */
-    data class LogEntry(val date: LocalDate, val poemId: Int, val badge: String?)
+    data class LogEntry(val date: LocalDate, val poemId: Int, val badge: String?, val why: String? = null)
 
     private const val LOG_KEY = "daily_log"
     private const val LOG_CAP = 730
@@ -54,30 +56,42 @@ object PoemOfDay {
             val n = count()
             if (n > 0) {
                 val off = Math.floorMod(today.toEpochDay() + swap, n.toLong()).toInt()
-                atOffset(off)?.let { return Result(it, JiguCalendar.currentTerm(today)) }
+                atOffset(off)?.let {
+                    return Result(it, JiguCalendar.currentTerm(today), if (swap > 0) "换的第 $swap 句" else null)
+                }
             }
         }
         val festival = JiguCalendar.festival(today)
         if (festival != null) {
             db.calendarPoemIds("festival", festival).takeIf { it.isNotEmpty() }
-                ?.let { ids -> db.poemById(ids[absIndex(today, ids.size)])?.let { return Result(it, festival) } }
+                ?.let { ids ->
+                    db.poemById(ids[absIndex(today, ids.size)])?.let {
+                        return Result(it, festival, "今天是$festival")
+                    }
+                }
         }
         val termToday = JiguCalendar.termOn(today)
         if (termToday != null) {
             db.calendarPoemIds("solar_term", termToday).takeIf { it.isNotEmpty() }
-                ?.let { ids -> db.poemById(ids[absIndex(today, ids.size)])?.let { return Result(it, termToday) } }
+                ?.let { ids ->
+                    db.poemById(ids[absIndex(today, ids.size)])?.let {
+                        return Result(it, termToday, "今日交$termToday")
+                    }
+                }
         }
         val n = count()
         if (n <= 0) return null
+        val curTerm = JiguCalendar.currentTerm(today)
         // 季节情境（D-019，对齐今日诗词思路）：每 4 天里 1 天优先当前节气配诗池，
         // 其余日子走配平后的精选池；节气池空则自然回退精选池。
-        val curTerm = JiguCalendar.currentTerm(today)
         if (curTerm != null && Math.floorMod(today.toEpochDay(), 4L) == 0L) {
             db.calendarPoemIds("solar_term", curTerm).takeIf { it.isNotEmpty() }
-                ?.let { ids -> db.poemById(ids[absIndex(today, ids.size)])?.let { return Result(it, curTerm) } }
+                ?.let { ids ->
+                    db.poemById(ids[absIndex(today, ids.size)])?.let {
+                        return Result(it, curTerm, "$curTerm·候物")
+                    }
+                }
         }
-        // 关注诗人轻加权（D-043 R3，用户定案"适度加权，不要太大"）：每 5 天 1 天优先
-        // 关注作者的名气作（精选池内），其余日子仍是全库——主体不被关注人挤占。
         // 天气情境槽（R4/D-045，可选联网）：城市已配置且当日天气在手 → 每 3 天里 1 天走天气题材池；
         // 角标沿用节气，无节气时用天气（今日·雨/晴/雪）。
         val weather = WeatherService.weatherToday(context)
@@ -86,24 +100,39 @@ object PoemOfDay {
             db.curatedThemeOrder(weatherThemes).takeIf { it.isNotEmpty() }
                 ?.let { ids ->
                     db.poemById(ids[absIndex(today, ids.size)])?.let {
-                        return Result(it, curTerm ?: MoodProfiles.weatherLabel(weather.code))
+                        val label = MoodProfiles.weatherLabel(weather.code)
+                        return Result(
+                            it,
+                            curTerm ?: label,
+                            if (weather.city.isNotBlank()) "$label·${weather.city}" else "今日$label",
+                        )
                     }
                 }
         }
+        // 关注诗人轻加权（D-043 R3，用户定案"适度加权，不要太大"）：每 5 天 1 天优先
+        // 关注作者的名气作（精选池内），其余日子仍是全库——主体不被关注人挤占。
         val followed = db.followedAuthorIds()
         if (followed.isNotEmpty() && Math.floorMod(today.toEpochDay(), 5L) == 2L) {
             db.curatedByFollowed(followed).takeIf { it.isNotEmpty() }
-                ?.let { list -> return Result(list[absIndex(today, list.size)], curTerm) }
+                ?.let { list ->
+                    val p = list[absIndex(today, list.size)]
+                    return Result(p, curTerm, "你关注的诗人")
+                }
         }
         val poem = atOffset(absIndex(today, n)) ?: return null
+        val why = when {
+            themes.isNotEmpty() -> "按你的题材偏好"
+            curTerm != null -> "$curTerm·时序"
+            else -> null
+        }
         // 角标仍展示当前所在节气，让普通日子也有时序感
-        return Result(poem, curTerm)
+        return Result(poem, curTerm, why)
     }
 
     private fun absIndex(date: LocalDate, size: Int): Int =
         ((date.toEpochDay() % size + size) % size).toInt()
 
-    /** 每日一句日志（诗历）：prefs JSON {epochDay: {id, badge}}，保留 730 天。
+    /** 每日一句日志（诗历）：prefs JSON {epochDay: {id, badge, why}}，保留 730 天。
      *  每次覆盖当日条目（换一首后记最后展示的一句）。 */
     fun logShown(context: Context, today: LocalDate, r: Result) {
         runCatching {
@@ -111,6 +140,7 @@ object PoemOfDay {
             val obj = org.json.JSONObject(prefs.getString(LOG_KEY, "{}") ?: "{}")
             val entry = org.json.JSONObject().put("id", r.poem.id)
             r.badge?.let { entry.put("badge", it) }
+            r.why?.let { entry.put("why", it) }
             obj.put(today.toEpochDay().toString(), entry)
             while (obj.length() > LOG_CAP) {
                 val oldest = obj.keys().asSequence().minByOrNull { it.toLongOrNull() ?: 0L } ?: break
@@ -131,7 +161,12 @@ object PoemOfDay {
                     val e = obj.optJSONObject(key) ?: return@mapNotNull null
                     val id = e.optInt("id", -1)
                     if (id < 0) return@mapNotNull null
-                    LogEntry(LocalDate.ofEpochDay(day), id, e.optString("badge").ifBlank { null })
+                    LogEntry(
+                        LocalDate.ofEpochDay(day),
+                        id,
+                        e.optString("badge").ifBlank { null },
+                        e.optString("why").ifBlank { null },
+                    )
                 }
                 .sortedByDescending { it.date.toEpochDay() }
                 .toList()

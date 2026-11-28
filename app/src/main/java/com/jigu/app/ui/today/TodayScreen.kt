@@ -183,6 +183,19 @@ fun TodayScreen(
                     .padding(horizontal = 24.dp)
                     .fillMaxWidth(),
             )
+            // 今日注（D-052）：一行极淡小字说明"为什么是今天"，
+            // 让日推从随机感变成被编排的一天（借鉴 Poem-a-Day 编辑手记/单向历宜忌）。
+            r.why?.takeIf { it.isNotBlank() }?.let { why ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = why,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         // 底部：安静的出口（朗读已移除，见 D-013）

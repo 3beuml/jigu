@@ -1154,7 +1154,7 @@ class PoemsDb private constructor(context: Context) {
 
     /** 关注列表（独立页）：按关注时间倒序，作者带作品量。 */
     fun followedAuthors(): List<Author> = rdb().rawQuery(
-        "$AUTHOR_COLUMNS FROM follows fo JOIN authors a ON a.id = fo.author_id " +
+        "SELECT $AUTHOR_COLUMNS FROM follows fo JOIN authors a ON a.id = fo.author_id " +
             "LEFT JOIN poems p ON p.author_id = a.id " +
             "GROUP BY a.id ORDER BY fo.created_at DESC",
         null,

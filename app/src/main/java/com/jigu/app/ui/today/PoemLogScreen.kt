@@ -132,6 +132,16 @@ fun PoemLogScreen(onBack: () -> Unit, onOpen: (Int) -> Unit) {
                                             .padding(horizontal = 8.dp, vertical = 2.dp),
                                     )
                                 }
+                                // 今日注（D-052）：回看时也能看到"那天为什么是这句"
+                                e.why?.let {
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        it,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        maxLines = 1,
+                                    )
+                                }
                             }
                             Spacer(Modifier.height(8.dp))
                             val line = p.famousLine.takeIf { it.length >= 6 }
